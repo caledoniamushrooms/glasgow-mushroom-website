@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import { recipes } from '../data/recipes.js';
+---
+
+<BaseLayout title="Recipes — Glasgow Mushroom Company" description="Delicious recipes featuring our gourmet mushrooms.">
+  <section class="recipes section">
+    <div class="container">
+      <h1>Recipes</h1>
+      <p class="recipes__intro">Simple, delicious ways to cook with our mushrooms. From quick weeknight suppers to something a bit more special.</p>
+
+      {recipes.map((recipe) => (
+        <RecipeCard {...recipe} />
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .recipes {
+    padding-top: 8rem;
+  }
+
+  .recipes h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .recipes__intro {
+    color: var(--color-text-muted);
+    max-width: 600px;
+    margin-bottom: 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .recipes {
+      padding-top: 10rem;
+    }
+  }
+</style>

@@ -1,0 +1,157 @@
+---
+import { navItems } from '../data/navigation.js';
+---
+
+<header class="header">
+  <div class="header__inner container">
+    <a href="/home" class="header__logo" aria-label="Glasgow Mushroom Company home">
+      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" width="60" height="60" />
+    </a>
+
+    <button class="header__hamburger" aria-label="Toggle menu" aria-expanded="false">
+      <span class="header__hamburger-line"></span>
+      <span class="header__hamburger-line"></span>
+      <span class="header__hamburger-line"></span>
+    </button>
+
+    <nav class="header__nav" aria-label="Main navigation">
+      <ul class="header__nav-list">
+        {navItems.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="header__nav-link"
+              {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const hamburger = document.querySelector('.header__hamburger');
+  const nav = document.querySelector('.header__nav');
+
+  hamburger?.addEventListener('click', () => {
+    const isOpen = nav?.classList.toggle('is-open');
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+  });
+</script>
+
+<style>
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--color-bg);
+  }
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .header__logo img {
+    display: block;
+  }
+
+  /* Hamburger */
+  .header__hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 101;
+  }
+
+  .header__hamburger-line {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background-color: var(--color-text);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .header__nav.is-open ~ .header__hamburger .header__hamburger-line:nth-child(1),
+  .header__hamburger[aria-expanded="true"] .header__hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .header__hamburger[aria-expanded="true"] .header__hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+
+  .header__hamburger[aria-expanded="true"] .header__hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Nav */
+  .header__nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .header__nav.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .header__nav-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .header__nav-link {
+    font-family: var(--font-heading);
+    font-size: var(--nav-link-size);
+    font-weight: 700;
+    transition: opacity 0.2s ease;
+  }
+
+  .header__nav-link:hover {
+    opacity: 0.7;
+  }
+
+  /* Desktop */
+  @media (min-width: 768px) {
+    .header__hamburger {
+      display: none;
+    }
+
+    .header__nav {
+      position: static;
+      opacity: 1;
+      pointer-events: auto;
+      background: none;
+    }
+
+    .header__nav-list {
+      flex-direction: row;
+      gap: 2rem;
+    }
+  }
+</style>

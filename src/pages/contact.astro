@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SocialIcons from '../components/SocialIcons.astro';
+---
+
+<BaseLayout title="Contact — Glasgow Mushroom Company" description="Get in touch with Glasgow Mushroom Company.">
+  <section class="contact section">
+    <div class="container">
+      <h1>Get in touch</h1>
+
+      <div class="contact__methods">
+        <a href="tel:+44XXXXXXXXXX" class="contact__method">
+          <h3>Phone</h3>
+          <p>Give us a call</p>
+        </a>
+
+        <a href="https://wa.me/447XXX" target="_blank" rel="noopener noreferrer" class="contact__method">
+          <h3>WhatsApp</h3>
+          <p>Message us on WhatsApp</p>
+        </a>
+
+        <a href="https://www.instagram.com/glasgowmushroom/" target="_blank" rel="noopener noreferrer" class="contact__method">
+          <h3>Instagram</h3>
+          <p>@glasgowmushroom</p>
+        </a>
+
+        <a href="https://www.facebook.com/glasgowmushroomcompany/" target="_blank" rel="noopener noreferrer" class="contact__method">
+          <h3>Facebook</h3>
+          <p>Glasgow Mushroom Company</p>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .contact {
+    padding-top: 8rem;
+  }
+
+  .contact h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+  }
+
+  .contact__methods {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 600px;
+  }
+
+  .contact__method {
+    display: block;
+    padding: 1.5rem;
+    background-color: var(--color-bg-footer);
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+  }
+
+  .contact__method:hover {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
+
+  .contact__method h3 {
+    font-family: var(--font-heading);
+    margin-bottom: 0.25rem;
+  }
+
+  .contact__method p {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .contact {
+      padding-top: 10rem;
+    }
+
+    .contact__methods {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

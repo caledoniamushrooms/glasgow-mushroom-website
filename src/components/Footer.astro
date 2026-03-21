@@ -1,0 +1,109 @@
+---
+import SocialIcons from './SocialIcons.astro';
+import { navItems } from '../data/navigation.js';
+---
+
+<footer class="footer">
+  <div class="footer__inner container">
+    <div class="footer__grid">
+      <div class="footer__section">
+        <h4>Sitemap</h4>
+        <ul>
+          <li><a href="/home">Home</a></li>
+          {navItems.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="footer__section">
+        <h4>About</h4>
+        <ul>
+          <li><a href="/privacy-policy">Privacy Policy</a></li>
+        </ul>
+      </div>
+
+      <div class="footer__section">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+44XXXXXXXXXX">Phone</a></li>
+        </ul>
+        <div class="footer__social">
+          <SocialIcons />
+        </div>
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <p>&copy; {new Date().getFullYear()} Glasgow Mushroom Company. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: var(--color-bg-footer);
+    padding: 3rem 0 1.5rem;
+    margin-top: 4rem;
+  }
+
+  .footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .footer__section h4 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .footer__section ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer__section a {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+  }
+
+  .footer__section a:hover {
+    color: var(--color-text);
+    opacity: 1;
+  }
+
+  .footer__social {
+    margin-top: 1rem;
+  }
+
+  .footer__bottom {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+  }
+
+  .footer__bottom p {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .footer__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

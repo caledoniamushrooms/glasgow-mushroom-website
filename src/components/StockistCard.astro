@@ -1,0 +1,44 @@
+---
+import MapEmbed from './MapEmbed.astro';
+
+interface Props {
+  name: string;
+  address: string;
+  mapEmbed: string;
+}
+
+const { name, address, mapEmbed } = Astro.props;
+---
+
+<article class="stockist-card">
+  <div class="stockist-card__info">
+    <h3>{name}</h3>
+    <p>{address}</p>
+  </div>
+  <div class="stockist-card__map">
+    <MapEmbed src={mapEmbed} title={`Map showing ${name}`} />
+  </div>
+</article>
+
+<style>
+  .stockist-card {
+    border-radius: 8px;
+    background-color: var(--color-bg-footer);
+    overflow: hidden;
+    padding: 1.5rem;
+  }
+
+  .stockist-card__info {
+    margin-bottom: 1rem;
+  }
+
+  .stockist-card__info h3 {
+    font-family: var(--font-heading);
+    margin-bottom: 0.25rem;
+  }
+
+  .stockist-card__info p {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+</style>

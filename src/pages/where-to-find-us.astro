@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StockistCard from '../components/StockistCard.astro';
+import { stockists } from '../data/stockists.js';
+---
+
+<BaseLayout title="Where to find us — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company products at these stockists and markets.">
+  <section class="stockists section">
+    <div class="container">
+      <h1>Where to find us</h1>
+      <p class="stockists__intro">Pick up our fresh mushrooms at these shops and markets across Glasgow.</p>
+
+      <div class="stockists__grid">
+        {stockists.map((stockist) => (
+          <StockistCard {...stockist} />
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .stockists {
+    padding-top: 8rem;
+  }
+
+  .stockists h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .stockists__intro {
+    color: var(--color-text-muted);
+    max-width: 600px;
+    margin-bottom: 3rem;
+  }
+
+  .stockists__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .stockists {
+      padding-top: 10rem;
+    }
+
+    .stockists__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

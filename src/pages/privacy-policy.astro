@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Privacy Policy — Glasgow Mushroom Company">
+  <section class="privacy section">
+    <div class="container">
+      <h1>Privacy policy</h1>
+
+      <div class="privacy__content">
+        <h2>Who we are</h2>
+        <p>Glasgow Mushroom Company is a small-scale mushroom grower based in Glasgow, Scotland. Our website address is: glasgowmushroom.co.</p>
+
+        <h2>What personal data we collect and why</h2>
+        <p>This website does not collect personal data through forms or user accounts. If you contact us via phone, WhatsApp, or social media, we may retain your contact details solely for the purpose of responding to your enquiry.</p>
+
+        <h2>Embedded content from other websites</h2>
+        <p>Pages on this site may include embedded content (e.g. Google Maps). Embedded content from other websites behaves in the exact same way as if the visitor has visited the other website. These websites may collect data about you, use cookies, embed additional third-party tracking, and monitor your interaction with that embedded content.</p>
+
+        <h2>How long we retain your data</h2>
+        <p>We do not store personal data on this website. Any data shared via direct contact channels is retained only as long as necessary to fulfil the purpose for which it was provided.</p>
+
+        <h2>Your rights</h2>
+        <p>If you have contacted us and wish to request deletion of your personal data, please get in touch and we will comply promptly.</p>
+
+        <h2>Contact information</h2>
+        <p>For any privacy-related queries, please <a href="/contact">contact us</a>.</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .privacy {
+    padding-top: 8rem;
+  }
+
+  .privacy h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+  }
+
+  .privacy__content {
+    max-width: 700px;
+  }
+
+  .privacy__content h2 {
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .privacy__content p {
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  .privacy__content a {
+    text-decoration: underline;
+  }
+
+  @media (min-width: 768px) {
+    .privacy {
+      padding-top: 10rem;
+    }
+  }
+</style>

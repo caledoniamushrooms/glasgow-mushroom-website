@@ -1,0 +1,101 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapEmbed from '../components/MapEmbed.astro';
+---
+
+<BaseLayout title="Home — Glasgow Mushroom Company">
+  <section class="hero section">
+    <div class="container">
+      <h1>Gourmet mushrooms grown in Glasgow</h1>
+      <p class="hero__tagline">We grow speciality mushrooms in the heart of Glasgow and supply them fresh to local restaurants, shops, and markets.</p>
+    </div>
+  </section>
+
+  <section class="cta-cards section">
+    <div class="container">
+      <div class="cta-cards__grid">
+        <a href="/products" class="cta-card">
+          <h2>Products</h2>
+          <p>Discover our range of gourmet mushrooms</p>
+        </a>
+        <a href="/recipes" class="cta-card">
+          <h2>Recipes</h2>
+          <p>Get inspired with our favourite recipes</p>
+        </a>
+        <a href="/where-to-find-us" class="cta-card">
+          <h2>Where to find us</h2>
+          <p>Find stockists and markets near you</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="map section">
+    <div class="container">
+      <h2>Find us</h2>
+      <MapEmbed
+        src="https://www.google.com/maps/d/embed?mid=PLACEHOLDER"
+        title="Glasgow Mushroom Company locations"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-top: 8rem;
+    text-align: center;
+  }
+
+  .hero__tagline {
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+    max-width: 600px;
+    margin: 1.5rem auto 0;
+  }
+
+  .cta-cards__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .cta-card {
+    display: block;
+    padding: 2.5rem 2rem;
+    background-color: var(--color-bg-footer);
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .cta-card:hover {
+    transform: translateY(-4px);
+    background-color: #1a1a1a;
+    opacity: 1;
+  }
+
+  .cta-card h2 {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .cta-card p {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .map h2 {
+    margin-bottom: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero {
+      padding-top: 10rem;
+    }
+
+    .cta-cards__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
