@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 ---
 
 <BaseLayout title="Home — Glasgow Mushroom Company">
@@ -91,7 +92,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
   };
 </script>
-<script is:inline src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNTzRC00lSkP8KqWx_ENi1DOh7GjsYxBI&callback=initMap" async defer></script>
+<script is:inline src={`https://maps.googleapis.com/maps/api/js?key=${mapsKey}&callback=initMap`} async defer></script>
 
 <style>
   .hero {
