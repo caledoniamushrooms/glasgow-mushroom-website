@@ -28,46 +28,70 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script is:inline>
-  function initMap() {
-    const center = { lat: 55.895, lng: -4.2750 };
-    const map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 11.5,
-      center: center,
-      styles: [
-        { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-        { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
-        { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#383838' }] },
-        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
-      ],
+  window.initMap = async function() {
+    var mapLib = await google.maps.importLibrary("maps");
+    var markerLib = await google.maps.importLibrary("marker");
+
+    var map = new mapLib.Map(document.getElementById("map"), {
+      mapId: "f036911d517a356e246f4d97",
+      mapTypeControl: false,
+      streetViewControl: false
     });
 
-    const locations = [
-      { name: 'Roots Fruits and Flowers', address: '455 Great Western Rd, G12 8HH', lat: 55.8758, lng: -4.2933 },
-      { name: 'The Good Choice', address: '1031 Cathcart Rd, Mt Florida, G42 9XJ', lat: 55.8266, lng: -4.2511 },
-      { name: 'Locavore', address: '49 Victoria Rd, G42 7SA', lat: 55.8348, lng: -4.2573 },
-      { name: 'Locavore', address: '449 Dumbarton Rd, Partick, G11 6EJ', lat: 55.8723, lng: -4.3109 },
-      { name: 'Zucchini', address: '28 Nithsdale Rd, G41 5RB', lat: 55.8297, lng: -4.2740 },
-      { name: 'Zucchini', address: '103 Clarkston Rd, Cathcart, G44 3BL', lat: 55.8163, lng: -4.2475 },
+    var locs = [
+      { lat: 55.8758, lng: -4.2933, name: "Roots, Fruits & Flowers",  logo: "/images/stockists/roots-fruits.jpg",     address: "455 Great Western Rd, Glasgow G12 8HH" },
+      { lat: 55.8266, lng: -4.2511, name: "The Good Choice",           logo: "/images/stockists/the-good-choice.png", address: "1031 Cathcart Rd, Mt Florida, Glasgow G42 9XJ" },
+      { lat: 55.8348, lng: -4.2573, name: "Locavore – Victoria Road",  logo: "/images/stockists/locavore.png",        address: "49 Victoria Rd, Glasgow G42 7SA" },
+      { lat: 55.8723, lng: -4.3109, name: "Locavore – Dumbarton Road", logo: "/images/stockists/locavore.png",        address: "449 Dumbarton Rd, Partick, Glasgow G11 6EJ" },
+      { lat: 55.8297, lng: -4.2740, name: "Zucchini – Nithsdale Road", logo: "/images/stockists/zucchini.jpg",        address: "28 Nithsdale Rd, Glasgow G41 5RB" },
+      { lat: 55.8163, lng: -4.2475, name: "Zucchini – Clarkston Road", logo: "/images/stockists/zucchini.jpg",        address: "103 Clarkston Rd, Cathcart, Glasgow G44 3BL" }
     ];
 
-    const infoWindow = new google.maps.InfoWindow();
+    var bounds = new google.maps.LatLngBounds();
+    var openInfo = null;
 
-    locations.forEach(function(loc) {
-      const marker = new google.maps.Marker({
-        position: { lat: loc.lat, lng: loc.lng },
-        map: map,
-        title: loc.name,
-      });
+    for (var i = 0; i < locs.length; i++) {
+      (function(loc) {
+        var pos = {lat: loc.lat, lng: loc.lng};
+        bounds.extend(pos);
 
-      marker.addListener('click', function() {
-        infoWindow.setContent('<div style="color:#000;padding:4px"><strong>' + loc.name + '</strong><br>' + loc.address + '</div>');
-        infoWindow.open(map, marker);
-      });
+        var marker = new markerLib.AdvancedMarkerElement({
+          position: pos,
+          map: map,
+          title: loc.name,
+          gmpClickable: true
+        });
+
+        var mapsUrl = 'https://www.google.com/maps?q=' + loc.lat + ',' + loc.lng;
+        var content = [
+          '<div style="display:flex;align-items:center;gap:10px;padding:4px 2px;min-width:220px">',
+          '  <img src="' + loc.logo + '" style="width:56px;height:56px;object-fit:contain;flex-shrink:0;border-radius:4px">',
+          '  <div>',
+          '    <div style="font-size:13px;font-weight:700;margin-bottom:2px;color:#111">' + loc.name + '</div>',
+          '    <div style="font-size:12px;color:#555;line-height:1.4;margin-bottom:6px">' + loc.address + '</div>',
+          '    <a href="' + mapsUrl + '" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:#1a73e8;text-decoration:none">View on Google Maps</a>',
+          '  </div>',
+          '</div>'
+        ].join('');
+
+        var info = new google.maps.InfoWindow({ headerDisabled: true, content: content });
+
+        marker.addEventListener('gmp-click', function() {
+          if (openInfo) openInfo.close();
+          info.open({ map: map, anchor: marker });
+          openInfo = info;
+        });
+      })(locs[i]);
+    }
+
+    map.fitBounds(bounds);
+
+    map.addListener('click', function() {
+      if (openInfo) { openInfo.close(); openInfo = null; }
     });
-  }
+  };
 </script>
-<script is:inline src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+<script is:inline src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBNTzRC00lSkP8KqWx_ENi1DOh7GjsYxBI&callback=initMap" async defer></script>
 
 <style>
   .hero {
@@ -142,10 +166,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     flex: 1;
     height: 320px;
     border-radius: 8px;
+    margin-right: 40px;
   }
 
   .map-section {
     display: none;
+  }
+
+  :global(.info-window h3) {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  :global(.info-window p) {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
   }
 
   @media (max-width: 767px) {

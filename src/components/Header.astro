@@ -63,6 +63,16 @@ import { navItems } from '../data/navigation.js';
     height: 120px;
   }
 
+  .header__logo {
+    display: inline-block;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .header__logo:hover {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+
   .header__logo img {
     display: block;
   }
@@ -135,11 +145,13 @@ import { navItems } from '../data/navigation.js';
     font-family: var(--font-heading);
     font-size: var(--nav-link-size);
     font-weight: 400;
-    transition: opacity 0.2s ease;
+    display: inline-block;
+    transition: transform 0.2s ease-in-out;
   }
 
   .header__nav-link:hover {
-    opacity: 0.7;
+    transform: scale(1.1);
+    opacity: 1;
   }
 
   /* Dropdown — mobile: show sub-items inline */
@@ -160,12 +172,14 @@ import { navItems } from '../data/navigation.js';
     font-size: calc(var(--nav-link-size) - 2px);
     font-weight: 700;
     color: var(--color-text-muted);
-    transition: opacity 0.2s ease;
+    display: inline-block;
+    transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
   }
 
   .header__dropdown-link:hover {
-    opacity: 0.7;
+    transform: scale(1.1);
     color: var(--color-text);
+    opacity: 1;
   }
 
   /* Desktop */

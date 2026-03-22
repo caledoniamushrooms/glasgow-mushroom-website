@@ -44,10 +44,8 @@ import SocialIcons from './SocialIcons.astro';
   }
 
   .footer__grid {
-    display: grid;
-    grid-template-columns: repeat(2, auto);
-    justify-content: start;
-    gap: 4rem;
+    display: flex;
+    gap: 8rem;
   }
 
   .footer__section {
@@ -57,17 +55,20 @@ import SocialIcons from './SocialIcons.astro';
 
   .footer__heading {
     font-family: var(--font-heading);
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: #f7f7f7;
-    margin-bottom: 12px;
+    margin-bottom: 28px;
   }
 
   .footer__link {
+    display: block;
     font-family: var(--font-heading);
-    font-size: 14px;
+    font-size: 18px;
     color: rgb(180, 180, 180);
-    margin-bottom: 6px;
+    margin-bottom: 28px;
     transition: color 0.2s ease;
   }
 
