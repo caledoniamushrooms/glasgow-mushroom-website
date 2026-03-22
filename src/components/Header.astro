@@ -5,7 +5,7 @@ import { navItems } from '../data/navigation.js';
 <header class="header">
   <div class="header__inner container">
     <a href="/home" class="header__logo" aria-label="Glasgow Mushroom Company home">
-      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" width="144" height="60" />
+      <img src="/images/logo-full.svg" alt="Glasgow Mushroom Company" width="144" height="60" class="header__logo-img" />
     </a>
 
     <button class="header__hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -65,6 +65,10 @@ import { navItems } from '../data/navigation.js';
 
   .header__logo img {
     display: block;
+  }
+
+  .header__logo-img {
+    filter: invert(1);
   }
 
   /* Hamburger */
