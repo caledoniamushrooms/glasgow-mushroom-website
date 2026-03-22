@@ -115,12 +115,12 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
 <style>
   .hero {
-    height: 696px;
+    height: 100svh;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     background-image: url('/images/splash-hero.jpg');
-    background-size: auto;
+    background-size: cover;
     background-position: 58% 0;
     padding: 60px 0 0 40px;
   }
@@ -137,8 +137,8 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   }
 
   .hero h1 {
-    font-size: clamp(3rem, 10vw, 160px);
-    max-width: 42vw;
+    font-size: clamp(3rem, 12svh, 160px);
+    max-width: 70vw;
     text-transform: capitalize;
     line-height: 1.05;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
