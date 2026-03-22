@@ -49,6 +49,26 @@ import { navItems } from '../data/navigation.js';
     const isOpen = nav?.classList.toggle('is-open');
     hamburger.setAttribute('aria-expanded', String(isOpen));
   });
+
+  // Dropdown with hide delay so mouse can travel from link to menu
+  document.querySelectorAll('.header__nav-item--has-dropdown').forEach((item) => {
+    const dropdown = item.querySelector('.header__dropdown');
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const show = () => {
+      if (hideTimer) clearTimeout(hideTimer);
+      dropdown?.classList.add('is-visible');
+    };
+
+    const hide = () => {
+      hideTimer = setTimeout(() => {
+        dropdown?.classList.remove('is-visible');
+      }, 200);
+    };
+
+    item.addEventListener('mouseenter', show);
+    item.addEventListener('mouseleave', hide);
+  });
 </script>
 
 <style>
@@ -212,18 +232,18 @@ import { navItems } from '../data/navigation.js';
       transform: translateX(-50%);
       background-color: var(--color-bg-footer);
       border-radius: 8px;
-      padding: 1rem 1.5rem;
-      margin-top: 0.75rem;
+      padding: 1.75rem 1.5rem 1rem;
       min-width: 160px;
       align-items: flex-start;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.2s ease 0.1s;
     }
 
-    .header__nav-item--has-dropdown:hover .header__dropdown {
+    .header__dropdown.is-visible {
       opacity: 1;
       pointer-events: auto;
+      transition-delay: 0s;
     }
 
     .header__dropdown-link {
