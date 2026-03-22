@@ -9,12 +9,10 @@ import { stockists } from '../data/stockists.js';
     <h1>Where to find us</h1>
   </section>
 
-  <section class="stockists section">
-    <div class="container">
-      {stockists.map((stockist) => (
-        <StockistCard {...stockist} />
-      ))}
-    </div>
+  <section class="stockists">
+    {stockists.map((stockist) => (
+      <StockistCard {...stockist} />
+    ))}
   </section>
 </BaseLayout>
 
