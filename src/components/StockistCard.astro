@@ -11,84 +11,130 @@ interface Props {
   addresses: Address[];
   bgColor?: string;
   textColor?: string;
+  headingColor?: string;
 }
 
-const { name, logo, description, addresses, bgColor = '#040404', textColor = '#ffffff' } = Astro.props;
+const { name, logo, description, addresses, bgColor = '#000000', textColor = '#ffffff', headingColor } = Astro.props;
+const titleColor = headingColor || textColor;
 ---
 
-<article class="stockist-section" style={`background-color: ${bgColor}; color: ${textColor}`}>
-  <div class="stockist-section__inner container">
-    <div class="stockist-section__header">
-      <img src={logo} alt={name} class="stockist-section__logo" loading="lazy" />
-      <h2>{name}</h2>
-    </div>
-    <p class="stockist-section__description">{description}</p>
-    <div class="stockist-section__addresses">
-      {addresses.map((addr) => (
-        <a href={addr.mapUrl} target="_blank" rel="noopener noreferrer" class="stockist-section__address" style={`color: ${textColor}`}>{addr.text}</a>
-      ))}
+<section class="stockist-outer" style={`background-color: #fff`}>
+  <div class="stockist-card" style={`background-color: ${bgColor}`}>
+    <div class="stockist-card__inner">
+      <div class="stockist-card__logo-col">
+        <img src={logo} alt={name} class="stockist-card__logo" loading="lazy" />
+      </div>
+      <div class="stockist-card__content" style={`color: ${textColor}`}>
+        <h2 class="stockist-card__name" style={`color: ${titleColor}`}>{name}</h2>
+        <p class="stockist-card__desc">{description}</p>
+        <div class="stockist-card__addresses">
+          {addresses.map((addr) => (
+            <a href={addr.mapUrl} target="_blank" rel="noopener noreferrer" class="stockist-card__address" style={`color: ${textColor}`}>{addr.text}</a>
+          ))}
+        </div>
+      </div>
     </div>
   </div>
-</article>
+</section>
 
 <style>
-  .stockist-section {
-    padding: 3rem 0;
+  .stockist-outer {
+    padding: 40px 0;
   }
 
-  .stockist-section__inner {
-    max-width: 800px;
+  .stockist-card {
+    max-width: 1088px;
     margin: 0 auto;
-    text-align: center;
+    padding: 40px;
+    box-sizing: border-box;
   }
 
-  .stockist-section__header {
+  .stockist-card__inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+  }
+
+  .stockist-card__logo-col {
+    flex: 0 0 265px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
   }
 
-  .stockist-section__logo {
-    max-width: 150px;
-    max-height: 100px;
+  .stockist-card__logo {
+    max-width: 265px;
+    max-height: 200px;
+    width: auto;
     height: auto;
     object-fit: contain;
+    display: block;
   }
 
-  .stockist-section h2 {
-    margin-bottom: 0;
+  .stockist-card__content {
+    flex: 1;
+    min-width: 0;
   }
 
-  .stockist-section__description {
-    opacity: 0.85;
-    line-height: 1.7;
+  .stockist-card__name {
+    font-size: 48px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0 0 0.75rem;
   }
 
-  .stockist-section__addresses {
+  .stockist-card__desc {
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+
+  .stockist-card__addresses {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: 0.25rem;
   }
 
-  .stockist-section__address {
-    font-size: 0.9rem;
+  .stockist-card__address {
+    display: block;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
     text-decoration: underline;
     text-underline-offset: 3px;
     opacity: 0.7;
   }
 
-  .stockist-section__address:hover {
+  .stockist-card__address:hover {
     opacity: 1;
   }
 
   @media (max-width: 767px) {
-    .stockist-section__header {
+    .stockist-card {
+      padding: 1.5rem;
+    }
+
+    .stockist-card__inner {
       flex-direction: column;
       align-items: flex-start;
       gap: 1rem;
+    }
+
+    .stockist-card__logo-col {
+      flex: none;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .stockist-card__logo {
+      max-width: 180px;
+    }
+
+    .stockist-card__name {
+      font-size: 2rem;
     }
   }
 </style>

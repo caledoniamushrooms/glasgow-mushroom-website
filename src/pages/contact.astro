@@ -3,64 +3,87 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Contact — Glasgow Mushroom Company" description="Get in touch with Glasgow Mushroom Company.">
-  <section class="contact section">
-    <div class="container">
-      <h1>Contact</h1>
+  <section class="contactus-section">
+    <a href="/direct-sales" class="contactus-banner contactus-banner--direct-sales">
+      <h1>Direct Sales</h1>
+    </a>
+  </section>
 
-      <div class="contact__content">
-        <p>For direct sales and orders over £50, please visit our <a href="/direct-sales">Direct Sales</a> page.</p>
-        <p>For wholesale and distribution enquiries, visit our <a href="/wholesale">Wholesale</a> page.</p>
-        <p>For general enquiries, you can reach us at:</p>
+  <section class="contactus-section">
+    <a href="/wholesale" class="contactus-banner contactus-banner--commercial">
+      <h1>Commercial Enquiries</h1>
+    </a>
+  </section>
 
-        <div class="contact__details">
-          <p><a href="tel:+441412660377">0141 266 0377</a></p>
-          <p><a href="mailto:hello@glasgowmushroomcompany.co.uk">hello@glasgowmushroomcompany.co.uk</a></p>
-        </div>
-      </div>
-    </div>
+  <section class="contactus-section contactus-section--bottom">
+    <a href="https://compostclub.glasgowmushroom.co/" target="_blank" rel="noopener noreferrer" class="contactus-banner contactus-banner--compost">
+      <h1>Compost Club</h1>
+    </a>
   </section>
 </BaseLayout>
 
 <style>
-  .contact {
-    padding-top: 8rem;
+  .contactus-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    background-color: var(--color-bg);
   }
 
-  .contact h1 {
-    font-size: 3rem;
-    margin-bottom: 2rem;
+  .contactus-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1152px;
+    max-width: 100%;
+    height: 300px;
+    background-size: cover;
+    text-align: center;
+    transition: opacity 0.3s ease;
   }
 
-  .contact__content {
-    max-width: 600px;
+  .contactus-banner:hover {
+    opacity: 0.9;
   }
 
-  .contact__content a {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+  .contactus-banner h1 {
+    font-size: 104px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    line-height: 1;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
   }
 
-  .contact__details {
-    margin-top: 1.5rem;
+  .contactus-banner--direct-sales {
+    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-position: 50% 47%;
   }
 
-  .contact__details p {
-    margin-bottom: 0.5rem;
+  .contactus-banner--commercial {
+    background-image: url('/images/banners/commercial-enquiries-banner.jpg');
+    background-position: 50% 47%;
   }
 
-  .contact__details a {
-    color: var(--color-text-muted);
-    transition: color 0.2s ease;
+  .contactus-banner--compost {
+    background-image: url('/images/banners/compost-club-banner.jpg');
+    background-position: 50% 57%;
   }
 
-  .contact__details a:hover {
-    color: var(--color-text);
-    opacity: 1;
-  }
+  @media (max-width: 767px) {
+    .contactus-section {
+      height: auto;
+      padding: 1rem;
+    }
 
-  @media (min-width: 768px) {
-    .contact {
-      padding-top: 10rem;
+    .contactus-banner {
+      height: 200px;
+    }
+
+    .contactus-banner h1 {
+      font-size: 3rem;
     }
   }
 </style>

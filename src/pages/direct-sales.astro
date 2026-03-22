@@ -8,14 +8,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <section class="ds-content">
-    <div class="container">
+    <div class="ds-flex">
       <div class="ds-intro">
         <p>We offer direct-to-customer sales for orders over £50 - if you have a big event planned or are just a mushroom lover looking to stock up please get in touch!</p>
         <p>For smaller quantites please check out our <a href="/where-to-find-us">where to find us</a> page for a list of local retailers.</p>
       </div>
 
       <div class="ds-form-card">
-        <h2>Make an enquiry</h2>
+        <label class="form-title">Make an enquiry</label>
         <form method="POST" action="mailto:hello@glasgowmushroomcompany.co.uk" enctype="text/plain">
           <div class="form__field">
             <label for="name">Name</label>
@@ -29,24 +29,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <label for="message">Message</label>
             <textarea id="message" name="message" rows="5" placeholder="Hi, I would like to buy directly from you..." required></textarea>
           </div>
-          <button type="submit" class="form__submit">Submit</button>
+          <input type="submit" class="form__submit" value="Submit" />
         </form>
       </div>
 
       <div class="ds-contact">
-        <h2>Other ways to get in touch</h2>
+        <p class="ds-contact__heading">Other ways to get in touch</p>
         <div class="ds-contact__icons">
           <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-            <img src="/images/icons/instagram.png" alt="Instagram" width="48" height="48" />
+            <img src="/images/icons/instagram.png" alt="Instagram" width="70" height="70" />
           </a>
           <a href="https://wa.me/4401412660377" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-            <img src="/images/icons/whatsapp.svg" alt="WhatsApp" width="48" height="48" />
+            <img src="/images/icons/whatsapp.svg" alt="WhatsApp" width="70" height="70" />
           </a>
-          <a href="https://www.facebook.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer" aria-label="Facebook Messenger">
-            <img src="/images/icons/facebook-messenger.svg" alt="Facebook Messenger" width="48" height="48" />
+          <a href="http://m.me/glasgowmushroomco" target="_blank" rel="noopener noreferrer" aria-label="Facebook Messenger">
+            <img src="/images/icons/facebook-messenger.svg" alt="Facebook Messenger" width="70" height="70" />
           </a>
           <a href="mailto:hello@glasgowmushroomcompany.co.uk" aria-label="Email">
-            <img src="/images/icons/email.svg" alt="Email" width="48" height="48" />
+            <img src="/images/icons/email.svg" alt="Email" width="70" height="70" />
           </a>
         </div>
         <a href="tel:+441412660377" class="ds-contact__phone">0141 266 0377</a>
@@ -55,9 +55,34 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 </BaseLayout>
 
+<style is:global>
+  body {
+    background-color: #fff;
+    color: #333;
+  }
+  a {
+    color: #333;
+  }
+  .header {
+    background-color: var(--color-bg);
+  }
+  .header a,
+  .header__nav-link,
+  .header__dropdown-link {
+    color: #fff;
+  }
+  footer {
+    background-color: var(--color-bg-footer);
+    color: #fff;
+  }
+  footer a {
+    color: #fff;
+  }
+</style>
+
 <style>
   .ds-hero {
-    min-height: 40vh;
+    height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -68,68 +93,93 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   .ds-hero h1 {
-    font-size: 4rem;
-    color: #ffffff;
+    font-size: 125px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    line-height: 1;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   .ds-content {
-    background-color: #f5f0eb;
-    color: #1a1a1a;
-    padding: 4rem 0;
+    background-color: #fff;
+    padding: 40px 0;
+  }
+
+  .ds-flex {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .ds-intro {
-    max-width: 600px;
-    margin-bottom: 3rem;
+    width: 700px;
+    max-width: 100%;
+    margin-top: 40px;
+    margin-bottom: 0;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
   }
 
   .ds-intro p {
-    color: #444;
+    font-size: 20px;
+    font-family: var(--font-heading);
+    color: #333;
+    line-height: 31px;
+    margin-bottom: 1rem;
   }
 
   .ds-intro a {
-    color: #1a1a1a;
+    color: #333;
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
   .ds-form-card {
-    background-color: #ffffff;
-    padding: 2.5rem;
-    border-radius: 8px;
-    max-width: 500px;
-    margin: 0 auto 4rem;
+    background-color: rgb(224, 207, 183);
+    border: 3px solid #333;
+    border-radius: 12px;
+    padding: 40px 40px 20px;
+    width: 500px;
+    max-width: calc(100% - 3rem);
+    margin: 20px 0 15px;
+    box-sizing: border-box;
   }
 
-  .ds-form-card h2 {
-    color: #1a1a1a;
-    font-size: 1.75rem;
-    margin-bottom: 1.5rem;
+  .form-title {
+    display: block;
+    font-size: 38px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 1.25rem;
   }
 
   .form__field {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   .form__field label {
     display: block;
-    font-size: 0.9rem;
+    font-size: 14px;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    color: #1a1a1a;
+    color: #333;
+    margin-bottom: 0.4rem;
   }
 
   .form__field input,
   .form__field textarea {
     width: 100%;
-    padding: 0.75rem;
-    background-color: #ffffff;
+    padding: 8px 12px;
+    background-color: #fff;
     border: 1px solid #ccc;
     border-radius: 4px;
-    color: #1a1a1a;
+    color: #333;
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: 14px;
+    box-sizing: border-box;
   }
 
   .form__field input:focus,
@@ -139,14 +189,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   .form__submit {
-    display: inline-block;
-    padding: 0.75rem 2rem;
-    background-color: #1a1a1a;
-    color: #ffffff;
+    display: block;
+    padding: 10px 2rem;
+    background-color: #333;
+    color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     font-family: var(--font-heading);
-    font-size: 1rem;
+    font-size: 19px;
     font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s ease;
@@ -157,21 +207,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   .ds-contact {
-    text-align: center;
+    width: 375px;
+    max-width: calc(100% - 3rem);
+    margin: 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  .ds-contact h2 {
-    color: #1a1a1a;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
+  .ds-contact__heading {
+    font-size: 27px;
+    font-family: var(--font-heading);
+    color: #000;
+    margin-bottom: 1rem;
+    text-align: center;
   }
 
   .ds-contact__icons {
     display: flex;
-    gap: 2rem;
+    gap: 1.25rem;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   .ds-contact__icons a {
@@ -185,19 +242,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   .ds-contact__icons img {
     display: block;
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
   }
 
   .ds-contact__phone {
     display: block;
-    color: #1a1a1a;
-    font-size: 1.1rem;
-    font-weight: 700;
-    font-family: var(--font-heading);
+    color: #000;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    text-decoration: none;
   }
 
-  @media (min-width: 768px) {
+  @media (max-width: 767px) {
+    .ds-hero {
+      height: 200px;
+    }
+
     .ds-hero h1 {
-      font-size: 6rem;
+      font-size: 3rem;
+    }
+
+    .ds-form-card {
+      padding: 1.5rem;
     }
   }
 </style>

@@ -71,18 +71,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 <style>
   .hero {
-    min-height: 90vh;
+    height: 696px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
     background-image: url('/images/splash-hero.jpg');
-    background-size: cover;
-    background-position: center;
-    padding: 2rem;
+    background-size: auto;
+    background-position: 58% 0;
+    padding: 60px 0 0 40px;
   }
 
   .hero h1 {
+    text-transform: capitalize;
+    line-height: 1;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
@@ -90,9 +91,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 350px;
+    height: 400px;
     background-size: cover;
-    background-position: center;
     text-align: center;
     transition: opacity 0.3s ease;
   }
@@ -102,25 +102,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   .cta-banner h2 {
-    font-size: 3rem;
+    font-size: 140px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    text-transform: capitalize;
     color: var(--color-text);
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    line-height: 1;
   }
 
   .cta-banner--products {
     background-image: url('/images/banners/products-banner.jpg');
+    background-position: 50% 100%;
   }
 
   .cta-banner--recipes {
     background-image: url('/images/banners/recipes-banner.jpg');
+    background-position: 50% 47%;
   }
 
   .cta-banner--stockists {
     background-color: var(--color-bg);
     display: flex;
     align-items: center;
-    min-height: 350px;
-    padding: 2rem;
+    height: 460px;
+    padding: 20px 0;
   }
 
   .cta-banner__text {
@@ -128,9 +134,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     text-align: center;
   }
 
+  .cta-banner__text h2 {
+    font-size: 81px;
+  }
+
   .cta-banner__map {
     flex: 1;
-    height: 350px;
+    height: 320px;
     border-radius: 8px;
   }
 
@@ -139,20 +149,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   @media (max-width: 767px) {
+    .hero {
+      height: auto;
+      min-height: 60vh;
+      padding: 40px 1.5rem;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .cta-banner {
+      height: 200px;
+    }
+
+    .cta-banner h2 {
+      font-size: 3rem;
+    }
+
     .cta-banner--stockists {
       flex-direction: column;
+      height: auto;
+      padding: 2rem 1.5rem;
       gap: 1.5rem;
+    }
+
+    .cta-banner__text h2 {
+      font-size: 3rem;
     }
 
     .cta-banner__map {
       width: 100%;
       height: 300px;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .cta-banner h2 {
-      font-size: 4rem;
     }
   }
 </style>

@@ -6,8 +6,9 @@ export const stockists = [
     addresses: [
       { text: '455 Great Western Rd, Glasgow G12 8HH', mapUrl: 'https://maps.google.com/?q=Roots+Fruits+and+Flowers+455+Great+Western+Rd+Glasgow+G12+8HH' },
     ],
-    bgColor: '#ffffff',
-    textColor: '#000000',
+    bgColor: '#000000',
+    textColor: '#ffffff',
+    headingColor: '#ffffff',
   },
   {
     name: 'The Good Choice',
@@ -17,7 +18,8 @@ export const stockists = [
       { text: '1031 Cathcart Rd, Mt Florida, Glasgow G42 9XJ', mapUrl: 'https://maps.google.com/?q=The+Good+Choice+1031+Cathcart+Rd+Mt+Florida+Glasgow+G42+9XJ' },
     ],
     bgColor: '#ffffff',
-    textColor: '#000000',
+    textColor: '#333333',
+    headingColor: 'rgb(59, 117, 98)',
   },
   {
     name: 'Locavore',
@@ -29,6 +31,7 @@ export const stockists = [
     ],
     bgColor: '#01662d',
     textColor: '#ffffff',
+    headingColor: 'rgb(252, 205, 0)',
   },
   {
     name: 'Zucchini',
@@ -40,5 +43,6 @@ export const stockists = [
     ],
     bgColor: '#e65465',
     textColor: '#ffffff',
+    headingColor: 'rgb(249, 229, 117)',
   },
 ];

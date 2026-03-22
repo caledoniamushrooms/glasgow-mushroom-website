@@ -9,35 +9,77 @@ import { products } from '../data/products.js';
     <h1>Products</h1>
   </section>
 
-  <section class="products section">
-    <div class="container">
-      {products.map((product) => (
-        <ProductCard {...product} />
-      ))}
-    </div>
-  </section>
+  <div class="products-list">
+    {products.map((product) => (
+      <ProductCard {...product} />
+    ))}
+  </div>
 </BaseLayout>
+
+<style is:global>
+  /* Products page overrides — white background with dark text */
+  body {
+    background-color: #fff;
+    color: #333;
+  }
+  a {
+    color: #333;
+  }
+  a:hover {
+    opacity: 0.7;
+  }
+  /* Keep header dark */
+  .header {
+    background-color: var(--color-bg);
+  }
+  .header a,
+  .header__nav-link,
+  .header__dropdown-link {
+    color: #fff;
+  }
+  /* Keep footer dark */
+  footer {
+    background-color: var(--color-bg-footer);
+    color: #fff;
+  }
+  footer a {
+    color: #fff;
+  }
+</style>
 
 <style>
   .products-hero {
-    min-height: 50vh;
+    height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
     background-image: url('/images/banners/products-banner.jpg');
     background-size: cover;
-    background-position: center;
+    background-position: 50% 28%;
     text-align: center;
+    margin-bottom: 100px;
   }
 
   .products-hero h1 {
-    font-size: 4rem;
+    font-size: 125px;
+    text-transform: capitalize;
+    color: #fff;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    line-height: 1;
   }
 
-  @media (min-width: 768px) {
+  .products-list {
+    padding-bottom: 4rem;
+  }
+
+  @media (max-width: 767px) {
+    .products-hero {
+      height: 200px;
+      margin-bottom: 2rem;
+    }
+
     .products-hero h1 {
-      font-size: 6rem;
+      font-size: 3rem;
     }
   }
 </style>

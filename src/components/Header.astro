@@ -5,7 +5,7 @@ import { navItems } from '../data/navigation.js';
 <header class="header">
   <div class="header__inner container">
     <a href="/home" class="header__logo" aria-label="Glasgow Mushroom Company home">
-      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" width="60" height="60" />
+      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" width="144" height="60" />
     </a>
 
     <button class="header__hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -53,11 +53,6 @@ import { navItems } from '../data/navigation.js';
 
 <style>
   .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
     background-color: var(--color-bg);
   }
 
@@ -65,8 +60,7 @@ import { navItems } from '../data/navigation.js';
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+    height: 120px;
   }
 
   .header__logo img {
@@ -136,7 +130,7 @@ import { navItems } from '../data/navigation.js';
   .header__nav-link {
     font-family: var(--font-heading);
     font-size: var(--nav-link-size);
-    font-weight: 700;
+    font-weight: 400;
     transition: opacity 0.2s ease;
   }
 

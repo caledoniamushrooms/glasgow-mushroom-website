@@ -9,69 +9,139 @@ import { recipes } from '../data/recipes.js';
     <h1>Recipes</h1>
   </section>
 
-  <section class="recipes-content">
-    <div class="container">
-      <div class="recipes__intro">
-        <h2>Cooking with Mushrooms</h2>
-        <p>Mushrooms are here for you! Mushrooms are a brilliant alternative to meat in many dishes. Gone are the days of just one boring type of mushroom on the shelf. As more growers enter the market it is becoming easier to access a variety of gourmet mushrooms and there is a mushroom for everyone, whether you are vegan, vegetarian, or just looking for something new to add to your meals.</p>
-        <p class="recipes__safety-note">Eating raw or undercooked mushrooms may cause adverse reactions in some individuals. When trying a new mushroom for the first time, we recommend consuming a small portion to assess personal tolerance.</p>
-      </div>
-
-      {recipes.map((recipe) => (
-        <RecipeCard {...recipe} />
-      ))}
+  <section class="recipe-intro">
+    <h1 class="recipe-intro__heading">Cooking with Mushrooms</h1>
+    <div class="recipe-intro__content">
+      <p>Thinking of becoming vegetarian, vegan or just looking to consume a little less meat? Not into over-processed meat substitutes? Mushrooms are here for you! Mushrooms are a brilliant alternative to meat in many dishes and emit very little carbon dioxide per unit weight when compared to meat production. They are a fantastic (and delicious) way to help you transition to a lower carbon footprint but any vegetarian or vegan will tell you how frustrating it is to be presented with the same types of mushroom based veggie options when dining out. We enjoy portobellos and button mushrooms as much as the next folks but we also believe that variety is the spice of life!</p>
+      <p>Transitioning to a lower carbon footprint shouldn't have to be a chore and with a variety of unique flavor profiles and textures, gourmet mushrooms are an ingredient that omnivores, herbivores and carnivores alike can all get on board with! We love cooking with mushrooms and below you'll find some of our favourite ways to use them.</p>
+    </div>
+    <div class="recipe-intro__note">
+      <p><strong>Please note:</strong> Eating raw or undercooked mushrooms may cause adverse reactions in some individuals. When trying a new mushroom for the first time, we recommend consuming a small portion to assess personal tolerance.</p>
     </div>
   </section>
+
+  <div class="recipes-list">
+    {recipes.map((recipe) => (
+      <RecipeCard {...recipe} />
+    ))}
+  </div>
 </BaseLayout>
+
+<style is:global>
+  body {
+    background-color: #fff;
+    color: #333;
+  }
+  a {
+    color: #333;
+  }
+  .header {
+    background-color: var(--color-bg);
+  }
+  .header a,
+  .header__nav-link,
+  .header__dropdown-link {
+    color: #fff;
+  }
+  footer {
+    background-color: var(--color-bg-footer);
+    color: #fff;
+  }
+  footer a {
+    color: #fff;
+  }
+</style>
 
 <style>
   .recipes-hero {
-    min-height: 50vh;
+    height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
     background-image: url('/images/banners/recipes-banner.jpg');
     background-size: cover;
-    background-position: center;
+    background-position: 0 5%;
     text-align: center;
+    margin-bottom: 60px;
   }
 
   .recipes-hero h1 {
-    font-size: 4rem;
-    color: #ffffff;
+    font-size: 125px;
+    text-transform: capitalize;
+    color: #fff;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    line-height: 1;
   }
 
-  .recipes-content {
-    background-color: #f5f0eb;
-    color: #1a1a1a;
-    padding: 4rem 0;
+  .recipe-intro {
+    background-color: rgb(255, 203, 170);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0 40px;
+    margin-bottom: 100px;
+    width: 100%;
   }
 
-  .recipes__intro {
-    max-width: 700px;
-    margin: 0 auto 3rem;
+  .recipe-intro__heading {
+    font-size: 38px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 1.25rem;
     text-align: center;
   }
 
-  .recipes__intro h2 {
-    color: #1a1a1a;
+  .recipe-intro__content {
+    max-width: 600px;
+    font-size: 20px;
+    color: #333;
+    line-height: 1.5;
+    padding: 0 1.5rem;
+  }
+
+  .recipe-intro__content p {
     margin-bottom: 1rem;
   }
 
-  .recipes__intro p {
-    color: #444;
-    line-height: 1.7;
+  .recipe-intro__note {
+    max-width: 600px;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.5;
+    margin-top: 1rem;
+    padding: 0 1.5rem;
   }
 
-  .recipes__safety-note {
-    font-size: 0.85rem;
+  .recipe-intro__note p {
+    margin-bottom: 0;
     font-style: italic;
   }
 
-  @media (min-width: 768px) {
+  .recipes-list {
+    padding-bottom: 0;
+  }
+
+  @media (max-width: 767px) {
+    .recipes-hero {
+      height: 200px;
+      margin-bottom: 2rem;
+    }
+
     .recipes-hero h1 {
-      font-size: 6rem;
+      font-size: 3rem;
+    }
+
+    .recipe-intro {
+      margin-bottom: 2rem;
+    }
+
+    .recipe-intro__heading {
+      font-size: 2rem;
+    }
+
+    .recipe-intro__content {
+      font-size: 1rem;
     }
   }
 </style>

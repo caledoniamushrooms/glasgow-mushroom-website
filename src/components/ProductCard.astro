@@ -10,47 +10,101 @@ interface Props {
 const { name, scientificName, image, description, tastingProfile } = Astro.props;
 ---
 
-<article class="product-section">
-  <div class="product-section__image" style={`background-image: url('${image}')`}></div>
-  <div class="product-section__content">
-    <h2>{name}</h2>
-    <p class="product-section__scientific-name">{scientificName}</p>
-    <p>{description}</p>
-    <p class="product-section__tasting"><strong>Tasting Notes:</strong> {tastingProfile}</p>
+<section class="product-section">
+  <div class="product-container">
+    <div class="product-flex">
+      <div class="product-image" style={`background-image: url('${image}')`}></div>
+      <div class="product-right">
+        <h2 class="product-title">{name}</h2>
+        <p class="product-scientific">{scientificName}</p>
+        <p class="product-description">{description}</p>
+        <p class="product-tasting"><em>Tasting Notes:</em> {tastingProfile}</p>
+      </div>
+    </div>
   </div>
-</article>
+</section>
 
 <style>
   .product-section {
-    margin-bottom: 2rem;
-  }
-
-  .product-section__image {
     width: 100%;
-    height: 400px;
+  }
+
+  .product-container {
+    max-width: 1152px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .product-flex {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 40px 0 20px 0;
+  }
+
+  .product-image {
+    width: 400px;
+    min-width: 400px;
+    height: 647px;
     background-size: cover;
-    background-position: center;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
+    background-position: 50% 100%;
+    margin-right: 50px;
+    margin-top: 40px;
   }
 
-  .product-section__content {
-    max-width: 700px;
+  .product-right {
+    flex: 1;
+    margin-top: 40px;
   }
 
-  .product-section h2 {
-    margin-bottom: 0.25rem;
+  .product-title {
+    font-size: 38px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #333;
+    line-height: 1.1;
+    margin: 0 0 10px 0;
   }
 
-  .product-section__scientific-name {
-    color: var(--color-text-muted);
+  .product-scientific {
+    font-size: 16px;
     font-style: italic;
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
+    color: #888;
+    margin-bottom: 1.25rem;
   }
 
-  .product-section__tasting {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
+  .product-description {
+    font-size: 20px;
+    line-height: 1.5;
+    color: #333;
+    margin-bottom: 1.25rem;
+  }
+
+  .product-tasting {
+    font-size: 16px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 767px) {
+    .product-flex {
+      flex-direction: column;
+    }
+
+    .product-image {
+      width: 100%;
+      min-width: unset;
+      height: 300px;
+      margin-right: 0;
+      background-position: center;
+    }
+
+    .product-title {
+      font-size: 2rem;
+    }
+
+    .product-description {
+      font-size: 1rem;
+    }
   }
 </style>

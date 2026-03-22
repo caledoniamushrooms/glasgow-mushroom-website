@@ -46,23 +46,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .splash__enter {
     display: inline-block;
     font-family: var(--font-heading);
-    font-size: 1.1rem;
+    font-size: 22px;
     font-weight: 700;
-    color: var(--color-text);
-    padding: 0.5rem 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    color: #000;
+    background-color: #fff;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 6px;
+    transition: opacity 0.2s ease;
   }
 
   .splash__enter:hover {
-    background-color: var(--color-text);
-    color: var(--color-bg);
-    opacity: 1;
+    opacity: 0.85;
   }
 
   @media (min-width: 768px) {
     .splash__logo {
-      width: 350px;
+      width: 500px;
     }
 
     .splash__tagline {
