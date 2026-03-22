@@ -17,10 +17,12 @@ import { products } from '../data/products.js';
 </BaseLayout>
 
 <style is:global>
-  /* Products page overrides — white background with dark text */
+  /* Products page overrides — white background with dark text.
+     !important needed to beat global.css body rule in production builds
+     where CSS chunk order isn't guaranteed. */
   body {
-    background-color: #fff;
-    color: #333;
+    background-color: #fff !important;
+    color: #333 !important;
   }
   a {
     color: #333;
