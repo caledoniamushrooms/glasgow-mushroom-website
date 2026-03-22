@@ -92,7 +92,26 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     });
   };
 </script>
-<script is:inline src={`https://maps.googleapis.com/maps/api/js?key=${mapsKey}&callback=initMap`} async defer></script>
+<script is:inline define:vars={{ mapsKey }}>
+  (function() {
+    function loadMaps() {
+      if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initMap';
+      s.async = true;
+      s.defer = true;
+      document.head.appendChild(s);
+    }
+
+    var consent = localStorage.getItem('cookie-consent');
+    if (consent === 'accepted') {
+      loadMaps();
+    }
+    window.addEventListener('cookie-consent', function(e) {
+      if (e.detail === 'accepted') loadMaps();
+    });
+  })();
+</script>
 
 <style>
   .hero {
