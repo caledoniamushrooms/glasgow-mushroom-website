@@ -105,10 +105,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     padding: 60px 0 0 40px;
   }
 
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .hero h1 {
+    font-size: clamp(3rem, 10vw, 160px);
+    max-width: 42vw;
     text-transform: capitalize;
-    line-height: 1;
+    line-height: 1.05;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    animation: fadeUp 0.9s ease forwards;
   }
 
   .cta-banner {
