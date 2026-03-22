@@ -2,6 +2,43 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement;
+  const status = document.getElementById('form-status') as HTMLParagraphElement;
+  const submit = document.getElementById('form-submit') as HTMLInputElement;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submit.disabled = true;
+    submit.value = 'Sending…';
+    status.textContent = '';
+    status.className = 'form__status';
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        body: new FormData(form),
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        status.textContent = 'Message sent! We\'ll be in touch soon.';
+        status.className = 'form__status form__status--success';
+        form.reset();
+      } else {
+        status.textContent = json.error ?? 'Something went wrong. Please try again.';
+        status.className = 'form__status form__status--error';
+      }
+    } catch {
+      status.textContent = 'Network error. Please check your connection and try again.';
+      status.className = 'form__status form__status--error';
+    } finally {
+      submit.disabled = false;
+      submit.value = 'Submit';
+    }
+  });
+</script>
+
 <BaseLayout title="Direct Sales — Glasgow Mushroom Company" description="Order mushrooms directly from Glasgow Mushroom Company.">
   <section class="ds-hero">
     <h1>Direct Sales</h1>
@@ -16,7 +53,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <div class="ds-form-card">
         <label class="form-title">Make an enquiry</label>
-        <form method="POST" action="mailto:hello@glasgowmushroomcompany.co.uk" enctype="text/plain">
+        <form id="contact-form" method="POST" action="/api/contact">
           <div class="form__field">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="Enter your name" required />
@@ -29,7 +66,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <label for="message">Message</label>
             <textarea id="message" name="message" rows="5" placeholder="Hi, I would like to buy directly from you..." required></textarea>
           </div>
-          <input type="submit" class="form__submit" value="Submit" />
+          <p id="form-status" class="form__status" aria-live="polite"></p>
+          <input type="submit" id="form-submit" class="form__submit" value="Submit" />
         </form>
       </div>
 
@@ -205,6 +243,26 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   .form__submit:hover {
     opacity: 0.85;
+  }
+
+  .form__submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form__status {
+    font-family: var(--font-body);
+    font-size: 14px;
+    margin-bottom: 0.75rem;
+    min-height: 1.25em;
+  }
+
+  .form__status--success {
+    color: #2a6e2a;
+  }
+
+  .form__status--error {
+    color: #b00020;
   }
 
   .ds-contact {
