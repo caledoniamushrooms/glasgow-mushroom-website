@@ -17,7 +17,7 @@ import { navItems } from '../data/navigation.js';
     <nav class="header__nav" aria-label="Main navigation">
       <ul class="header__nav-list">
         {navItems.map((item) => (
-          <li>
+          <li class={item.children ? 'header__nav-item--has-dropdown' : ''}>
             <a
               href={item.href}
               class="header__nav-link"
@@ -25,6 +25,15 @@ import { navItems } from '../data/navigation.js';
             >
               {item.label}
             </a>
+            {item.children && (
+              <ul class="header__dropdown">
+                {item.children.map((child) => (
+                  <li>
+                    <a href={child.href} class="header__dropdown-link">{child.label}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
@@ -84,7 +93,6 @@ import { navItems } from '../data/navigation.js';
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  .header__nav.is-open ~ .header__hamburger .header__hamburger-line:nth-child(1),
   .header__hamburger[aria-expanded="true"] .header__hamburger-line:nth-child(1) {
     transform: translateY(7px) rotate(45deg);
   }
@@ -136,6 +144,32 @@ import { navItems } from '../data/navigation.js';
     opacity: 0.7;
   }
 
+  /* Dropdown — mobile: show sub-items inline */
+  .header__nav-item--has-dropdown {
+    text-align: center;
+  }
+
+  .header__dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .header__dropdown-link {
+    font-family: var(--font-heading);
+    font-size: calc(var(--nav-link-size) - 2px);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    transition: opacity 0.2s ease;
+  }
+
+  .header__dropdown-link:hover {
+    opacity: 0.7;
+    color: var(--color-text);
+  }
+
   /* Desktop */
   @media (min-width: 768px) {
     .header__hamburger {
@@ -152,6 +186,37 @@ import { navItems } from '../data/navigation.js';
     .header__nav-list {
       flex-direction: row;
       gap: 2rem;
+    }
+
+    /* Dropdown — desktop: show on hover */
+    .header__nav-item--has-dropdown {
+      position: relative;
+    }
+
+    .header__dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--color-bg-footer);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin-top: 0.75rem;
+      min-width: 160px;
+      align-items: flex-start;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .header__nav-item--has-dropdown:hover .header__dropdown {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .header__dropdown-link {
+      font-size: 0.9rem;
+      white-space: nowrap;
     }
   }
 </style>

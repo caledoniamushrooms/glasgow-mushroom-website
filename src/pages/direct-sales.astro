@@ -1,0 +1,203 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Direct Sales — Glasgow Mushroom Company" description="Order mushrooms directly from Glasgow Mushroom Company.">
+  <section class="ds-hero">
+    <h1>Direct Sales</h1>
+  </section>
+
+  <section class="ds-content">
+    <div class="container">
+      <div class="ds-intro">
+        <p>We offer direct-to-customer sales for orders over £50 - if you have a big event planned or are just a mushroom lover looking to stock up please get in touch!</p>
+        <p>For smaller quantites please check out our <a href="/where-to-find-us">where to find us</a> page for a list of local retailers.</p>
+      </div>
+
+      <div class="ds-form-card">
+        <h2>Make an enquiry</h2>
+        <form method="POST" action="mailto:hello@glasgowmushroomcompany.co.uk" enctype="text/plain">
+          <div class="form__field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required />
+          </div>
+          <div class="form__field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required />
+          </div>
+          <div class="form__field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" placeholder="Hi, I would like to buy directly from you..." required></textarea>
+          </div>
+          <button type="submit" class="form__submit">Submit</button>
+        </form>
+      </div>
+
+      <div class="ds-contact">
+        <h2>Other ways to get in touch</h2>
+        <div class="ds-contact__icons">
+          <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <img src="/images/icons/instagram.png" alt="Instagram" width="48" height="48" />
+          </a>
+          <a href="https://wa.me/4401412660377" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+            <img src="/images/icons/whatsapp.svg" alt="WhatsApp" width="48" height="48" />
+          </a>
+          <a href="https://www.facebook.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer" aria-label="Facebook Messenger">
+            <img src="/images/icons/facebook-messenger.svg" alt="Facebook Messenger" width="48" height="48" />
+          </a>
+          <a href="mailto:hello@glasgowmushroomcompany.co.uk" aria-label="Email">
+            <img src="/images/icons/email.svg" alt="Email" width="48" height="48" />
+          </a>
+        </div>
+        <a href="tel:+441412660377" class="ds-contact__phone">0141 266 0377</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .ds-hero {
+    min-height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-size: cover;
+    background-position: 100% 31%;
+    text-align: center;
+  }
+
+  .ds-hero h1 {
+    font-size: 4rem;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .ds-content {
+    background-color: #f5f0eb;
+    color: #1a1a1a;
+    padding: 4rem 0;
+  }
+
+  .ds-intro {
+    max-width: 600px;
+    margin-bottom: 3rem;
+  }
+
+  .ds-intro p {
+    color: #444;
+  }
+
+  .ds-intro a {
+    color: #1a1a1a;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .ds-form-card {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 8px;
+    max-width: 500px;
+    margin: 0 auto 4rem;
+  }
+
+  .ds-form-card h2 {
+    color: #1a1a1a;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form__field {
+    margin-bottom: 1.5rem;
+  }
+
+  .form__field label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #1a1a1a;
+  }
+
+  .form__field input,
+  .form__field textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #1a1a1a;
+    font-family: var(--font-body);
+    font-size: 1rem;
+  }
+
+  .form__field input:focus,
+  .form__field textarea:focus {
+    outline: none;
+    border-color: #888;
+  }
+
+  .form__submit {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .form__submit:hover {
+    opacity: 0.85;
+  }
+
+  .ds-contact {
+    text-align: center;
+  }
+
+  .ds-contact h2 {
+    color: #1a1a1a;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .ds-contact__icons {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .ds-contact__icons a {
+    display: block;
+    transition: opacity 0.2s ease;
+  }
+
+  .ds-contact__icons a:hover {
+    opacity: 0.7;
+  }
+
+  .ds-contact__icons img {
+    display: block;
+  }
+
+  .ds-contact__phone {
+    display: block;
+    color: #1a1a1a;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+  }
+
+  @media (min-width: 768px) {
+    .ds-hero h1 {
+      font-size: 6rem;
+    }
+  }
+</style>

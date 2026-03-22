@@ -1,62 +1,56 @@
 ---
 interface Props {
   name: string;
+  scientificName: string;
   image: string;
   description: string;
   tastingProfile: string;
 }
 
-const { name, image, description, tastingProfile } = Astro.props;
+const { name, scientificName, image, description, tastingProfile } = Astro.props;
 ---
 
-<article class="product-card">
-  <div class="product-card__image">
-    <img src={image} alt={name} loading="lazy" />
-  </div>
-  <div class="product-card__content">
-    <h3>{name}</h3>
+<article class="product-section">
+  <div class="product-section__image" style={`background-image: url('${image}')`}></div>
+  <div class="product-section__content">
+    <h2>{name}</h2>
+    <p class="product-section__scientific-name">{scientificName}</p>
     <p>{description}</p>
-    <p class="product-card__tasting"><strong>Tasting profile:</strong> {tastingProfile}</p>
+    <p class="product-section__tasting"><strong>Tasting Notes:</strong> {tastingProfile}</p>
   </div>
 </article>
 
 <style>
-  .product-card {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border-radius: 8px;
-    background-color: var(--color-bg-footer);
+  .product-section {
+    margin-bottom: 2rem;
   }
 
-  .product-card__image {
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-  }
-
-  .product-card__image img {
+  .product-section__image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+    height: 400px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
   }
 
-  .product-card:hover .product-card__image img {
-    transform: scale(1.05);
+  .product-section__content {
+    max-width: 700px;
   }
 
-  .product-card__content {
-    padding: 1.5rem;
+  .product-section h2 {
+    margin-bottom: 0.25rem;
   }
 
-  .product-card__content h3 {
-    font-family: var(--font-heading);
-    margin-bottom: 0.75rem;
-  }
-
-  .product-card__tasting {
+  .product-section__scientific-name {
     color: var(--color-text-muted);
-    font-size: 0.9rem;
     font-style: italic;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .product-section__tasting {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
   }
 </style>

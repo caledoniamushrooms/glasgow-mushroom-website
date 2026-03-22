@@ -1,44 +1,94 @@
 ---
-import MapEmbed from './MapEmbed.astro';
+interface Address {
+  text: string;
+  mapUrl: string;
+}
 
 interface Props {
   name: string;
-  address: string;
-  mapEmbed: string;
+  logo: string;
+  description: string;
+  addresses: Address[];
+  bgColor?: string;
+  textColor?: string;
 }
 
-const { name, address, mapEmbed } = Astro.props;
+const { name, logo, description, addresses, bgColor = '#040404', textColor = '#ffffff' } = Astro.props;
 ---
 
-<article class="stockist-card">
-  <div class="stockist-card__info">
-    <h3>{name}</h3>
-    <p>{address}</p>
-  </div>
-  <div class="stockist-card__map">
-    <MapEmbed src={mapEmbed} title={`Map showing ${name}`} />
+<article class="stockist-section" style={`background-color: ${bgColor}; color: ${textColor}`}>
+  <div class="stockist-section__inner container">
+    <div class="stockist-section__header">
+      <img src={logo} alt={name} class="stockist-section__logo" loading="lazy" />
+      <h2>{name}</h2>
+    </div>
+    <p class="stockist-section__description">{description}</p>
+    <div class="stockist-section__addresses">
+      {addresses.map((addr) => (
+        <a href={addr.mapUrl} target="_blank" rel="noopener noreferrer" class="stockist-section__address" style={`color: ${textColor}`}>{addr.text}</a>
+      ))}
+    </div>
   </div>
 </article>
 
 <style>
-  .stockist-card {
-    border-radius: 8px;
-    background-color: var(--color-bg-footer);
-    overflow: hidden;
-    padding: 1.5rem;
+  .stockist-section {
+    padding: 3rem 0;
   }
 
-  .stockist-card__info {
+  .stockist-section__inner {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .stockist-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
     margin-bottom: 1rem;
   }
 
-  .stockist-card__info h3 {
-    font-family: var(--font-heading);
-    margin-bottom: 0.25rem;
+  .stockist-section__logo {
+    max-width: 150px;
+    max-height: 100px;
+    height: auto;
+    object-fit: contain;
   }
 
-  .stockist-card__info p {
-    color: var(--color-text-muted);
+  .stockist-section h2 {
+    margin-bottom: 0;
+  }
+
+  .stockist-section__description {
+    opacity: 0.85;
+    line-height: 1.7;
+  }
+
+  .stockist-section__addresses {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .stockist-section__address {
     font-size: 0.9rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.7;
+  }
+
+  .stockist-section__address:hover {
+    opacity: 1;
+  }
+
+  @media (max-width: 767px) {
+    .stockist-section__header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
   }
 </style>

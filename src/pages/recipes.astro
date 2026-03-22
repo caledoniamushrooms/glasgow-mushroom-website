@@ -5,10 +5,17 @@ import { recipes } from '../data/recipes.js';
 ---
 
 <BaseLayout title="Recipes — Glasgow Mushroom Company" description="Delicious recipes featuring our gourmet mushrooms.">
-  <section class="recipes section">
+  <section class="recipes-hero">
+    <h1>Recipes</h1>
+  </section>
+
+  <section class="recipes-content">
     <div class="container">
-      <h1>Recipes</h1>
-      <p class="recipes__intro">Simple, delicious ways to cook with our mushrooms. From quick weeknight suppers to something a bit more special.</p>
+      <div class="recipes__intro">
+        <h2>Cooking with Mushrooms</h2>
+        <p>Mushrooms are here for you! Mushrooms are a brilliant alternative to meat in many dishes. Gone are the days of just one boring type of mushroom on the shelf. As more growers enter the market it is becoming easier to access a variety of gourmet mushrooms and there is a mushroom for everyone, whether you are vegan, vegetarian, or just looking for something new to add to your meals.</p>
+        <p class="recipes__safety-note">Eating raw or undercooked mushrooms may cause adverse reactions in some individuals. When trying a new mushroom for the first time, we recommend consuming a small portion to assess personal tolerance.</p>
+      </div>
 
       {recipes.map((recipe) => (
         <RecipeCard {...recipe} />
@@ -18,24 +25,53 @@ import { recipes } from '../data/recipes.js';
 </BaseLayout>
 
 <style>
-  .recipes {
-    padding-top: 8rem;
+  .recipes-hero {
+    min-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('/images/banners/recipes-banner.jpg');
+    background-size: cover;
+    background-position: center;
+    text-align: center;
   }
 
-  .recipes h1 {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+  .recipes-hero h1 {
+    font-size: 4rem;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .recipes-content {
+    background-color: #f5f0eb;
+    color: #1a1a1a;
+    padding: 4rem 0;
   }
 
   .recipes__intro {
-    color: var(--color-text-muted);
-    max-width: 600px;
-    margin-bottom: 3rem;
+    max-width: 700px;
+    margin: 0 auto 3rem;
+    text-align: center;
+  }
+
+  .recipes__intro h2 {
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+  }
+
+  .recipes__intro p {
+    color: #444;
+    line-height: 1.7;
+  }
+
+  .recipes__safety-note {
+    font-size: 0.85rem;
+    font-style: italic;
   }
 
   @media (min-width: 768px) {
-    .recipes {
-      padding-top: 10rem;
+    .recipes-hero h1 {
+      font-size: 6rem;
     }
   }
 </style>

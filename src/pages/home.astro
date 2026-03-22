@@ -1,101 +1,158 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import MapEmbed from '../components/MapEmbed.astro';
 ---
 
 <BaseLayout title="Home — Glasgow Mushroom Company">
-  <section class="hero section">
-    <div class="container">
-      <h1>Gourmet mushrooms grown in Glasgow</h1>
-      <p class="hero__tagline">We grow speciality mushrooms in the heart of Glasgow and supply them fresh to local restaurants, shops, and markets.</p>
-    </div>
+  <section class="hero">
+    <h1>Gourmet Mushrooms Grown In Glasgow</h1>
   </section>
 
-  <section class="cta-cards section">
-    <div class="container">
-      <div class="cta-cards__grid">
-        <a href="/products" class="cta-card">
-          <h2>Products</h2>
-          <p>Discover our range of gourmet mushrooms</p>
-        </a>
-        <a href="/recipes" class="cta-card">
-          <h2>Recipes</h2>
-          <p>Get inspired with our favourite recipes</p>
-        </a>
-        <a href="/where-to-find-us" class="cta-card">
-          <h2>Where to find us</h2>
-          <p>Find stockists and markets near you</p>
-        </a>
-      </div>
-    </div>
-  </section>
+  <a href="/products" class="cta-banner cta-banner--products">
+    <h2>Products</h2>
+  </a>
 
-  <section class="map section">
-    <div class="container">
-      <h2>Find us</h2>
-      <MapEmbed
-        src="https://www.google.com/maps/d/embed?mid=PLACEHOLDER"
-        title="Glasgow Mushroom Company locations"
-      />
-    </div>
+  <a href="/recipes" class="cta-banner cta-banner--recipes">
+    <h2>Recipes</h2>
+  </a>
+
+  <div class="cta-banner cta-banner--stockists">
+    <a href="/where-to-find-us" class="cta-banner__text">
+      <h2>Where To Find Us</h2>
+    </a>
+    <div class="cta-banner__map" id="map"></div>
+  </div>
+
+  <section class="map-section">
+    <!-- Map is rendered in the Where To Find Us banner above -->
   </section>
 </BaseLayout>
 
+<script is:inline>
+  function initMap() {
+    const center = { lat: 55.895, lng: -4.2750 };
+    const map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 11.5,
+      center: center,
+      styles: [
+        { elementType: 'geometry', stylers: [{ color: '#212121' }] },
+        { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
+        { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#383838' }] },
+        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
+      ],
+    });
+
+    const locations = [
+      { name: 'Roots Fruits and Flowers', address: '455 Great Western Rd, G12 8HH', lat: 55.8758, lng: -4.2933 },
+      { name: 'The Good Choice', address: '1031 Cathcart Rd, Mt Florida, G42 9XJ', lat: 55.8266, lng: -4.2511 },
+      { name: 'Locavore', address: '49 Victoria Rd, G42 7SA', lat: 55.8348, lng: -4.2573 },
+      { name: 'Locavore', address: '449 Dumbarton Rd, Partick, G11 6EJ', lat: 55.8723, lng: -4.3109 },
+      { name: 'Zucchini', address: '28 Nithsdale Rd, G41 5RB', lat: 55.8297, lng: -4.2740 },
+      { name: 'Zucchini', address: '103 Clarkston Rd, Cathcart, G44 3BL', lat: 55.8163, lng: -4.2475 },
+    ];
+
+    const infoWindow = new google.maps.InfoWindow();
+
+    locations.forEach(function(loc) {
+      const marker = new google.maps.Marker({
+        position: { lat: loc.lat, lng: loc.lng },
+        map: map,
+        title: loc.name,
+      });
+
+      marker.addListener('click', function() {
+        infoWindow.setContent('<div style="color:#000;padding:4px"><strong>' + loc.name + '</strong><br>' + loc.address + '</div>');
+        infoWindow.open(map, marker);
+      });
+    });
+  }
+</script>
+<script is:inline src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+
 <style>
   .hero {
-    padding-top: 8rem;
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-image: url('/images/splash-hero.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 2rem;
+  }
+
+  .hero h1 {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .cta-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 350px;
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    transition: opacity 0.3s ease;
+  }
+
+  .cta-banner:hover {
+    opacity: 0.9;
+  }
+
+  .cta-banner h2 {
+    font-size: 3rem;
+    color: var(--color-text);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .cta-banner--products {
+    background-image: url('/images/banners/products-banner.jpg');
+  }
+
+  .cta-banner--recipes {
+    background-image: url('/images/banners/recipes-banner.jpg');
+  }
+
+  .cta-banner--stockists {
+    background-color: var(--color-bg);
+    display: flex;
+    align-items: center;
+    min-height: 350px;
+    padding: 2rem;
+  }
+
+  .cta-banner__text {
+    flex: 1;
     text-align: center;
   }
 
-  .hero__tagline {
-    font-size: 1.1rem;
-    color: var(--color-text-muted);
-    max-width: 600px;
-    margin: 1.5rem auto 0;
-  }
-
-  .cta-cards__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .cta-card {
-    display: block;
-    padding: 2.5rem 2rem;
-    background-color: var(--color-bg-footer);
+  .cta-banner__map {
+    flex: 1;
+    height: 350px;
     border-radius: 8px;
-    text-align: center;
-    transition: transform 0.2s ease, background-color 0.2s ease;
   }
 
-  .cta-card:hover {
-    transform: translateY(-4px);
-    background-color: #1a1a1a;
-    opacity: 1;
+  .map-section {
+    display: none;
   }
 
-  .cta-card h2 {
-    font-size: 1.75rem;
-    margin-bottom: 0.5rem;
-  }
+  @media (max-width: 767px) {
+    .cta-banner--stockists {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
 
-  .cta-card p {
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-
-  .map h2 {
-    margin-bottom: 1.5rem;
+    .cta-banner__map {
+      width: 100%;
+      height: 300px;
+    }
   }
 
   @media (min-width: 768px) {
-    .hero {
-      padding-top: 10rem;
-    }
-
-    .cta-cards__grid {
-      grid-template-columns: repeat(3, 1fr);
+    .cta-banner h2 {
+      font-size: 4rem;
     }
   }
 </style>

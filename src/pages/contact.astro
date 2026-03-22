@@ -1,33 +1,21 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SocialIcons from '../components/SocialIcons.astro';
 ---
 
 <BaseLayout title="Contact — Glasgow Mushroom Company" description="Get in touch with Glasgow Mushroom Company.">
   <section class="contact section">
     <div class="container">
-      <h1>Get in touch</h1>
+      <h1>Contact</h1>
 
-      <div class="contact__methods">
-        <a href="tel:+441412660377" class="contact__method">
-          <h3>Phone</h3>
-          <p>0141 266 0377</p>
-        </a>
+      <div class="contact__content">
+        <p>For direct sales and orders over £50, please visit our <a href="/direct-sales">Direct Sales</a> page.</p>
+        <p>For wholesale and distribution enquiries, visit our <a href="/wholesale">Wholesale</a> page.</p>
+        <p>For general enquiries, you can reach us at:</p>
 
-        <a href="https://wa.me/447XXX" target="_blank" rel="noopener noreferrer" class="contact__method">
-          <h3>WhatsApp</h3>
-          <p>Message us on WhatsApp</p>
-        </a>
-
-        <a href="https://www.instagram.com/glasgowmushroom/" target="_blank" rel="noopener noreferrer" class="contact__method">
-          <h3>Instagram</h3>
-          <p>@glasgowmushroom</p>
-        </a>
-
-        <a href="https://www.facebook.com/glasgowmushroomcompany/" target="_blank" rel="noopener noreferrer" class="contact__method">
-          <h3>Facebook</h3>
-          <p>Glasgow Mushroom Company</p>
-        </a>
+        <div class="contact__details">
+          <p><a href="tel:+441412660377">0141 266 0377</a></p>
+          <p><a href="mailto:hello@glasgowmushroomcompany.co.uk">hello@glasgowmushroomcompany.co.uk</a></p>
+        </div>
       </div>
     </div>
   </section>
@@ -43,44 +31,36 @@ import SocialIcons from '../components/SocialIcons.astro';
     margin-bottom: 2rem;
   }
 
-  .contact__methods {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  .contact__content {
     max-width: 600px;
   }
 
-  .contact__method {
-    display: block;
-    padding: 1.5rem;
-    background-color: var(--color-bg-footer);
-    border-radius: 8px;
-    transition: transform 0.2s ease;
+  .contact__content a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
-  .contact__method:hover {
-    transform: translateY(-2px);
-    opacity: 1;
+  .contact__details {
+    margin-top: 1.5rem;
   }
 
-  .contact__method h3 {
-    font-family: var(--font-heading);
-    margin-bottom: 0.25rem;
+  .contact__details p {
+    margin-bottom: 0.5rem;
   }
 
-  .contact__method p {
+  .contact__details a {
     color: var(--color-text-muted);
-    font-size: 0.9rem;
-    margin: 0;
+    transition: color 0.2s ease;
+  }
+
+  .contact__details a:hover {
+    color: var(--color-text);
+    opacity: 1;
   }
 
   @media (min-width: 768px) {
     .contact {
       padding-top: 10rem;
-    }
-
-    .contact__methods {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>

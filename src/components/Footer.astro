@@ -1,38 +1,24 @@
 ---
 import SocialIcons from './SocialIcons.astro';
-import { navItems } from '../data/navigation.js';
 ---
 
 <footer class="footer">
   <div class="footer__inner container">
     <div class="footer__grid">
       <div class="footer__section">
-        <h4>Sitemap</h4>
+        <h4>SITE MAP</h4>
         <ul>
-          <li><a href="/home">Home</a></li>
-          {navItems.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
+          <li><a href="/products">Products</a></li>
+          <li><a href="/recipes">Recipes</a></li>
+          <li><a href="/where-to-find-us">Where to find us</a></li>
+          <li><a href="/contact">Contact</a></li>
         </ul>
       </div>
 
       <div class="footer__section">
-        <h4>About</h4>
+        <h4>ABOUT</h4>
         <ul>
-          <li><a href="/privacy-policy">Privacy Policy</a></li>
-        </ul>
-      </div>
-
-      <div class="footer__section">
-        <h4>Contact</h4>
-        <ul>
+          <li><a href="/privacy-policy">Privacy policy</a></li>
           <li><a href="tel:+441412660377">0141 266 0377</a></li>
         </ul>
         <div class="footer__social">
@@ -42,7 +28,7 @@ import { navItems } from '../data/navigation.js';
     </div>
 
     <div class="footer__bottom">
-      <p>&copy; {new Date().getFullYear()} Glasgow Mushroom Company. All rights reserved.</p>
+      <p>Copyright &copy; {new Date().getFullYear()} Glasgow Mushroom Co.</p>
     </div>
   </div>
 </footer>
@@ -51,7 +37,7 @@ import { navItems } from '../data/navigation.js';
   .footer {
     background-color: var(--color-bg-footer);
     padding: 3rem 0 1.5rem;
-    margin-top: 4rem;
+    margin-top: 0;
   }
 
   .footer__grid {
@@ -61,10 +47,11 @@ import { navItems } from '../data/navigation.js';
   }
 
   .footer__section h4 {
-    font-family: var(--font-heading);
+    font-family: var(--font-body);
     font-weight: 700;
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
   }
 
   .footer__section ul {
@@ -103,7 +90,7 @@ import { navItems } from '../data/navigation.js';
 
   @media (min-width: 768px) {
     .footer__grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>

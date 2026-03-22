@@ -5,7 +5,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <BaseLayout title="Glasgow Mushroom Company" showNav={false} showFooter={false}>
   <section class="splash">
     <div class="splash__content">
-      <h1>Glasgow Mushroom Company</h1>
+      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" class="splash__logo" />
+      <p class="splash__tagline">Glasgow Mushroom Co.</p>
       <a href="/home" class="splash__enter">Enter</a>
     </div>
   </section>
@@ -20,36 +21,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     background-image: url('/images/splash-hero.jpg');
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    position: relative;
-  }
-
-  .splash::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(4, 4, 4, 0.6);
   }
 
   .splash__content {
-    position: relative;
-    z-index: 1;
     text-align: center;
     padding: 2rem;
   }
 
-  .splash__content h1 {
+  .splash__logo {
+    width: 250px;
+    height: auto;
+    margin-bottom: 0.5rem;
+  }
+
+  .splash__tagline {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
     margin-bottom: 2rem;
+    letter-spacing: 0.02em;
   }
 
   .splash__enter {
     display: inline-block;
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    padding: 0.75rem 2.5rem;
-    border: 2px solid var(--color-text);
     color: var(--color-text);
+    padding: 0.5rem 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
@@ -57,5 +58,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     background-color: var(--color-text);
     color: var(--color-bg);
     opacity: 1;
+  }
+
+  @media (min-width: 768px) {
+    .splash__logo {
+      width: 350px;
+    }
+
+    .splash__tagline {
+      font-size: 2rem;
+    }
   }
 </style>

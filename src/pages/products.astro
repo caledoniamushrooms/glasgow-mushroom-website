@@ -5,49 +5,39 @@ import { products } from '../data/products.js';
 ---
 
 <BaseLayout title="Products — Glasgow Mushroom Company" description="Our range of gourmet mushrooms grown in Glasgow.">
+  <section class="products-hero">
+    <h1>Products</h1>
+  </section>
+
   <section class="products section">
     <div class="container">
-      <h1>Our mushrooms</h1>
-      <p class="products__intro">All our mushrooms are grown fresh in Glasgow using locally sourced substrates. Available at markets, shops, and restaurants across the city.</p>
-
-      <div class="products__grid">
-        {products.map((product) => (
-          <ProductCard {...product} />
-        ))}
-      </div>
+      {products.map((product) => (
+        <ProductCard {...product} />
+      ))}
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  .products {
-    padding-top: 8rem;
+  .products-hero {
+    min-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: url('/images/banners/products-banner.jpg');
+    background-size: cover;
+    background-position: center;
+    text-align: center;
   }
 
-  .products h1 {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  .products__intro {
-    color: var(--color-text-muted);
-    max-width: 600px;
-    margin-bottom: 3rem;
-  }
-
-  .products__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
+  .products-hero h1 {
+    font-size: 4rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   @media (min-width: 768px) {
-    .products {
-      padding-top: 10rem;
-    }
-
-    .products__grid {
-      grid-template-columns: repeat(3, 1fr);
+    .products-hero h1 {
+      font-size: 6rem;
     }
   }
 </style>

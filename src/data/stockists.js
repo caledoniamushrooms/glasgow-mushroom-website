@@ -1,32 +1,44 @@
 export const stockists = [
   {
-    name: 'Locavore',
-    address: '53 Dumbarton Rd, Glasgow G11 6PD',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.2896!3d55.8689!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zLocavore!5e0!3m2!1sen!2suk!4v1',
-  },
-  {
     name: 'Roots, Fruits & Flowers',
-    address: '451-457 Great Western Rd, Glasgow G12 8HH',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.2800!3d55.8750!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zRoots+Fruits!5e0!3m2!1sen!2suk!4v1',
+    logo: '/images/stockists/roots-fruits.jpg',
+    description: 'One of our first customers and a Glasgow West End Stalwart. You can find our fresh mushrooms nestled amongst the fruit & veg in the grocery store as well as in use at their fabulous deli & new cafe.',
+    addresses: [
+      { text: '455 Great Western Rd, Glasgow G12 8HH', mapUrl: 'https://maps.google.com/?q=Roots+Fruits+and+Flowers+455+Great+Western+Rd+Glasgow+G12+8HH' },
+    ],
+    bgColor: '#ffffff',
+    textColor: '#000000',
   },
   {
-    name: 'Partick Farmers Market',
-    address: 'Mansfield Park, Glasgow G11 5QP',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.3100!3d55.8700!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zPartick+Market!5e0!3m2!1sen!2suk!4v1',
+    name: 'The Good Choice',
+    logo: '/images/stockists/the-good-choice.png',
+    description: "It is our pleasure to supply Mt Florida\u2019s premier zero waste shop with our mushrooms for their store and veg box offering.",
+    addresses: [
+      { text: '1031 Cathcart Rd, Mt Florida, Glasgow G42 9XJ', mapUrl: 'https://maps.google.com/?q=The+Good+Choice+1031+Cathcart+Rd+Mt+Florida+Glasgow+G42+9XJ' },
+    ],
+    bgColor: '#ffffff',
+    textColor: '#000000',
   },
   {
-    name: 'Hyndland Food Company',
-    address: '100 Hyndland Rd, Glasgow G12 9PJ',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.3200!3d55.8780!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zSeedfood!5e0!3m2!1sen!2suk!4v1',
+    name: 'Locavore',
+    logo: '/images/stockists/locavore.png',
+    description: 'With a focus on locally sourced and organic produce, Locavore has popular locations in both Partick and Govanhill which we deliver to weekly.',
+    addresses: [
+      { text: '49 Victoria Rd, Glasgow G42 7SA', mapUrl: 'https://maps.google.com/?q=Locavore+49+Victoria+Rd+Glasgow+G42+7SA' },
+      { text: '449 Dumbarton Rd, Partick, Glasgow G11 6EJ', mapUrl: 'https://maps.google.com/?q=Locavore+449+Dumbarton+Rd+Partick+Glasgow+G11+6EJ' },
+    ],
+    bgColor: '#01662d',
+    textColor: '#ffffff',
   },
   {
-    name: 'The Good Spirit Co.',
-    address: '14 Clarendon St, Glasgow G20 7QD',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.2700!3d55.8800!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zGood+Spirit!5e0!3m2!1sen!2suk!4v1',
-  },
-  {
-    name: 'Piece',
-    address: '1056 Argyle St, Glasgow G3 8LY',
-    mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2239.0!2d-4.2850!3d55.8630!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zUG91bmRzIVA!5e0!3m2!1sen!2suk!4v1',
+    name: 'Zucchini',
+    logo: '/images/stockists/zucchini.jpg',
+    description: 'You can find our gourmet mushrooms at Zucchini Greengrocers, a true Southside institution for over 20 years. Much like our own, their story began with a desire for wholesome, delicious food and a passion for great cooking. It is a pleasure to partner with a family business so deeply rooted in the community and committed to quality.',
+    addresses: [
+      { text: '28 Nithsdale Rd, Glasgow G41 5RB', mapUrl: 'https://maps.google.com/?q=Zucchini+28+Nithsdale+Rd+Glasgow+G41+5RB' },
+      { text: '103 Clarkston Rd, Cathcart, Glasgow G44 3BL', mapUrl: 'https://maps.google.com/?q=Zucchini+103+Clarkston+Rd+Cathcart+Glasgow+G44+3BL' },
+    ],
+    bgColor: '#e65465',
+    textColor: '#ffffff',
   },
 ];
