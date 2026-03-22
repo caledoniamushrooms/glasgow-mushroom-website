@@ -5,8 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <BaseLayout title="Glasgow Mushroom Company" showNav={false} showFooter={false}>
   <section class="splash">
     <div class="splash__content">
-      <img src="/images/logo.svg" alt="Glasgow Mushroom Company" class="splash__logo" />
-      <p class="splash__tagline">Glasgow Mushroom Co.</p>
+      <img src="/images/logo-full.svg" alt="Glasgow Mushroom Company" class="splash__logo" />
       <a href="/home" class="splash__enter">Enter</a>
     </div>
   </section>
@@ -23,6 +22,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     background-position: center;
   }
 
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .splash__content {
     text-align: center;
     padding: 2rem;
@@ -31,16 +41,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .splash__logo {
     width: 250px;
     height: auto;
-    margin-bottom: 0.5rem;
-  }
-
-  .splash__tagline {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text);
-    margin-bottom: 2rem;
-    letter-spacing: 0.02em;
+    margin-bottom: 2.5rem;
+    filter: brightness(0) invert(1);
+    animation: fadeUp 0.9s ease forwards;
   }
 
   .splash__enter {
@@ -53,6 +56,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     padding: 9px 10px;
     border: none;
     border-radius: 6px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 0.3s forwards;
     transition: opacity 0.2s ease;
   }
 
