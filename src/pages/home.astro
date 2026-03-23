@@ -115,11 +115,10 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
 <style>
   .hero {
-    height: 100svh;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    background-image: url('/images/splash-hero.jpg');
+    background-image: url('/images/home-hero.jpg');
     background-size: auto;
     background-position: 58% 0;
     padding: 60px 0 0 40px;
@@ -137,10 +136,11 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   }
 
   .hero h1 {
-    font-size: clamp(3rem, 12svh, 160px);
-    max-width: 70vw;
+    font-size: 160px;
+    line-height: 159px;
+    max-width: 50%;
+    overflow: visible;
     text-transform: capitalize;
-    line-height: 1.05;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: fadeUp 0.9s ease forwards;
   }
@@ -149,7 +149,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 400px;
+    height: 300px;
     background-size: cover;
     text-align: center;
     transition: opacity 0.3s ease;
@@ -219,13 +219,22 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     line-height: 1.4;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 991px) {
+    .hero h1 {
+      line-height: 142px;
+    }
+  }
+
+  @media (max-width: 479px) {
     .hero {
-      height: auto;
-      min-height: 60vh;
-      padding: 40px 1.5rem;
-      background-size: cover;
-      background-position: center;
+      padding: 20px 0 60px 20px;
+      background-position: 50% 11%;
+    }
+
+    .hero h1 {
+      font-size: 54px;
+      line-height: 72px;
+      max-width: 51%;
     }
 
     .cta-banner {
@@ -250,6 +259,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     .cta-banner__map {
       width: 100%;
       height: 300px;
+      margin-right: 0;
     }
   }
 </style>
