@@ -1,0 +1,30 @@
+---
+export const prerender = false
+import PortalApp from '../../portal/App'
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Glasgow Mushroom Company — Customer Portal" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Customer Portal — Glasgow Mushroom Company</title>
+  </head>
+  <body class="portal-body">
+    <div id="portal-root">
+      <PortalApp client:only="react" />
+    </div>
+    <noscript>
+      <p style="padding: 2rem; text-align: center; font-family: sans-serif;">
+        JavaScript is required to use the Customer Portal.
+      </p>
+    </noscript>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+.dashboard-header { margin-bottom: var(--portal-space-xl); }
+.dashboard-header h1 { font-family: var(--portal-font-heading); font-size: var(--portal-text-2xl); color: var(--portal-text); margin: 0; }
+.dashboard-header p { color: var(--portal-text-muted); font-size: var(--portal-text-sm); margin: var(--portal-space-xs) 0 0; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr; gap: var(--portal-space-md); }
+.dashboard-card { background: var(--portal-surface); border: 1px solid var(--portal-border); border-radius: var(--portal-radius); padding: var(--portal-space-lg); }
+.dashboard-card h3 { font-size: var(--portal-text-sm); font-weight: 500; color: var(--portal-text-muted); margin: 0 0 var(--portal-space-xs); text-transform: uppercase; letter-spacing: 0.05em; }
+.dashboard-stat { font-size: var(--portal-text-3xl); font-weight: 700; color: var(--portal-text); margin: 0; }
+.dashboard-label { font-size: var(--portal-text-xs); color: var(--portal-gray-400); }
+@media (min-width: 768px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(4, 1fr); } .dashboard-header h1 { font-size: var(--portal-text-3xl); } }
