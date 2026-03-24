@@ -8,3 +8,5 @@
 .dashboard-label { font-size: var(--portal-text-xs); color: var(--portal-gray-400); }
 @media (min-width: 768px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(4, 1fr); } .dashboard-header h1 { font-size: var(--portal-text-3xl); } }
+.dashboard-card-link { display: inline-block; margin-top: var(--portal-space-xs); font-size: var(--portal-text-xs); color: var(--portal-green); text-decoration: none; }
+.dashboard-card-link:hover { text-decoration: underline; }

@@ -8,6 +8,9 @@ import { Register } from './pages/Register'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
+import { Invoices } from './pages/Invoices'
+import { Payments } from './pages/Payments'
+import { Profile } from './pages/Profile'
 import '../styles/portal.css'
 
 const queryClient = new QueryClient({
@@ -41,10 +44,10 @@ export default function App() {
             >
               <Route path="/portal" element={<Dashboard />} />
               <Route path="/portal/orders" element={<Placeholder title="Orders" />} />
-              <Route path="/portal/invoices" element={<Placeholder title="Invoices" />} />
-              <Route path="/portal/payments" element={<Placeholder title="Payments" />} />
+              <Route path="/portal/invoices" element={<Invoices />} />
+              <Route path="/portal/payments" element={<Payments />} />
               <Route path="/portal/price-list" element={<Placeholder title="Price List" />} />
-              <Route path="/portal/profile" element={<Placeholder title="Profile" />} />
+              <Route path="/portal/profile" element={<Profile />} />
             </Route>
 
             {/* Catch-all redirect */}

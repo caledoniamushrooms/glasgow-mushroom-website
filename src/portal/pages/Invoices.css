@@ -1,0 +1,30 @@
+.invoices-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--portal-space-xl); }
+.invoices-header h1 { font-family: var(--portal-font-heading); font-size: var(--portal-text-2xl); margin: 0; }
+.invoices-header p { color: var(--portal-text-muted); font-size: var(--portal-text-sm); margin: var(--portal-space-xs) 0 0; }
+.invoices-balance { text-align: right; }
+.invoices-balance-label { display: block; font-size: var(--portal-text-xs); color: var(--portal-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.invoices-balance-amount { font-size: var(--portal-text-2xl); font-weight: 700; color: var(--portal-status-cancelled); }
+.invoices-empty { text-align: center; padding: var(--portal-space-2xl); color: var(--portal-text-muted); }
+.invoices-table-wrap { background: var(--portal-surface); border: 1px solid var(--portal-border); border-radius: var(--portal-radius); overflow-x: auto; }
+.invoices-table { width: 100%; border-collapse: collapse; font-size: var(--portal-text-sm); }
+.invoices-table th { padding: var(--portal-space-sm) var(--portal-space-md); text-align: left; font-weight: 500; color: var(--portal-text-muted); border-bottom: 1px solid var(--portal-border); font-size: var(--portal-text-xs); text-transform: uppercase; letter-spacing: 0.05em; }
+.invoices-table td { padding: var(--portal-space-sm) var(--portal-space-md); border-bottom: 1px solid var(--portal-gray-100); }
+.invoices-table tr:last-child td { border-bottom: none; }
+.invoices-table tr:hover { background: var(--portal-gray-50); }
+.invoice-no { font-weight: 600; }
+.text-muted { color: var(--portal-text-muted); }
+.text-right { text-align: right; }
+.font-semibold { font-weight: 600; }
+.invoice-badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: var(--portal-text-xs); font-weight: 500; text-transform: capitalize; }
+.badge-paid { background: hsl(142 71% 92%); color: hsl(142 71% 25%); }
+.badge-pending { background: hsl(45 93% 90%); color: hsl(45 93% 30%); }
+.badge-modified { background: hsl(213 94% 92%); color: hsl(213 94% 35%); }
+.badge-cancelled { background: hsl(0 72% 93%); color: hsl(0 72% 40%); }
+.badge-draft { background: var(--portal-gray-100); color: var(--portal-gray-600); }
+.invoice-actions { display: flex; gap: var(--portal-space-sm); }
+.invoice-link { color: var(--portal-green); text-decoration: none; font-weight: 500; }
+.invoice-link:hover { text-decoration: underline; }
+.invoice-pay-link { color: var(--portal-white); background: var(--portal-green); padding: 2px 10px; border-radius: var(--portal-radius-sm); text-decoration: none; font-weight: 500; font-size: var(--portal-text-xs); }
+.invoice-pay-link:hover { background: var(--portal-green-dark); }
+.portal-loading { display: flex; align-items: center; justify-content: center; padding: var(--portal-space-2xl); color: var(--portal-text-muted); }
+.portal-error { padding: var(--portal-space-md); background: hsl(0 72% 97%); border: 1px solid hsl(0 72% 90%); border-radius: var(--portal-radius-sm); color: hsl(0 72% 40%); }
