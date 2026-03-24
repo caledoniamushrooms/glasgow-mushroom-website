@@ -13,6 +13,7 @@ import { Payments } from './pages/Payments'
 import { Profile } from './pages/Profile'
 import { Orders } from './pages/Orders'
 import { NewOrder } from './pages/NewOrder'
+import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
 import '../styles/portal.css'
 
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/portal" element={<Dashboard />} />
               <Route path="/portal/orders" element={<Orders />} />
               <Route path="/portal/orders/new" element={<NewOrder />} />
+              <Route path="/portal/orders/recurring" element={<RecurringOrders />} />
               <Route path="/portal/invoices" element={<Invoices />} />
               <Route path="/portal/payments" element={<Payments />} />
               <Route path="/portal/price-list" element={<PriceList />} />
