@@ -300,6 +300,18 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     .callout-grid {
       grid-template-columns: 1fr;
       padding: 2rem 1.5rem;
+      gap: 0;
+    }
+
+    .callout-card {
+      border: none;
+      border-radius: 0;
+      border-bottom: 1px solid hsl(142 71% 25%);
+      padding: 2rem 0;
+    }
+
+    .callout-card:first-child {
+      border-top: 1px solid hsl(142 71% 25%);
     }
 
     .callout-card h2 {
