@@ -11,6 +11,9 @@ import { Dashboard } from './pages/Dashboard'
 import { Invoices } from './pages/Invoices'
 import { Payments } from './pages/Payments'
 import { Profile } from './pages/Profile'
+import { Orders } from './pages/Orders'
+import { NewOrder } from './pages/NewOrder'
+import { PriceList } from './pages/PriceList'
 import '../styles/portal.css'
 
 const queryClient = new QueryClient({
@@ -43,10 +46,11 @@ export default function App() {
               }
             >
               <Route path="/portal" element={<Dashboard />} />
-              <Route path="/portal/orders" element={<Placeholder title="Orders" />} />
+              <Route path="/portal/orders" element={<Orders />} />
+              <Route path="/portal/orders/new" element={<NewOrder />} />
               <Route path="/portal/invoices" element={<Invoices />} />
               <Route path="/portal/payments" element={<Payments />} />
-              <Route path="/portal/price-list" element={<Placeholder title="Price List" />} />
+              <Route path="/portal/price-list" element={<PriceList />} />
               <Route path="/portal/profile" element={<Profile />} />
             </Route>
 
@@ -56,14 +60,5 @@ export default function App() {
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
-  )
-}
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div>
-      <h1 style={{ fontFamily: 'var(--portal-font-heading)', fontSize: 'var(--portal-text-2xl)', marginBottom: 'var(--portal-space-sm)' }}>{title}</h1>
-      <p style={{ color: 'var(--portal-text-muted)' }}>This section is coming soon.</p>
-    </div>
   )
 }
