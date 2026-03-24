@@ -9,40 +9,58 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   </section>
 
   <section class="callout-grid">
-    <a href="/products" class="callout-card">
-      <h2>Products</h2>
-      <p>Explore our range of gourmet mushrooms.</p>
-      <span class="callout-card__btn">View Products</span>
+    <a href="/products" class="callout-card callout-card--products">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Products</h2>
+        <p>Explore our range of gourmet mushrooms.</p>
+        <span class="callout-card__btn">View Products</span>
+      </div>
     </a>
 
-    <a href="/recipes" class="callout-card">
-      <h2>Recipes</h2>
-      <p>Delicious ways to cook with our mushrooms.</p>
-      <span class="callout-card__btn">View Recipes</span>
+    <a href="/recipes" class="callout-card callout-card--recipes">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Recipes</h2>
+        <p>Delicious ways to cook with our mushrooms.</p>
+        <span class="callout-card__btn">View Recipes</span>
+      </div>
     </a>
 
-    <a href="/markets" class="callout-card">
-      <h2>Markets & Workshops</h2>
-      <p>Find us at local markets or join a workshop.</p>
-      <span class="callout-card__btn">View Dates</span>
+    <a href="/markets" class="callout-card callout-card--markets">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Markets & Workshops</h2>
+        <p>Find us at local markets or join a workshop.</p>
+        <span class="callout-card__btn">View Dates</span>
+      </div>
     </a>
 
-    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card">
-      <h2>Compost Club</h2>
-      <p>Spent substrate collection for your garden.</p>
-      <span class="callout-card__btn">Learn More</span>
+    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card callout-card--compost">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Compost Club</h2>
+        <p>Spent substrate collection for your garden.</p>
+        <span class="callout-card__btn">Learn More</span>
+      </div>
     </a>
 
-    <a href="/where-to-find-us" class="callout-card">
-      <h2>Where To Find Us</h2>
-      <p>Find our mushrooms at retailers across Glasgow.</p>
-      <span class="callout-card__btn">View Stockists</span>
+    <a href="/where-to-find-us" class="callout-card callout-card--stockists">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Where To Find Us</h2>
+        <p>Find our mushrooms at retailers across Glasgow.</p>
+        <span class="callout-card__btn">View Stockists</span>
+      </div>
     </a>
 
-    <a href="/wholesale" class="callout-card">
-      <h2>Wholesale Customers</h2>
-      <p>Access your account, place orders, and manage invoices.</p>
-      <span class="callout-card__btn">Trade Login</span>
+    <a href="/wholesale" class="callout-card callout-card--wholesale">
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Wholesale Customers</h2>
+        <p>Access your account, place orders, and manage invoices.</p>
+        <span class="callout-card__btn">Trade Login</span>
+      </div>
     </a>
   </section>
 
@@ -178,59 +196,117 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   .callout-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    max-width: 900px;
+    gap: 1.25rem;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 4rem 1.5rem;
+    padding: 3rem 1.5rem;
     background-color: var(--color-bg);
   }
 
   .callout-card {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    text-decoration: none;
-    border: 1px solid hsl(142 71% 25%);
+    align-items: flex-end;
+    min-height: 320px;
     border-radius: 12px;
-    padding: 2.5rem 2rem;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    overflow: hidden;
+    text-decoration: none;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.4s ease;
   }
 
   .callout-card:hover {
-    border-color: hsl(142 71% 35%);
-    background-color: rgba(255, 255, 255, 0.03);
+    transform: scale(1.02);
+  }
+
+  .callout-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.85) 0%,
+      rgba(0, 0, 0, 0.4) 50%,
+      rgba(0, 0, 0, 0.15) 100%
+    );
+    transition: background 0.4s ease;
+  }
+
+  .callout-card:hover .callout-card__overlay {
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(0, 0, 0, 0.3) 50%,
+      rgba(0, 0, 0, 0.1) 100%
+    );
+  }
+
+  .callout-card__content {
+    position: relative;
+    z-index: 1;
+    padding: 2rem;
+    width: 100%;
   }
 
   .callout-card h2 {
     font-family: var(--font-heading);
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     font-weight: 700;
-    color: var(--color-text);
+    color: #fff;
+    line-height: 1.1;
     margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
   }
 
   .callout-card p {
     font-family: var(--font-body);
-    font-size: 1rem;
-    color: var(--color-text-muted);
-    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    max-width: 28ch;
   }
 
   .callout-card__btn {
     display: inline-block;
     font-family: var(--font-heading);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #fff;
     background-color: hsl(142 71% 25%);
-    padding: 0.6rem 2rem;
+    padding: 0.6rem 1.75rem;
     border-radius: 6px;
-    transition: opacity 0.2s ease;
+    transition: background-color 0.3s ease;
   }
 
   .callout-card:hover .callout-card__btn {
-    opacity: 0.85;
+    background-color: hsl(142 71% 30%);
+  }
+
+  .callout-card--products {
+    background-image: url('/images/banners/products-banner.jpg');
+    background-position: 50% 100%;
+  }
+
+  .callout-card--recipes {
+    background-image: url('/images/banners/recipes-banner.jpg');
+    background-position: 50% 47%;
+  }
+
+  .callout-card--markets {
+    background-image: url('/images/banners/direct-sales-banner.jpg');
+  }
+
+  .callout-card--compost {
+    background-image: url('/images/banners/compost-club-banner.jpg');
+  }
+
+  .callout-card--stockists {
+    background-image: url('/images/banners/stockists-banner.jpg');
+  }
+
+  .callout-card--wholesale {
+    background-image: url('/images/banners/wholesale-banner.jpg');
   }
 
   .instagram-feed {
@@ -299,15 +375,14 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
     .callout-grid {
       grid-template-columns: 1fr;
-      padding: 2rem 1.5rem;
+      padding: 0;
       gap: 0;
     }
 
     .callout-card {
-      border: none;
+      min-height: 220px;
       border-radius: 0;
       border-bottom: 1px solid hsl(142 71% 25%);
-      padding: 2rem 0;
     }
 
     .callout-card:first-child {
@@ -316,6 +391,10 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
     .callout-card h2 {
       font-size: 1.75rem;
+    }
+
+    .callout-card__content {
+      padding: 1.5rem;
     }
   }
 </style>
