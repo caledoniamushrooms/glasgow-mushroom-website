@@ -10,6 +10,12 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
   <section class="callout-grid">
     <a href="/products" class="callout-card callout-card--products" data-reveal="scale" style="transition-delay: 0s">
+      <div class="product-slides">
+        <div class="product-slides__img is-active" style="background-image: url('/images/banners/products-banner.jpg')"></div>
+        <div class="product-slides__img" style="background-image: url('/images/products/grey-oyster.jpg')"></div>
+        <div class="product-slides__img" style="background-image: url('/images/products/lions-mane.jpg')"></div>
+        <div class="product-slides__img" style="background-image: url('/images/products/speckled-chestnut.jpg')"></div>
+      </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Products</h2>
@@ -165,22 +171,21 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   })();
 </script>
 <script is:inline>
-  function initRecipeSlides() {
-    var slides = document.querySelectorAll('.recipe-slides__img');
+  function initCardSlides(selector, timerKey, interval) {
+    var slides = document.querySelectorAll(selector);
     if (!slides.length) return;
     var current = 0;
-    var interval = 3500;
 
+    slides.forEach(function(s) { s.classList.remove('is-active', 'is-exiting'); });
     slides[0].classList.add('is-active');
 
-    if (window._recipeTimer) clearInterval(window._recipeTimer);
-    window._recipeTimer = setInterval(function() {
+    if (window[timerKey]) clearInterval(window[timerKey]);
+    window[timerKey] = setInterval(function() {
       var prev = current;
       current = (current + 1) % slides.length;
 
       slides[prev].classList.remove('is-active');
       slides[prev].classList.add('is-exiting');
-
       slides[current].classList.add('is-active');
 
       setTimeout(function() {
@@ -188,8 +193,13 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       }, 1000);
     }, interval);
   }
-  initRecipeSlides();
-  document.addEventListener('astro:page-load', initRecipeSlides);
+
+  function initAllSlides() {
+    initCardSlides('.product-slides__img', '_productTimer', 3000);
+    initCardSlides('.recipe-slides__img', '_recipeTimer', 3500);
+  }
+  initAllSlides();
+  document.addEventListener('astro:page-load', initAllSlides);
 </script>
 
 <style>
@@ -318,8 +328,33 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
-  .callout-card--products { background-position: 50% 100%; }
-  .callout-card--products::before { background-image: url('/images/banners/products-banner.jpg'); }
+  .callout-card--products::before { display: none; }
+
+  .product-slides {
+    position: absolute;
+    inset: 0;
+  }
+
+  .product-slides__img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.08) translateX(4%);
+    transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .product-slides__img.is-active {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+
+  .product-slides__img.is-exiting {
+    opacity: 0;
+    transform: scale(1.08) translateX(-4%);
+  }
 
   .callout-card--recipes::before { display: none; }
 
