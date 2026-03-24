@@ -8,39 +8,42 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     <h1>Gourmet Mushrooms Grown In Glasgow</h1>
   </section>
 
-  <a href="/products" class="cta-banner cta-banner--products">
-    <h2>Products</h2>
-  </a>
-
-  <a href="/recipes" class="cta-banner cta-banner--recipes">
-    <h2>Recipes</h2>
-  </a>
-
-  <a href="/markets" class="cta-banner cta-banner--markets">
-    <h2>Markets & Workshops</h2>
-  </a>
-
-  <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="cta-banner cta-banner--compost">
-    <h2>Compost Club</h2>
-  </a>
-
-  <div class="cta-banner cta-banner--stockists">
-    <a href="/where-to-find-us" class="cta-banner__text">
-      <h2>Where To Find Us</h2>
+  <section class="callout-grid">
+    <a href="/products" class="callout-card">
+      <h2>Products</h2>
+      <p>Explore our range of gourmet mushrooms.</p>
+      <span class="callout-card__btn">View Products</span>
     </a>
-    <div class="cta-banner__map" id="map"></div>
-  </div>
 
-  <section class="map-section">
-    <!-- Map is rendered in the Where To Find Us banner above -->
-  </section>
+    <a href="/recipes" class="callout-card">
+      <h2>Recipes</h2>
+      <p>Delicious ways to cook with our mushrooms.</p>
+      <span class="callout-card__btn">View Recipes</span>
+    </a>
 
-  <section class="b2b-callout">
-    <div class="b2b-callout__inner">
+    <a href="/markets" class="callout-card">
+      <h2>Markets & Workshops</h2>
+      <p>Find us at local markets or join a workshop.</p>
+      <span class="callout-card__btn">View Dates</span>
+    </a>
+
+    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card">
+      <h2>Compost Club</h2>
+      <p>Spent substrate collection for your garden.</p>
+      <span class="callout-card__btn">Learn More</span>
+    </a>
+
+    <a href="/where-to-find-us" class="callout-card">
+      <h2>Where To Find Us</h2>
+      <p>Find our mushrooms at retailers across Glasgow.</p>
+      <span class="callout-card__btn">View Stockists</span>
+    </a>
+
+    <a href="/wholesale" class="callout-card">
       <h2>Wholesale Customers</h2>
       <p>Access your account, place orders, and manage invoices.</p>
-      <a href="/wholesale" class="b2b-callout__btn">Trade Login</a>
-    </div>
+      <span class="callout-card__btn">Trade Login</span>
+    </a>
   </section>
 
   <section class="instagram-feed">
@@ -172,122 +175,61 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     animation: fadeUp 0.9s ease forwards;
   }
 
-  .cta-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 300px;
-    background-size: cover;
-    text-align: center;
-    transition: opacity 0.3s ease;
-  }
-
-  .cta-banner:hover {
-    opacity: 0.9;
-  }
-
-  .cta-banner h2 {
-    font-size: 140px;
-    font-family: var(--font-heading);
-    font-weight: 700;
-    text-transform: capitalize;
-    color: var(--color-text);
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    line-height: 1;
-  }
-
-  .cta-banner--products {
-    background-image: url('/images/banners/products-banner.jpg');
-    background-position: 50% 100%;
-  }
-
-  .cta-banner--recipes {
-    background-image: url('/images/banners/recipes-banner.jpg');
-    background-position: 50% 47%;
-  }
-
-  .cta-banner--stockists {
-    background-color: var(--color-bg);
-    display: flex;
-    align-items: center;
-    height: 460px;
-    padding: 20px 0;
-  }
-
-  .cta-banner__text {
-    flex: 1;
-    text-align: center;
-  }
-
-  .cta-banner__text h2 {
-    font-size: 81px;
-  }
-
-  .cta-banner__map {
-    flex: 1;
-    height: 320px;
-    border-radius: 8px;
-    margin-right: 40px;
-  }
-
-  .cta-banner--markets {
-    /* TODO: Replace with dedicated markets banner image */
-    background-image: url('/images/banners/direct-sales-banner.jpg');
-    background-position: 50% 50%;
-  }
-
-  .cta-banner--compost {
-    background-image: url('/images/banners/compost-club-banner.jpg');
-    background-position: 50% 50%;
-  }
-
-  .map-section {
-    display: none;
-  }
-
-  .b2b-callout {
-    text-align: center;
+  .callout-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
     padding: 4rem 1.5rem;
     background-color: var(--color-bg);
   }
 
-  .b2b-callout__inner {
-    max-width: 800px;
-    margin: 0 auto;
+  .callout-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    text-decoration: none;
     border: 1px solid hsl(142 71% 25%);
     border-radius: 12px;
-    padding: 3rem 2rem;
+    padding: 2.5rem 2rem;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
   }
 
-  .b2b-callout h2 {
+  .callout-card:hover {
+    border-color: hsl(142 71% 35%);
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  .callout-card h2 {
     font-family: var(--font-heading);
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--color-text);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
   }
 
-  .b2b-callout p {
+  .callout-card p {
     font-family: var(--font-body);
-    font-size: 1.125rem;
+    font-size: 1rem;
     color: var(--color-text-muted);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
-  .b2b-callout__btn {
+  .callout-card__btn {
     display: inline-block;
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #fff;
     background-color: hsl(142 71% 25%);
-    padding: 0.75rem 2.5rem;
+    padding: 0.6rem 2rem;
     border-radius: 6px;
-    text-decoration: none;
     transition: opacity 0.2s ease;
   }
 
-  .b2b-callout__btn:hover {
+  .callout-card:hover .callout-card__btn {
     opacity: 0.85;
   }
 
@@ -355,29 +297,13 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       max-width: 51%;
     }
 
-    .cta-banner {
-      height: 200px;
-    }
-
-    .cta-banner h2 {
-      font-size: 3rem;
-    }
-
-    .cta-banner--stockists {
-      flex-direction: column;
-      height: auto;
+    .callout-grid {
+      grid-template-columns: 1fr;
       padding: 2rem 1.5rem;
-      gap: 1.5rem;
     }
 
-    .cta-banner__text h2 {
-      font-size: 3rem;
-    }
-
-    .cta-banner__map {
-      width: 100%;
-      height: 300px;
-      margin-right: 0;
+    .callout-card h2 {
+      font-size: 1.75rem;
     }
   }
 </style>
