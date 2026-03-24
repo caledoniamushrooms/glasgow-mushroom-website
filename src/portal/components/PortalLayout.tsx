@@ -1,21 +1,27 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthContext } from './AuthProvider'
+import { useRealtime } from '../hooks/useRealtime'
 import './PortalLayout.css'
 
 const navItems = [
   { to: '/portal', label: 'Dashboard' },
   { to: '/portal/orders', label: 'Orders' },
+  { to: '/portal/orders/recurring', label: 'Recurring' },
   { to: '/portal/invoices', label: 'Invoices' },
   { to: '/portal/payments', label: 'Payments' },
   { to: '/portal/price-list', label: 'Price List' },
   { to: '/portal/profile', label: 'Profile' },
+  { to: '/portal/team', label: 'Team' },
 ]
 
 export function PortalLayout() {
   const { portalUser, signOut } = useAuthContext()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Subscribe to Realtime updates for this customer
+  useRealtime()
 
   const handleSignOut = async () => {
     await signOut()

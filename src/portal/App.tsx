@@ -15,6 +15,7 @@ import { Orders } from './pages/Orders'
 import { NewOrder } from './pages/NewOrder'
 import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
+import { Team } from './pages/Team'
 import '../styles/portal.css'
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="/portal/payments" element={<Payments />} />
               <Route path="/portal/price-list" element={<PriceList />} />
               <Route path="/portal/profile" element={<Profile />} />
+              <Route path="/portal/team" element={<Team />} />
             </Route>
 
             {/* Catch-all redirect */}
