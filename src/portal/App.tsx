@@ -4,6 +4,9 @@ import { AuthProvider } from './components/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { PortalLayout } from './components/PortalLayout'
 import { Login } from './pages/Login'
+import { Register } from './pages/Register'
+import { ForgotPassword } from './pages/ForgotPassword'
+import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
 import '../styles/portal.css'
 
@@ -22,7 +25,13 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public routes */}
             <Route path="/portal/login" element={<Login />} />
+            <Route path="/portal/register" element={<Register />} />
+            <Route path="/portal/forgot-password" element={<ForgotPassword />} />
+            <Route path="/portal/onboarding" element={<Onboarding />} />
+
+            {/* Protected routes wrapped in layout */}
             <Route
               element={
                 <ProtectedRoute>
@@ -37,6 +46,8 @@ export default function App() {
               <Route path="/portal/price-list" element={<Placeholder title="Price List" />} />
               <Route path="/portal/profile" element={<Placeholder title="Profile" />} />
             </Route>
+
+            {/* Catch-all redirect */}
             <Route path="/portal/*" element={<Navigate to="/portal" replace />} />
           </Routes>
         </BrowserRouter>
