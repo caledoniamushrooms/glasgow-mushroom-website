@@ -39,6 +39,12 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     </a>
 
     <a href="/markets" class="callout-card callout-card--markets" data-reveal="scale" style="transition-delay: 0.2s">
+      <div class="markets-slides">
+        <div class="markets-slides__img is-active" style="background-image: url('/images/markets/markets-1.jpg')"></div>
+        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-2.jpg')"></div>
+        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-3.jpg')"></div>
+        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-4.jpg')"></div>
+      </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Markets & Workshops</h2>
@@ -197,6 +203,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   function initAllSlides() {
     initCardSlides('.product-slides__img', '_productTimer', 3000);
     initCardSlides('.recipe-slides__img', '_recipeTimer', 3500);
+    initCardSlides('.markets-slides__img', '_marketsTimer', 4000);
   }
   initAllSlides();
   document.addEventListener('astro:page-load', initAllSlides);
@@ -384,7 +391,33 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     transform: scale(1.08) translateX(-4%);
   }
 
-  .callout-card--markets::before { background-image: url('/images/banners/direct-sales-banner.jpg'); }
+  .callout-card--markets::before { display: none; }
+
+  .markets-slides {
+    position: absolute;
+    inset: 0;
+  }
+
+  .markets-slides__img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.08) translateX(4%);
+    transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .markets-slides__img.is-active {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+
+  .markets-slides__img.is-exiting {
+    opacity: 0;
+    transform: scale(1.08) translateX(-4%);
+  }
 
   .callout-card--compost::before { background-image: url('/images/banners/compost-club-banner.jpg'); }
 
