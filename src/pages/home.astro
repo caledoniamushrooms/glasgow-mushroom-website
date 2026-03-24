@@ -19,6 +19,11 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     </a>
 
     <a href="/recipes" class="callout-card callout-card--recipes" data-reveal="scale" style="transition-delay: 0.1s">
+      <div class="recipe-slides">
+        <div class="recipe-slides__img" style="background-image: url('/images/recipes/roasted-chestnuts.jpg')"></div>
+        <div class="recipe-slides__img" style="background-image: url('/images/recipes/lions-mane-linguine.jpg')"></div>
+        <div class="recipe-slides__img" style="background-image: url('/images/recipes/oyster-pie.jpg')"></div>
+      </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Recipes</h2>
@@ -159,6 +164,33 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     });
   })();
 </script>
+<script is:inline>
+  function initRecipeSlides() {
+    var slides = document.querySelectorAll('.recipe-slides__img');
+    if (!slides.length) return;
+    var current = 0;
+    var interval = 3500;
+
+    slides[0].classList.add('is-active');
+
+    if (window._recipeTimer) clearInterval(window._recipeTimer);
+    window._recipeTimer = setInterval(function() {
+      var prev = current;
+      current = (current + 1) % slides.length;
+
+      slides[prev].classList.remove('is-active');
+      slides[prev].classList.add('is-exiting');
+
+      slides[current].classList.add('is-active');
+
+      setTimeout(function() {
+        slides[prev].classList.remove('is-exiting');
+      }, 1000);
+    }, interval);
+  }
+  initRecipeSlides();
+  document.addEventListener('astro:page-load', initRecipeSlides);
+</script>
 
 <style>
   .hero {
@@ -289,8 +321,33 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   .callout-card--products { background-position: 50% 100%; }
   .callout-card--products::before { background-image: url('/images/banners/products-banner.jpg'); }
 
-  .callout-card--recipes { background-position: 50% 47%; }
-  .callout-card--recipes::before { background-image: url('/images/banners/recipes-banner.jpg'); }
+  .callout-card--recipes::before { display: none; }
+
+  .recipe-slides {
+    position: absolute;
+    inset: 0;
+  }
+
+  .recipe-slides__img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.08) translateX(4%);
+    transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .recipe-slides__img.is-active {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+
+  .recipe-slides__img.is-exiting {
+    opacity: 0;
+    transform: scale(1.08) translateX(-4%);
+  }
 
   .callout-card--markets::before { background-image: url('/images/banners/direct-sales-banner.jpg'); }
 
