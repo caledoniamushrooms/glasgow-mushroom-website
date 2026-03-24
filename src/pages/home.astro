@@ -9,7 +9,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
   </section>
 
   <section class="callout-grid">
-    <a href="/products" class="callout-card callout-card--products">
+    <a href="/products" class="callout-card callout-card--products" data-reveal="scale" style="transition-delay: 0s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Products</h2>
@@ -18,7 +18,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/recipes" class="callout-card callout-card--recipes">
+    <a href="/recipes" class="callout-card callout-card--recipes" data-reveal="scale" style="transition-delay: 0.1s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Recipes</h2>
@@ -27,7 +27,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/markets" class="callout-card callout-card--markets">
+    <a href="/markets" class="callout-card callout-card--markets" data-reveal="scale" style="transition-delay: 0.2s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Markets & Workshops</h2>
@@ -36,7 +36,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card callout-card--compost">
+    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card callout-card--compost" data-reveal="scale" style="transition-delay: 0.3s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Compost Club</h2>
@@ -45,7 +45,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/where-to-find-us" class="callout-card callout-card--stockists">
+    <a href="/where-to-find-us" class="callout-card callout-card--stockists" data-reveal="scale" style="transition-delay: 0.4s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Where To Find Us</h2>
@@ -54,7 +54,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/wholesale" class="callout-card callout-card--wholesale">
+    <a href="/wholesale" class="callout-card callout-card--wholesale" data-reveal="scale" style="transition-delay: 0.5s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Wholesale Customers</h2>
@@ -64,7 +64,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     </a>
   </section>
 
-  <section class="instagram-feed">
+  <section class="instagram-feed" data-reveal>
     <h2>Follow Us</h2>
     <div class="instagram-feed__embed" id="instagram-embed">
       <!-- Behold Instagram widget — embed code to be added once account is set up -->
@@ -211,13 +211,19 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     border-radius: 12px;
     overflow: hidden;
     text-decoration: none;
-    background-size: cover;
-    background-position: center;
-    transition: transform 0.4s ease;
   }
 
-  .callout-card:hover {
-    transform: scale(1.02);
+  .callout-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: inherit;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .callout-card:hover::before {
+    transform: scale(1.06);
   }
 
   .callout-card__overlay {
@@ -229,16 +235,11 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       rgba(0, 0, 0, 0.4) 50%,
       rgba(0, 0, 0, 0.15) 100%
     );
-    transition: background 0.4s ease;
+    transition: opacity 0.4s ease;
   }
 
   .callout-card:hover .callout-card__overlay {
-    background: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.9) 0%,
-      rgba(0, 0, 0, 0.3) 50%,
-      rgba(0, 0, 0, 0.1) 100%
-    );
+    opacity: 0.85;
   }
 
   .callout-card__content {
@@ -276,38 +277,28 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     background-color: hsl(142 71% 25%);
     padding: 0.6rem 1.75rem;
     border-radius: 6px;
-    transition: background-color 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
   }
 
   .callout-card:hover .callout-card__btn {
     background-color: hsl(142 71% 30%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
-  .callout-card--products {
-    background-image: url('/images/banners/products-banner.jpg');
-    background-position: 50% 100%;
-  }
+  .callout-card--products { background-position: 50% 100%; }
+  .callout-card--products::before { background-image: url('/images/banners/products-banner.jpg'); }
 
-  .callout-card--recipes {
-    background-image: url('/images/banners/recipes-banner.jpg');
-    background-position: 50% 47%;
-  }
+  .callout-card--recipes { background-position: 50% 47%; }
+  .callout-card--recipes::before { background-image: url('/images/banners/recipes-banner.jpg'); }
 
-  .callout-card--markets {
-    background-image: url('/images/banners/direct-sales-banner.jpg');
-  }
+  .callout-card--markets::before { background-image: url('/images/banners/direct-sales-banner.jpg'); }
 
-  .callout-card--compost {
-    background-image: url('/images/banners/compost-club-banner.jpg');
-  }
+  .callout-card--compost::before { background-image: url('/images/banners/compost-club-banner.jpg'); }
 
-  .callout-card--stockists {
-    background-image: url('/images/banners/stockists-banner.jpg');
-  }
+  .callout-card--stockists::before { background-image: url('/images/banners/stockists-banner.jpg'); }
 
-  .callout-card--wholesale {
-    background-image: url('/images/banners/wholesale-banner.jpg');
-  }
+  .callout-card--wholesale::before { background-image: url('/images/banners/wholesale-banner.jpg'); }
 
   .instagram-feed {
     text-align: center;

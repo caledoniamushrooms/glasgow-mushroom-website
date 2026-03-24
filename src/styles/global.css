@@ -12,7 +12,7 @@
   --color-bg: #040404;
   --color-bg-footer: #161616;
   --color-text: #ffffff;
-  --color-text-muted: #aaaaaa;
+  --color-text-muted: #b0b0b0;
   --color-accent: #ffffff;
 
   --font-heading: 'Abhaya Libre', serif;
@@ -66,15 +66,18 @@ h1, h2, h3, h4 {
   font-family: var(--font-heading);
   font-weight: 700;
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 h1 {
   font-size: var(--h1-size-mobile);
   text-transform: none;
+  letter-spacing: -0.03em;
 }
 
 h2 {
   font-size: 2rem;
+  letter-spacing: -0.015em;
 }
 
 h3 {
@@ -83,6 +86,31 @@ h3 {
 
 p {
   margin-bottom: 1rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+/* === Scroll Reveal === */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-reveal="scale"] {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+[data-reveal="scale"].is-visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* === Layout Utilities === */
