@@ -1,0 +1,200 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { markets } from '../data/markets.js';
+
+const months = {};
+for (const event of markets) {
+  const d = new Date(event.date + 'T00:00:00');
+  const key = d.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+  if (!months[key]) months[key] = [];
+  months[key].push({
+    ...event,
+    dayLabel: d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+  });
+}
+---
+
+<BaseLayout title="Markets & Workshops — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets and workshops.">
+  <section class="markets-hero">
+    <h1>Markets & Workshops</h1>
+  </section>
+
+  <section class="markets-content">
+    <div class="markets-intro">
+      <p>Find us at farmers markets across Glasgow or join one of our mushroom growing workshops. Come say hello, grab some fresh mushrooms, and learn about what we do.</p>
+    </div>
+
+    {Object.entries(months).map(([month, events]) => (
+      <div class="markets-month">
+        <h2>{month}</h2>
+        <div class="markets-grid">
+          {events.map((event) => (
+            <div class={`markets-card markets-card--${event.type}`}>
+              <span class="markets-card__badge">{event.type}</span>
+              <h3>{event.name}</h3>
+              <p class="markets-card__date">{event.dayLabel}</p>
+              <p class="markets-card__time">{event.time}</p>
+              <p class="markets-card__location">{event.location}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
+
+<style is:global>
+  body {
+    background-color: #fff !important;
+    color: #333 !important;
+  }
+  a {
+    color: #333;
+  }
+  .header {
+    background-color: var(--color-bg);
+  }
+  .header a,
+  .header__nav-link,
+  .header__dropdown-link {
+    color: #fff;
+  }
+  footer {
+    background-color: var(--color-bg-footer);
+    color: #fff;
+  }
+  footer a {
+    color: #fff;
+  }
+</style>
+
+<style>
+  .markets-hero {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* TODO: Replace with dedicated markets banner image */
+    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-size: cover;
+    background-position: 50% 50%;
+    text-align: center;
+  }
+
+  .markets-hero h1 {
+    font-size: 100px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .markets-content {
+    padding: 40px 0 60px;
+  }
+
+  .markets-intro {
+    width: 700px;
+    max-width: 100%;
+    margin: 20px auto 40px;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+  }
+
+  .markets-intro p {
+    font-size: 20px;
+    font-family: var(--font-heading);
+    color: #333;
+    line-height: 31px;
+    text-align: center;
+  }
+
+  .markets-month {
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    padding: 0 1.5rem;
+  }
+
+  .markets-month h2 {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.5rem;
+  }
+
+  .markets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .markets-card {
+    background-color: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .markets-card__badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    background-color: hsl(142 71% 25%);
+    color: #fff;
+  }
+
+  .markets-card--workshop .markets-card__badge {
+    background-color: hsl(30 80% 50%);
+  }
+
+  .markets-card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+
+  .markets-card__date {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 0.25rem;
+  }
+
+  .markets-card__time {
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 0.25rem;
+  }
+
+  .markets-card__location {
+    font-size: 0.9rem;
+    color: #777;
+  }
+
+  @media (max-width: 767px) {
+    .markets-hero {
+      height: 200px;
+    }
+
+    .markets-hero h1 {
+      font-size: 3rem;
+    }
+
+    .markets-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

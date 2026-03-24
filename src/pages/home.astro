@@ -16,6 +16,14 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     <h2>Recipes</h2>
   </a>
 
+  <a href="/markets" class="cta-banner cta-banner--markets">
+    <h2>Markets & Workshops</h2>
+  </a>
+
+  <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="cta-banner cta-banner--compost">
+    <h2>Compost Club</h2>
+  </a>
+
   <div class="cta-banner cta-banner--stockists">
     <a href="/where-to-find-us" class="cta-banner__text">
       <h2>Where To Find Us</h2>
@@ -25,6 +33,24 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
   <section class="map-section">
     <!-- Map is rendered in the Where To Find Us banner above -->
+  </section>
+
+  <section class="b2b-callout">
+    <div class="b2b-callout__inner">
+      <h2>Wholesale Customers</h2>
+      <p>Access your account, place orders, and manage invoices.</p>
+      <a href="/wholesale" class="b2b-callout__btn">Trade Login</a>
+    </div>
+  </section>
+
+  <section class="instagram-feed">
+    <h2>Follow Us</h2>
+    <div class="instagram-feed__embed" id="instagram-embed">
+      <!-- Behold Instagram widget — embed code to be added once account is set up -->
+      <p class="instagram-feed__placeholder">
+        Follow us on <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer">@glasgowmushroomco</a>
+      </p>
+    </div>
   </section>
 </BaseLayout>
 
@@ -204,8 +230,91 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     margin-right: 40px;
   }
 
+  .cta-banner--markets {
+    /* TODO: Replace with dedicated markets banner image */
+    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-position: 50% 50%;
+  }
+
+  .cta-banner--compost {
+    background-image: url('/images/banners/compost-club-banner.jpg');
+    background-position: 50% 50%;
+  }
+
   .map-section {
     display: none;
+  }
+
+  .b2b-callout {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background-color: var(--color-bg);
+  }
+
+  .b2b-callout__inner {
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid hsl(142 71% 25%);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+  }
+
+  .b2b-callout h2 {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .b2b-callout p {
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .b2b-callout__btn {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: hsl(142 71% 25%);
+    padding: 0.75rem 2.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .b2b-callout__btn:hover {
+    opacity: 0.85;
+  }
+
+  .instagram-feed {
+    text-align: center;
+    padding: 3rem 1.5rem 4rem;
+    background-color: var(--color-bg);
+  }
+
+  .instagram-feed h2 {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 1.5rem;
+  }
+
+  .instagram-feed__placeholder {
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+  }
+
+  .instagram-feed__placeholder a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   :global(.info-window h3) {

@@ -7,6 +7,7 @@ export const navItems = [
       { label: 'Direct Sales', href: '/direct-sales' },
       { label: 'Retail', href: '/where-to-find-us' },
       { label: 'Wholesale', href: '/wholesale' },
+      { label: 'Markets', href: '/markets' },
     ],
   },
   { label: 'Recipes', href: '/recipes' },
