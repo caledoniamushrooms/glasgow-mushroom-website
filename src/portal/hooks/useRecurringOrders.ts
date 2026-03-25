@@ -25,18 +25,24 @@ interface RecurringOrderItem {
 export function useRecurringOrders() {
   const { portalUser } = useAuthContext()
   const customerId = portalUser?.customer_id
+  const branchId = portalUser?.branch_id
   const queryClient = useQueryClient()
 
   const recurringQuery = useQuery({
-    queryKey: ['recurring-orders', customerId],
+    queryKey: ['recurring-orders', customerId, branchId],
     queryFn: async (): Promise<RecurringOrder[]> => {
       if (!customerId) return []
-      const { data, error } = await supabase
+      let query = supabase
         .from('recurring_orders')
         .select('*, recurring_order_items(*)')
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
 
+      if (branchId) {
+        query = query.eq('branch_id', branchId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return (data || []).map(o => ({ ...o, items: o.recurring_order_items }))
     },

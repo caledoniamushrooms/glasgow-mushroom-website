@@ -36,21 +36,10 @@ export function useAuth() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const portalUser = await fetchPortalUser(session.user.id)
-        setState({
-          session,
-          user: session.user,
-          portalUser,
-          loading: false,
-          error: portalUser ? null : 'No active portal account found',
-        })
-      } else {
-        setState({ session: null, user: null, portalUser: null, loading: false, error: null })
-      }
-    })
-
+    // Use onAuthStateChange as the single source of truth.
+    // It fires INITIAL_SESSION on setup, avoiding the deadlock
+    // that occurs when getSession() and onAuthStateChange compete
+    // for the internal auth lock in @supabase/supabase-js v2.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
@@ -102,7 +91,9 @@ export function useAuth() {
   return {
     ...state,
     isAuthenticated: !!state.session && !!state.portalUser,
-    isAdmin: state.portalUser?.role === 'admin',
+    isSystemAdmin: state.portalUser?.role === 'system_admin',
+    isAdmin: state.portalUser?.role === 'admin' || state.portalUser?.role === 'system_admin',
+    branchId: state.portalUser?.branch_id ?? null,
     signIn,
     signOut,
     resetPassword,

@@ -3,7 +3,8 @@ export interface PortalUser {
   id: string
   auth_user_id: string
   customer_id: string
-  role: 'admin' | 'member'
+  branch_id: string | null
+  role: 'system_admin' | 'admin' | 'member'
   display_name: string
   email: string
   status: 'pending' | 'active' | 'suspended'
@@ -108,6 +109,47 @@ export interface ProductType {
   id: string
   name: string
   price_multiplier: number
+}
+
+/** Price tier */
+export interface PriceTier {
+  id: string
+  name: string
+  display_name: string
+  multiplier: number
+}
+
+/** Price list entry (flat) */
+export interface PriceEntry {
+  product_name: string
+  product_type: string
+  price_per_kg: number
+}
+
+/** Price list grouped by product with multi-tier pricing */
+export interface PriceGroup {
+  product_name: string
+  base_price: number
+  grades: {
+    grade_name: string
+    multiplier: number
+    tiers: Record<string, number>
+  }[]
+}
+
+/** Wholesale threshold — min kg for a product to qualify for wholesale pricing */
+export interface WholesaleThreshold {
+  product_name: string
+  min_quantity_kg: number
+}
+
+/** Volume discount — percentage discount at a quantity threshold */
+export interface VolumeDiscount {
+  product_name: string | null
+  tier_name: string
+  tier_display_name: string
+  min_quantity: number
+  discount_percent: number
 }
 
 /** Customer delivery schedule entry */

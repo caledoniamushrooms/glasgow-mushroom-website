@@ -6,17 +6,23 @@ import type { Invoice, Payment } from '../lib/types'
 export function useInvoices() {
   const { portalUser } = useAuthContext()
   const customerId = portalUser?.customer_id
+  const branchId = portalUser?.branch_id
 
   const invoicesQuery = useQuery({
-    queryKey: ['invoices', customerId],
+    queryKey: ['invoices', customerId, branchId],
     queryFn: async (): Promise<Invoice[]> => {
       if (!customerId) return []
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoice_balances')
         .select('*')
         .eq('customer_id', customerId)
         .order('date', { ascending: false })
 
+      if (branchId) {
+        query = query.eq('branch_id', branchId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return data || []
     },
@@ -24,15 +30,17 @@ export function useInvoices() {
   })
 
   const paymentsQuery = useQuery({
-    queryKey: ['payments', customerId],
+    queryKey: ['payments', customerId, branchId],
     queryFn: async (): Promise<Payment[]> => {
       if (!customerId) return []
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
         .select('*')
         .eq('customer_id', customerId)
         .order('date', { ascending: false })
 
+      // Payments may not have branch_id — filter via invoice join if needed
+      const { data, error } = await query
       if (error) throw error
       return data || []
     },

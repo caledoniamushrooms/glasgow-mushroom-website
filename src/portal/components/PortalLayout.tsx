@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthContext } from './AuthProvider'
+import { useCustomer } from '../hooks/useCustomer'
 import { useRealtime } from '../hooks/useRealtime'
 import './PortalLayout.css'
 
@@ -17,6 +18,7 @@ const navItems = [
 
 export function PortalLayout() {
   const { portalUser, signOut } = useAuthContext()
+  const { customer, currentBranch } = useCustomer()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -46,7 +48,10 @@ export function PortalLayout() {
 
       <aside className={`portal-sidebar ${sidebarOpen ? 'portal-sidebar--open' : ''}`}>
         <div className="portal-sidebar-brand">
-          <h2>Glasgow Mushroom Co.</h2>
+          <h2>{customer?.name || 'Glasgow Mushroom Co.'}</h2>
+          {currentBranch && (
+            <p className="portal-sidebar-branch">{currentBranch.name}</p>
+          )}
           <p className="portal-sidebar-user">{portalUser?.display_name}</p>
         </div>
 

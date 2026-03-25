@@ -6,18 +6,24 @@ import type { PortalOrder, Product, ProductType } from '../lib/types'
 export function useOrders() {
   const { portalUser } = useAuthContext()
   const customerId = portalUser?.customer_id
+  const branchId = portalUser?.branch_id
   const queryClient = useQueryClient()
 
   const ordersQuery = useQuery({
-    queryKey: ['portal-orders', customerId],
+    queryKey: ['portal-orders', customerId, branchId],
     queryFn: async (): Promise<PortalOrder[]> => {
       if (!customerId) return []
-      const { data, error } = await supabase
+      let query = supabase
         .from('portal_orders')
         .select('*, portal_order_items(*)')
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
 
+      if (branchId) {
+        query = query.eq('branch_id', branchId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return (data || []).map(o => ({ ...o, items: o.portal_order_items }))
     },

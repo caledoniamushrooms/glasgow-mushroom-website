@@ -6,6 +6,7 @@ import type { Customer, Branch, DeliverySchedule } from '../lib/types'
 export function useCustomer() {
   const { portalUser } = useAuthContext()
   const customerId = portalUser?.customer_id
+  const branchId = portalUser?.branch_id
 
   const customerQuery = useQuery({
     queryKey: ['customer', customerId],
@@ -40,23 +41,34 @@ export function useCustomer() {
   })
 
   const schedulesQuery = useQuery({
-    queryKey: ['delivery-schedules', customerId],
+    queryKey: ['delivery-schedules', customerId, branchId],
     queryFn: async (): Promise<DeliverySchedule[]> => {
       if (!customerId) return []
-      const { data, error } = await supabase
+      let query = supabase
         .from('customer_delivery_schedules')
         .select('*')
         .eq('customer_id', customerId)
         .eq('active', true)
 
+      if (branchId) {
+        query = query.eq('branch_id', branchId)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       return data || []
     },
     enabled: !!customerId,
   })
 
+  // Resolve the current branch when user is branch-scoped
+  const currentBranch = branchId
+    ? (branchesQuery.data || []).find(b => b.id === branchId) ?? null
+    : null
+
   return {
     customer: customerQuery.data || null,
+    currentBranch,
     branches: branchesQuery.data || [],
     deliverySchedules: schedulesQuery.data || [],
     loading: customerQuery.isLoading,

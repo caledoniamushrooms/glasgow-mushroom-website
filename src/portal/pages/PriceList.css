@@ -1,0 +1,341 @@
+/*
+ * Price List styles — extracted from Odin's shadcn/ui + Tailwind theme
+ *
+ * Source: PriceCatalogue.jsx + /src/components/ui/table.jsx + /src/index.css
+ * Font: system-ui, -apple-system, sans-serif — 14px / 20px line-height
+ * Border: 1px solid hsl(0 0% 89.8%) = #e5e5e5
+ * Muted foreground: hsl(0 0% 45.1%) = #737373
+ * Foreground: hsl(0 0% 3.9%) = #0a0a0a
+ * Tier colours (Tailwind): blue-600, amber-600, green-600
+ */
+
+.price-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.price-list-header h1 {
+  font-family: var(--portal-font-heading);
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.price-list-header p {
+  color: #737373;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.price-list-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.price-list-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #fff;
+  color: #0a0a0a;
+  cursor: pointer;
+}
+
+.price-list-select:focus {
+  outline: none;
+  border-color: var(--portal-green);
+  box-shadow: 0 0 0 2px rgba(26, 107, 53, 0.15);
+}
+
+.price-list-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: var(--portal-green);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.price-list-download-btn:hover {
+  background: var(--portal-green-dark);
+}
+
+.price-list-download-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tier legend — Odin: "Pricing Tiers:" label + coloured badges with pill multipliers */
+.price-list-tier-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.price-list-tier-legend::before {
+  content: 'Pricing Tiers:';
+  color: #737373;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.tier-multiplier {
+  font-size: 0.75rem;
+  font-weight: 400;
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  padding: 0 0.375rem;
+  margin-left: 0.125rem;
+  opacity: 0.8;
+}
+
+/*
+ * Table — exact match of Odin's shadcn/ui Table component
+ * Container: rounded-md border overflow-x-auto  (border-radius: 6px, border: 1px solid)
+ * Table: w-full caption-bottom text-sm  (font-size: 14px)
+ * TH: h-10 px-2 text-left align-middle font-medium  (height: 40px, padding: 0 8px, font-weight: 500)
+ * TR: border-b transition-colors hover:bg-muted/50  (border-bottom: 1px solid, hover: rgba(245,245,245,0.5))
+ * TD: p-2 align-middle  (padding: 8px)
+ * Price TD: text-center p-1  (text-align: center, padding: 4px)
+ */
+.price-list-table-wrap {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+.price-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #0a0a0a;
+  caption-side: bottom;
+}
+
+/* TH — h-10 px-2 font-medium, no background */
+.price-list-table thead tr {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.price-list-table th {
+  height: 40px;
+  padding: 0 8px;
+  text-align: left;
+  vertical-align: middle;
+  font-weight: 500;
+  white-space: nowrap;
+  color: #0a0a0a;
+  background: transparent;
+}
+
+.price-list-table th.tier-header {
+  text-align: center;
+}
+
+/* TR — border-b, hover:bg-muted/50 */
+.price-list-table tbody tr {
+  border-bottom: 1px solid #e5e5e5;
+  transition: background-color 0.15s;
+}
+
+.price-list-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.price-list-table tbody tr:hover {
+  background-color: rgba(245, 245, 245, 0.5);
+}
+
+/* TD — p-2, align-middle */
+.price-list-table td {
+  padding: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Product cell — font-medium align-top with rowSpan */
+.price-list-table .product-name-cell {
+  font-weight: 500;
+  vertical-align: top;
+}
+
+.product-name {
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+/* Base price — text-xs text-muted-foreground mt-1 (12px, #737373, margin-top 4px) */
+.product-base {
+  font-size: 12px;
+  line-height: 16px;
+  color: #737373;
+  margin-top: 4px;
+}
+
+/* Grade name and multiplier */
+.grade-name {
+  font-weight: 400;
+}
+
+/* Grade multiplier — text-xs text-muted-foreground (12px, #737373) */
+.grade-multiplier {
+  font-size: 12px;
+  line-height: 16px;
+  color: #737373;
+}
+
+/* Price cells — text-center p-1 (padding: 4px, text-align: center, font-weight: 400) */
+.price-cell {
+  text-align: center;
+  padding: 4px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-list-table .text-center {
+  text-align: center;
+}
+
+/*
+ * Filters — matches Odin's filter bar:
+ * Container: flex items-center gap-4 p-4 bg-slate-50 rounded-lg border
+ * Label: text-sm font-medium
+ * Chips: toggle buttons for multi-select
+ */
+.price-list-filters {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-icon {
+  color: #737373;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.filter-chip {
+  padding: 3px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fff;
+  color: #0a0a0a;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: #f5f5f5;
+}
+
+.filter-chip--active {
+  background: #0a0a0a;
+  color: #fff;
+  border-color: #0a0a0a;
+}
+
+.filter-chip--active:hover {
+  background: #262626;
+}
+
+.filter-clear {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #737373;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.filter-clear:hover {
+  color: #0a0a0a;
+}
+
+/* Empty/loading */
+.price-list-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #737373;
+}
+
+/* Sections — wholesale thresholds, volume discounts */
+.price-list-section {
+  margin-top: 2rem;
+}
+
+.price-list-section h2 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #0a0a0a;
+  margin: 0 0 4px 0;
+}
+
+.price-list-section-desc {
+  font-size: 14px;
+  color: #737373;
+  margin: 0 0 12px 0;
+}
+
+.price-list-disclaimer {
+  margin-top: 1rem;
+  font-size: 12px;
+  color: #737373;
+}
