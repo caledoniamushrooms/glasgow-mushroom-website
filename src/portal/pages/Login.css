@@ -1,7 +1,9 @@
-.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #040404 0%, #1a2a1a 100%); padding: var(--portal-space-md); }
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: url('/images/splash-hero.jpg') center/cover no-repeat fixed; padding: var(--portal-space-md); }
+.login-page::before { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 0; }
+.login-card { position: relative; z-index: 1; }
 .login-card { width: 100%; max-width: 400px; background: var(--portal-surface); border-radius: var(--portal-radius-lg); box-shadow: var(--portal-shadow-lg); padding: var(--portal-space-2xl); }
 .login-brand { text-align: center; margin-bottom: var(--portal-space-xl); }
-.login-brand h1 { font-family: var(--portal-font-heading); font-size: var(--portal-text-2xl); color: var(--portal-green-dark); margin: 0; line-height: 1.2; }
+.login-logo { max-width: 200px; height: auto; margin: 0 auto var(--portal-space-xs); display: block; }
 .login-brand p { font-size: var(--portal-text-sm); color: var(--portal-text-muted); margin: var(--portal-space-xs) 0 0; }
 .login-loading { text-align: center; color: var(--portal-text-muted); padding: var(--portal-space-xl) 0; }
 .login-form { display: flex; flex-direction: column; gap: var(--portal-space-md); }
@@ -20,3 +22,10 @@
 .login-back { margin-top: var(--portal-space-xl); padding-top: var(--portal-space-md); border-top: 1px solid var(--portal-border); text-align: center; }
 .login-back a { color: var(--portal-text-muted); font-size: var(--portal-text-sm); text-decoration: none; }
 .login-back a:hover { color: var(--portal-text); }
+.login-magic-sent { text-align: center; padding: var(--portal-space-md) 0; }
+.login-magic-sent h2 { font-family: var(--portal-font-heading); font-size: var(--portal-text-xl); color: var(--portal-green-dark); margin: 0 0 var(--portal-space-sm); }
+.login-magic-sent p { font-size: var(--portal-text-sm); color: var(--portal-text-muted); margin: 0 0 var(--portal-space-lg); line-height: 1.5; }
+.login-submit--outline { background: var(--portal-white); color: var(--portal-green); border: 1px solid var(--portal-green); }
+.login-submit--outline:hover:not(:disabled) { background: var(--portal-gray-50); }
+.login-toggle { background: none; border: none; color: var(--portal-green); font-size: var(--portal-text-sm); cursor: pointer; padding: 0; font-family: var(--portal-font-body); }
+.login-toggle:hover { text-decoration: underline; }
