@@ -16,7 +16,7 @@ import { NewOrder } from './pages/NewOrder'
 import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
-import '../styles/portal.css'
+import '../styles/portal-tailwind.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
