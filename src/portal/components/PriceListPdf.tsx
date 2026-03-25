@@ -66,17 +66,17 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     color: green,
   },
-  tierName: { fontSize: 12, color: '#555', marginTop: 3 },
-  date: { fontSize: 8, color: muted, marginTop: 3 },
+  tierName: { fontSize: 12, color: '#555', marginTop: 8 },
+  date: { fontSize: 8, color: muted, marginTop: 6 },
 
-  // Table container — matches rounded-md border
+  // Table container — matches Odin's rounded-md border (1px solid #e5e5e5)
   tableWrap: {
     border: `1px solid ${border}`,
     borderRadius: 4,
     marginTop: 8,
   },
 
-  // TH row — border-bottom, no background
+  // TH row — border-bottom matching Odin (1px solid #e5e5e5)
   tableHeader: {
     flexDirection: 'row',
     borderBottom: `1px solid ${border}`,
@@ -94,17 +94,17 @@ const styles = StyleSheet.create({
   // Product group — no extra styling, just rows
   productGroup: {},
 
-  // TR — border-bottom only
+  // TR — border-bottom matching Odin (1px solid #e5e5e5 on every row)
   tableRow: {
     flexDirection: 'row',
-    borderBottom: `0.5px solid ${border}`,
+    borderBottom: `1px solid ${border}`,
     minHeight: 24,
     alignItems: 'center',
   },
   tableRowLast: {
     borderBottom: 'none',
   },
-  // Thicker border between product groups
+  // Same weight between product groups (Odin uses consistent 1px throughout)
   productGroupBorder: {
     borderBottom: `1px solid ${border}`,
   },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   // Simple table row for thresholds/discounts
   simpleRow: {
     flexDirection: 'row',
-    borderBottom: `0.5px solid ${border}`,
+    borderBottom: `1px solid ${border}`,
     minHeight: 22,
     alignItems: 'center',
     paddingHorizontal: 6,
@@ -180,10 +180,7 @@ const styles = StyleSheet.create({
 
   // Footer
   footer: {
-    position: 'absolute',
-    bottom: 36,
-    left: 40,
-    right: 40,
+    marginTop: 'auto',
     borderTop: `1px solid ${green}`,
     paddingTop: 10,
   },
@@ -202,17 +199,28 @@ const styles = StyleSheet.create({
   },
 })
 
+interface TierInfo {
+  key: string
+  displayName: string
+}
+
 interface PriceListPdfProps {
   grouped: PriceGroup[]
-  tierName: string
-  tierKey: string
+  tiers: TierInfo[]
   generatedDate: string
   wholesaleThresholds?: WholesaleThreshold[]
   volumeDiscounts?: VolumeDiscount[]
 }
 
-export function PriceListPdf({ grouped, tierName, tierKey, generatedDate, wholesaleThresholds = [], volumeDiscounts = [] }: PriceListPdfProps) {
+export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThresholds = [], volumeDiscounts = [] }: PriceListPdfProps) {
   const logoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/images/logo-full.png`
+  const tierLabel = tiers.map(t => t.displayName).join(', ')
+  const multiTier = tiers.length > 1
+
+  // Dynamic column widths based on number of tiers
+  const productWidth = multiTier ? '30%' : '35%'
+  const gradeWidth = multiTier ? '20%' : '30%'
+  const priceWidth = multiTier ? `${50 / tiers.length}%` : '35%'
 
   return (
     <Document>
@@ -221,7 +229,7 @@ export function PriceListPdf({ grouped, tierName, tierKey, generatedDate, wholes
           <Image style={styles.logo} src={logoUrl} />
           <View style={styles.headerRight}>
             <Text style={styles.title}>Price List</Text>
-            <Text style={styles.tierName}>{tierName} Pricing</Text>
+            <Text style={styles.tierName}>{tierLabel} Pricing</Text>
             <Text style={styles.date}>{generatedDate}</Text>
           </View>
         </View>
@@ -229,43 +237,42 @@ export function PriceListPdf({ grouped, tierName, tierKey, generatedDate, wholes
         <View style={styles.tableWrap}>
           {/* Table header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderText, styles.colProduct]}>Product</Text>
-            <Text style={[styles.tableHeaderText, styles.colGrade]}>Grade</Text>
-            <Text style={[styles.tableHeaderText, styles.colPrice, { textAlign: 'right' }]}>
-              Price / kg
-            </Text>
+            <Text style={[styles.tableHeaderText, { width: productWidth, paddingHorizontal: 6 }]}>Product</Text>
+            <Text style={[styles.tableHeaderText, { width: gradeWidth, paddingHorizontal: 6 }]}>Grade</Text>
+            {tiers.map(tier => (
+              <Text key={tier.key} style={[styles.tableHeaderText, { width: priceWidth, paddingHorizontal: 4, textAlign: 'right' }]}>
+                {multiTier ? tier.displayName : 'Price / kg'}
+              </Text>
+            ))}
           </View>
 
           {/* Rows */}
           {grouped.map((group, gi) => {
             const isLastGroup = gi === grouped.length - 1
             return (
-              <View key={group.product_name} style={!isLastGroup ? styles.productGroupBorder : undefined}>
+              <View key={group.product_name} wrap={false} style={!isLastGroup ? styles.productGroupBorder : undefined}>
                 {group.grades.map((grade, gradeIdx) => {
                   const isLastRow = isLastGroup && gradeIdx === group.grades.length - 1
-                  const price = grade.tiers[tierKey] || 0
                   return (
                     <View
                       key={`${group.product_name}-${grade.grade_name}`}
                       style={[styles.tableRow, isLastRow ? styles.tableRowLast : {}]}
                     >
-                      <View style={styles.colProduct}>
+                      <View style={{ width: productWidth, paddingHorizontal: 6 }}>
                         {gradeIdx === 0 ? (
-                          <View>
-                            <Text style={styles.productName}>{group.product_name}</Text>
-                            <Text style={styles.productBase}>Base: £{group.base_price.toFixed(2)}/kg</Text>
-                          </View>
+                          <Text style={styles.productName}>{group.product_name}</Text>
                         ) : (
                           <Text> </Text>
                         )}
                       </View>
-                      <View style={styles.colGrade}>
+                      <View style={{ width: gradeWidth, paddingHorizontal: 6 }}>
                         <Text style={styles.gradeName}>{grade.grade_name}</Text>
-                        <Text style={styles.gradeMultiplier}>{grade.multiplier}x</Text>
                       </View>
-                      <Text style={[styles.colPrice, styles.priceText]}>
-                        £{price.toFixed(2)}
-                      </Text>
+                      {tiers.map(tier => (
+                        <Text key={tier.key} style={[{ width: priceWidth, paddingHorizontal: 4 }, styles.priceText]}>
+                          £{(grade.tiers[tier.key] || 0).toFixed(2)}
+                        </Text>
+                      ))}
                     </View>
                   )
                 })}

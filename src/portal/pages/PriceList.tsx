@@ -106,33 +106,33 @@ export function PriceList() {
         year: 'numeric',
       })
 
-      // Use first visible tier for single-tier PDF
-      const tierKey = visibleTiers[0].name
-      const tierDisplayName = visibleTiers.length === 1
-        ? visibleTiers[0].display_name
-        : visibleTiers.map(t => t.display_name).join(', ')
+      const pdfTiers = visibleTiers.map(t => ({ key: t.name, displayName: t.display_name }))
 
-      // Filter to non-zero prices for the PDF tier
+      // Filter to grades that have non-zero prices in at least one visible tier
       const pdfGroups = filteredGroups.map(g => ({
         ...g,
-        grades: g.grades.filter(gr => (gr.tiers[tierKey] || 0) > 0),
+        grades: g.grades.filter(gr =>
+          visibleTiers.some(t => (gr.tiers[t.name] || 0) > 0)
+        ),
       })).filter(g => g.grades.length > 0)
 
       const blob = await pdf(
         PriceListPdf({
           grouped: pdfGroups,
-          tierName: tierDisplayName,
-          tierKey,
+          tiers: pdfTiers,
           generatedDate: today,
           wholesaleThresholds: visibleTiers.some(t => t.name === 'commercial') ? wholesaleThresholds : [],
           volumeDiscounts: visibleTiers.some(t => t.name === 'commercial') ? volumeDiscounts : [],
         })
       ).toBlob()
 
+      const tierFileLabel = visibleTiers.length === 1
+        ? visibleTiers[0].display_name
+        : 'All-Tiers'
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `GMC-Price-List-${visibleTiers[0].display_name}-${new Date().toISOString().slice(0, 10)}.pdf`
+      a.download = `GMC-Price-List-${tierFileLabel}-${new Date().toISOString().slice(0, 10)}.pdf`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
@@ -264,12 +264,10 @@ export function PriceList() {
                     {gi === 0 && (
                       <td className="product-name-cell" rowSpan={group.grades.length}>
                         <div className="product-name">{group.product_name}</div>
-                        <div className="product-base">Base: £{group.base_price.toFixed(2)}/kg</div>
                       </td>
                     )}
                     <td className="grade-cell">
                       <div className="grade-name">{grade.grade_name}</div>
-                      <div className="grade-multiplier">{grade.multiplier}x</div>
                     </td>
                     {visibleTiers.map(tier => (
                       <td key={tier.id} className="text-center price-cell">
