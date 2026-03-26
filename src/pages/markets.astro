@@ -14,14 +14,14 @@ for (const event of markets) {
 }
 ---
 
-<BaseLayout title="Markets & Workshops — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets and workshops.">
+<BaseLayout title="Markets — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets across Glasgow.">
   <section class="markets-hero">
-    <h1>Markets & Workshops</h1>
+    <h1>Markets</h1>
   </section>
 
   <section class="markets-content">
     <div class="markets-intro">
-      <p>We love getting out and meeting people face to face. Find us at local markets and workshops across Glasgow — come say hello, grab some fresh mushrooms, and learn about what we do.</p>
+      <p>We love getting out and meeting people face to face. Find us at local markets across Glasgow — come say hello and grab some fresh mushrooms.</p>
     </div>
 
     {Object.entries(months).map(([month, events]) => (
@@ -152,10 +152,6 @@ for (const event of markets) {
     margin-bottom: 0.75rem;
     background-color: hsl(142 71% 25%);
     color: #fff;
-  }
-
-  .markets-card--workshop .markets-card__badge {
-    background-color: hsl(30 80% 50%);
   }
 
   .markets-card__logo {

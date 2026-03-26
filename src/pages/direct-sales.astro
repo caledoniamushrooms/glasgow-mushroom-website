@@ -75,12 +75,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </script>
 
 <script>
+  const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
+
   const carousel = document.getElementById('props-carousel')!;
   const track = carousel.querySelector('.carousel__track') as HTMLElement;
   const cards = Array.from(track.children) as HTMLElement[];
   const CLONES = 3; // clone cards on each side
   const TOTAL = 3;  // unique cards
   let index = CLONES - 1; // leftmost visible; centre = index+1
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
   function getCardWidth() {
     return cards[0].offsetWidth + parseFloat(getComputedStyle(track).gap);
@@ -92,6 +95,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     if (cards[centre]) cards[centre].classList.add('active');
     if (cards[centre - 1]) cards[centre - 1].classList.add('side');
     if (cards[centre + 1]) cards[centre + 1].classList.add('side');
+  }
+
+  function clearClasses() {
+    cards.forEach((c) => c.classList.remove('active', 'side'));
   }
 
   function positionTrack() {
@@ -113,23 +120,41 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     updateClasses();
   }
 
-  // Initial position
-  jumpTo(index);
+  function startCarousel() {
+    if (intervalId) return;
+    jumpTo(index);
+    intervalId = setInterval(() => {
+      slideTo(index + 1);
+      setTimeout(() => {
+        const centre = index + 1;
+        if (centre >= CLONES + TOTAL) {
+          jumpTo(CLONES - 1);
+        }
+      }, 650);
+    }, 6000);
+  }
 
-  // Auto-advance
-  setInterval(() => {
-    slideTo(index + 1);
+  function stopCarousel() {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    track.style.transform = '';
+    track.style.transition = '';
+    clearClasses();
+  }
 
-    // After transition, if centre has moved past real cards, snap back
-    setTimeout(() => {
-      const centre = index + 1;
-      if (centre >= CLONES + TOTAL) {
-        jumpTo(CLONES - 1);
-      }
-    }, 650);
-  }, 6000);
+  function handleResize() {
+    if (isMobile()) {
+      stopCarousel();
+    } else {
+      startCarousel();
+    }
+  }
 
-  window.addEventListener('resize', () => jumpTo(index));
+  // Initial setup
+  handleResize();
+  window.addEventListener('resize', handleResize);
 </script>
 
 <BaseLayout title="Direct Sales — Glasgow Mushroom Company" description="Order fresh gourmet mushrooms directly from Glasgow Mushroom Company. Minimum order £50, free Glasgow city centre delivery.">
@@ -327,6 +352,26 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  @media (max-width: 767px) {
+    .carousel__track {
+      flex-direction: column;
+      gap: 1.5rem;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    .prop-card {
+      width: 100%;
+      transform: none;
+      opacity: 1;
+      flex-shrink: 1;
+    }
+
+    .prop-card[aria-hidden="true"] {
+      display: none;
+    }
   }
 
   .prop-card__img {
