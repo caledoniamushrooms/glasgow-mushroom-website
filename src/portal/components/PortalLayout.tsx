@@ -3,17 +3,16 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthContext } from './AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { useRealtime } from '../hooks/useRealtime'
-import './PortalLayout.css'
 
 const navItems = [
-  { to: '/portal', label: 'Dashboard' },
-  { to: '/portal/orders', label: 'Orders' },
-  { to: '/portal/orders/recurring', label: 'Recurring' },
-  { to: '/portal/invoices', label: 'Invoices' },
-  { to: '/portal/payments', label: 'Payments' },
-  { to: '/portal/price-list', label: 'Price List' },
-  { to: '/portal/profile', label: 'Profile' },
-  { to: '/portal/team', label: 'Team' },
+  { to: '/portal', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { to: '/portal/orders', label: 'Orders', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+  { to: '/portal/orders/recurring', label: 'Recurring', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+  { to: '/portal/invoices', label: 'Invoices', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z' },
+  { to: '/portal/payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+  { to: '/portal/price-list', label: 'Price List', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
+  { to: '/portal/profile', label: 'Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+  { to: '/portal/team', label: 'Team', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
 ]
 
 export function PortalLayout() {
@@ -22,7 +21,6 @@ export function PortalLayout() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Subscribe to Realtime updates for this customer
   useRealtime()
 
   const handleSignOut = async () => {
@@ -31,61 +29,89 @@ export function PortalLayout() {
   }
 
   return (
-    <div className="portal-layout">
-      <header className="portal-header">
+    <div className="flex min-h-screen bg-background text-foreground font-sans antialiased">
+      {/* Mobile header */}
+      <header className="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-white border-b border-border z-30 lg:hidden">
         <button
-          className="portal-menu-toggle"
+          className="flex items-center justify-center w-10 h-10 rounded-md hover:bg-accent transition-colors"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label="Toggle menu"
         >
-          <span className="portal-menu-icon" />
+          <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
-        <span className="portal-header-title">Glasgow Mushroom Co.</span>
-        <button className="portal-header-signout" onClick={handleSignOut}>
+        <span className="text-lg font-semibold text-foreground">Glasgow Mushroom Co.</span>
+        <button
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+          onClick={handleSignOut}
+        >
           Sign out
         </button>
       </header>
 
-      <aside className={`portal-sidebar ${sidebarOpen ? 'portal-sidebar--open' : ''}`}>
-        <div className="portal-sidebar-brand">
-          <h2>{customer?.name || 'Glasgow Mushroom Co.'}</h2>
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 bottom-0 w-60 bg-white border-r border-border flex flex-col z-40 transition-transform duration-200 ease-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
+      >
+        {/* Brand */}
+        <div className="px-4 py-5 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground leading-tight">
+            {customer?.name || 'Glasgow Mushroom Co.'}
+          </h2>
           {currentBranch && (
-            <p className="portal-sidebar-branch">{currentBranch.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">{currentBranch.name}</p>
           )}
-          <p className="portal-sidebar-user">{portalUser?.display_name}</p>
+          <p className="text-sm text-muted-foreground mt-1">{portalUser?.display_name}</p>
         </div>
 
-        <nav className="portal-nav">
+        {/* Navigation */}
+        <nav className="flex-1 py-2 overflow-y-auto">
           {navItems.map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/portal'}
               className={({ isActive }) =>
-                `portal-nav-link ${isActive ? 'portal-nav-link--active' : ''}`
+                `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors border-l-[3px] ${
+                  isActive
+                    ? 'text-foreground bg-accent/50 border-l-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/30 border-l-transparent'
+                }`
               }
               onClick={() => setSidebarOpen(false)}
             >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+              </svg>
               {item.label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="portal-sidebar-footer">
-          <button className="portal-signout-btn" onClick={handleSignOut}>
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-border">
+          <button
+            className="w-full px-3 py-2 text-sm text-muted-foreground border border-border rounded-md hover:bg-accent hover:text-foreground transition-colors"
+            onClick={handleSignOut}
+          >
             Sign out
           </button>
         </div>
       </aside>
 
+      {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="portal-sidebar-overlay"
+          className="fixed inset-0 bg-black/30 z-[35] lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <main className="portal-main">
+      {/* Main content */}
+      <main className="flex-1 mt-16 lg:mt-0 lg:ml-60 p-4 md:p-6 lg:p-8 min-h-screen">
         <Outlet />
       </main>
     </div>

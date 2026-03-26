@@ -2,10 +2,8 @@ import { useState } from 'react'
 import { useRecurringOrders } from '../hooks/useRecurringOrders'
 import { useOrders } from '../hooks/useOrders'
 import { useCustomer } from '../hooks/useCustomer'
-import './Invoices.css'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const DAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export function RecurringOrders() {
   const { recurringOrders, cancelRecurring, togglePause, loading, error } = useRecurringOrders()
@@ -13,7 +11,6 @@ export function RecurringOrders() {
   const { deliverySchedules } = useCustomer()
   const [cancelling, setCancelling] = useState<string | null>(null)
 
-  // Build upcoming schedule: combine one-off portal orders with recurring order days
   const scheduleItems = buildSchedule(upcomingOrders, recurringOrders, deliverySchedules)
 
   const handleCancel = async (id: string) => {
@@ -27,43 +24,34 @@ export function RecurringOrders() {
     setCancelling(null)
   }
 
-  if (loading) return <div className="portal-loading">Loading...</div>
-  if (error) return <div className="portal-error">Failed to load recurring orders</div>
+  if (loading) return <div className="odin-loading">Loading...</div>
+  if (error) return <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">Failed to load recurring orders</div>
 
   return (
     <div>
-      <header className="invoices-header">
+      <header className="flex justify-between items-start mb-8">
         <div>
-          <h1>Recurring Orders</h1>
-          <p>Your standing orders and upcoming delivery schedule</p>
+          <h1 className="text-2xl font-semibold text-foreground">Recurring Orders</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your standing orders and upcoming delivery schedule</p>
         </div>
       </header>
 
       {/* Upcoming Schedule (next 14 days) */}
-      <section style={{ marginBottom: 'var(--portal-space-xl)' }}>
-        <h2 style={{ fontSize: 'var(--portal-text-lg)', fontWeight: 600, marginBottom: 'var(--portal-space-sm)' }}>
-          Upcoming 2 Weeks
-        </h2>
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">Upcoming 2 Weeks</h2>
         {scheduleItems.length === 0 ? (
-          <div className="invoices-empty"><p>No upcoming deliveries scheduled.</p></div>
+          <div className="odin-empty"><p>No upcoming deliveries scheduled.</p></div>
         ) : (
-          <div style={{ display: 'grid', gap: 'var(--portal-space-xs)' }}>
+          <div className="grid gap-2">
             {scheduleItems.map((item, i) => (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: 'var(--portal-space-sm) var(--portal-space-md)',
-                background: 'var(--portal-surface)', border: '1px solid var(--portal-border)',
-                borderRadius: 'var(--portal-radius-sm)',
-              }}>
+              <div key={i} className="flex justify-between items-center px-4 py-3 bg-white border border-border rounded-md">
                 <div>
-                  <span style={{ fontWeight: 600, fontSize: 'var(--portal-text-sm)' }}>
+                  <span className="font-semibold text-sm">
                     {item.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                   </span>
-                  <span style={{ color: 'var(--portal-text-muted)', fontSize: 'var(--portal-text-xs)', marginLeft: 'var(--portal-space-sm)' }}>
-                    {item.source}
-                  </span>
+                  <span className="text-muted-foreground text-xs ml-3">{item.source}</span>
                 </div>
-                <span className={`invoice-badge ${item.type === 'one-off' ? 'badge-modified' : 'badge-paid'}`}>
+                <span className={`badge ${item.type === 'one-off' ? 'badge-modified' : 'badge-paid'}`}>
                   {item.type === 'one-off' ? item.status : 'recurring'}
                 </span>
               </div>
@@ -74,21 +62,19 @@ export function RecurringOrders() {
 
       {/* Active Recurring Orders */}
       <section>
-        <h2 style={{ fontSize: 'var(--portal-text-lg)', fontWeight: 600, marginBottom: 'var(--portal-space-sm)' }}>
-          Standing Orders
-        </h2>
+        <h2 className="text-lg font-semibold mb-3">Standing Orders</h2>
         {recurringOrders.length === 0 ? (
-          <div className="invoices-empty">
+          <div className="odin-empty">
             <p>No recurring orders set up. Contact us to arrange a standing order.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 'var(--portal-space-md)' }}>
+          <div className="grid gap-4">
             {recurringOrders.map(order => (
-              <div key={order.id} className="invoices-table-wrap" style={{ padding: 'var(--portal-space-md)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--portal-space-sm)' }}>
+              <div key={order.id} className="odin-card p-4">
+                <div className="flex justify-between items-center mb-2">
                   <div>
                     <strong>{order.name}</strong>
-                    <span className={`invoice-badge ${order.active ? 'badge-paid' : 'badge-cancelled'}`} style={{ marginLeft: 'var(--portal-space-sm)' }}>
+                    <span className={`badge ml-3 ${order.active ? 'badge-paid' : 'badge-cancelled'}`}>
                       {order.active ? (order.paused_until ? 'paused' : 'active') : 'inactive'}
                     </span>
                   </div>
@@ -96,27 +82,22 @@ export function RecurringOrders() {
                     <button
                       onClick={() => handleCancel(order.id)}
                       disabled={cancelling === order.id}
-                      style={{
-                        background: 'none', border: '1px solid var(--portal-border)',
-                        padding: '4px 12px', borderRadius: 'var(--portal-radius-sm)',
-                        fontSize: 'var(--portal-text-xs)', cursor: 'pointer',
-                        color: 'var(--portal-text-muted)',
-                      }}
+                      className="bg-transparent border border-border px-3 py-1 rounded text-xs cursor-pointer text-muted-foreground hover:bg-accent transition-colors"
                     >
                       {cancelling === order.id ? '...' : 'Deactivate'}
                     </button>
                   )}
                 </div>
-                <div style={{ fontSize: 'var(--portal-text-sm)', color: 'var(--portal-text-muted)' }}>
-                  <strong>Days:</strong> {order.days_of_week?.map(d => DAY_NAMES[d]).join(', ') || 'None set'}
+                <div className="text-sm text-muted-foreground">
+                  <strong>Days:</strong> {order.days_of_week?.map((d: number) => DAY_NAMES[d]).join(', ') || 'None set'}
                 </div>
                 {order.items && order.items.length > 0 && (
-                  <div style={{ fontSize: 'var(--portal-text-sm)', color: 'var(--portal-text-muted)', marginTop: '4px' }}>
+                  <div className="text-sm text-muted-foreground mt-1">
                     <strong>Items:</strong> {order.items.length} product{order.items.length !== 1 ? 's' : ''}
                   </div>
                 )}
                 {order.paused_until && (
-                  <div style={{ fontSize: 'var(--portal-text-xs)', color: 'var(--portal-status-pending)', marginTop: '4px' }}>
+                  <div className="text-xs text-yellow-600 mt-1">
                     Paused until {new Date(order.paused_until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                 )}
@@ -141,7 +122,6 @@ function buildSchedule(upcomingOrders: any[], recurringOrders: any[], deliverySc
   const today = new Date()
   const twoWeeks = new Date(today.getTime() + 14 * 86400000)
 
-  // Add one-off portal orders
   for (const order of upcomingOrders) {
     const date = new Date(order.actual_date || order.requested_date)
     if (date >= today && date <= twoWeeks) {
@@ -149,7 +129,6 @@ function buildSchedule(upcomingOrders: any[], recurringOrders: any[], deliverySc
     }
   }
 
-  // Add recurring order occurrences
   for (const order of recurringOrders) {
     if (!order.active || !order.days_of_week) continue
     const pausedUntil = order.paused_until ? new Date(order.paused_until) : null

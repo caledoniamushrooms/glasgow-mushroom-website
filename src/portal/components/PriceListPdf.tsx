@@ -36,10 +36,11 @@ Font.register({
  * - No coloured header bar
  */
 
-const border = '#e5e5e5'
+const border = '#0a0a0a'
+const borderLight = '#e5e5e5'
 const muted = '#737373'
 const foreground = '#0a0a0a'
-const green = '#1a6b35'
+const green = '#16a34a'
 
 const styles = StyleSheet.create({
   page: {
@@ -54,29 +55,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
-    borderBottom: `2px solid ${green}`,
+    marginBottom: 28,
+    borderBottom: `2px solid ${foreground}`,
     paddingBottom: 14,
   },
   logo: { width: 150, height: 62 },
   headerRight: { alignItems: 'flex-end' },
   title: {
-    fontFamily: 'Abhaya Libre',
-    fontSize: 22,
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 20,
     fontWeight: 700,
-    color: green,
+    color: foreground,
   },
-  tierName: { fontSize: 12, color: '#555', marginTop: 8 },
+  tierName: { fontSize: 11, color: muted, marginTop: 8 },
   date: { fontSize: 8, color: muted, marginTop: 6 },
 
-  // Table container — matches Odin's rounded-md border (1px solid #e5e5e5)
+  // Table container — matches portal's border-foreground rounded-md
   tableWrap: {
     border: `1px solid ${border}`,
     borderRadius: 4,
     marginTop: 8,
   },
 
-  // TH row — border-bottom matching Odin (1px solid #e5e5e5)
+  // TH row — dark border-bottom matching portal
   tableHeader: {
     flexDirection: 'row',
     borderBottom: `1px solid ${border}`,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   // Product group — no extra styling, just rows
   productGroup: {},
 
-  // TR — border-bottom matching Odin (1px solid #e5e5e5 on every row)
+  // TR — border-bottom matching portal's border-foreground
   tableRow: {
     flexDirection: 'row',
     borderBottom: `1px solid ${border}`,
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
   tableRowLast: {
     borderBottom: 'none',
   },
-  // Same weight between product groups (Odin uses consistent 1px throughout)
   productGroupBorder: {
     borderBottom: `1px solid ${border}`,
   },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   // Simple table row for thresholds/discounts
   simpleRow: {
     flexDirection: 'row',
-    borderBottom: `1px solid ${border}`,
+    borderBottom: `1px solid ${borderLight}`,
     minHeight: 22,
     alignItems: 'center',
     paddingHorizontal: 6,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     marginTop: 'auto',
-    borderTop: `1px solid ${green}`,
+    borderTop: `1px solid ${foreground}`,
     paddingTop: 10,
   },
   footerBold: {

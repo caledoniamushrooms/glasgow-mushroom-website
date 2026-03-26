@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrders } from '../hooks/useOrders'
 import { useCustomer } from '../hooks/useCustomer'
-import './Invoices.css'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -24,11 +23,10 @@ export function NewOrder() {
   const [items, setItems] = useState<OrderItem[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // Get allowed days for the date picker
   const allowedDays = deliverySchedules.map(s => s.day_of_week)
 
   const isDateAllowed = (dateStr: string) => {
-    if (allowedDays.length === 0) return true // no restrictions if none configured
+    if (allowedDays.length === 0) return true
     const date = new Date(dateStr)
     return allowedDays.includes(date.getDay())
   }
@@ -79,46 +77,34 @@ export function NewOrder() {
     }
   }
 
+  const inputClass = 'w-full px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground odin-focus'
+  const selectSmClass = 'w-full p-1.5 border border-input rounded text-sm bg-white odin-focus'
+
   return (
     <div>
-      <header className="invoices-header">
+      <header className="flex justify-between items-start mb-8">
         <div>
-          <h1>New Order</h1>
-          <p>Place a one-off order for delivery</p>
+          <h1 className="text-2xl font-semibold text-foreground">New Order</h1>
+          <p className="text-sm text-muted-foreground mt-1">Place a one-off order for delivery</p>
         </div>
       </header>
 
       {allowedDays.length > 0 && (
-        <div style={{
-          padding: 'var(--portal-space-sm) var(--portal-space-md)',
-          background: 'hsl(213 94% 95%)',
-          borderRadius: 'var(--portal-radius-sm)',
-          fontSize: 'var(--portal-text-sm)',
-          color: 'hsl(213 94% 30%)',
-          marginBottom: 'var(--portal-space-lg)',
-        }}>
+        <div className="px-4 py-2.5 bg-blue-50 rounded-md text-sm text-blue-800 mb-6">
           Your delivery days: <strong>{allowedDays.map(d => DAY_NAMES[d]).join(', ')}</strong>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: '640px' }}>
-        {error && <div className="portal-error" style={{ marginBottom: 'var(--portal-space-md)' }}>{error}</div>}
+      <form onSubmit={handleSubmit} className="max-w-[640px]">
+        {error && (
+          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm mb-4">{error}</div>
+        )}
 
         {/* Branch selector */}
         {branches.length > 1 && (
-          <div style={{ marginBottom: 'var(--portal-space-md)' }}>
-            <label style={{ display: 'block', fontWeight: 500, fontSize: 'var(--portal-text-sm)', marginBottom: '4px' }}>
-              Delivery location
-            </label>
-            <select
-              value={branchId}
-              onChange={e => setBranchId(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', border: '1px solid var(--portal-border)',
-                borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-base)',
-                fontFamily: 'var(--portal-font-body)', background: 'var(--portal-white)',
-              }}
-            >
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Delivery location</label>
+            <select value={branchId} onChange={e => setBranchId(e.target.value)} className={inputClass}>
               {branches.map(b => (
                 <option key={b.id} value={b.id}>{b.name} — {b.address_line_1 || 'No address'}</option>
               ))}
@@ -127,60 +113,45 @@ export function NewOrder() {
         )}
 
         {/* Date */}
-        <div style={{ marginBottom: 'var(--portal-space-md)' }}>
-          <label style={{ display: 'block', fontWeight: 500, fontSize: 'var(--portal-text-sm)', marginBottom: '4px' }}>
-            Delivery date *
-          </label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Delivery date *</label>
           <input
             type="date"
             value={requestedDate}
             onChange={e => setRequestedDate(e.target.value)}
             required
             min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-            style={{
-              width: '100%', padding: '10px 12px', border: '1px solid var(--portal-border)',
-              borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-base)',
-              fontFamily: 'var(--portal-font-body)',
-            }}
+            className={inputClass}
           />
         </div>
 
         {/* Items */}
-        <div style={{ marginBottom: 'var(--portal-space-md)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--portal-space-sm)' }}>
-            <label style={{ fontWeight: 500, fontSize: 'var(--portal-text-sm)' }}>Items</label>
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-medium">Items</label>
             <button
               type="button"
               onClick={addItem}
-              style={{
-                background: 'var(--portal-green)', color: 'var(--portal-white)',
-                border: 'none', padding: '4px 12px', borderRadius: 'var(--portal-radius-sm)',
-                fontSize: 'var(--portal-text-xs)', cursor: 'pointer', fontWeight: 600,
-              }}
+              className="bg-primary text-primary-foreground px-3 py-1 rounded text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
             >
               + Add Item
             </button>
           </div>
 
           {items.length === 0 && (
-            <p style={{ color: 'var(--portal-text-muted)', fontSize: 'var(--portal-text-sm)' }}>
+            <p className="text-sm text-muted-foreground">
               No items added yet. Click "Add Item" to start your order.
             </p>
           )}
 
           {items.map((item, index) => (
-            <div key={index} style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr auto auto',
-              gap: 'var(--portal-space-sm)', alignItems: 'end',
-              padding: 'var(--portal-space-sm)', background: 'var(--portal-gray-50)',
-              borderRadius: 'var(--portal-radius-sm)', marginBottom: 'var(--portal-space-xs)',
-            }}>
+            <div key={index} className="grid grid-cols-[1fr_1fr_auto_auto] gap-3 items-end p-3 bg-muted rounded-md mb-2">
               <div>
-                <label style={{ fontSize: 'var(--portal-text-xs)', color: 'var(--portal-text-muted)' }}>Product</label>
+                <label className="text-xs text-muted-foreground">Product</label>
                 <select
                   value={item.product_id}
                   onChange={e => updateItem(index, 'product_id', e.target.value)}
-                  style={{ width: '100%', padding: '6px', border: '1px solid var(--portal-border)', borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-sm)' }}
+                  className={selectSmClass}
                 >
                   {products.map(p => (
                     <option key={p.id} value={p.id}>{p.name}{p.strain ? ` (${p.strain})` : ''}</option>
@@ -188,11 +159,11 @@ export function NewOrder() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 'var(--portal-text-xs)', color: 'var(--portal-text-muted)' }}>Type</label>
+                <label className="text-xs text-muted-foreground">Type</label>
                 <select
                   value={item.product_type_id}
                   onChange={e => updateItem(index, 'product_type_id', e.target.value)}
-                  style={{ width: '100%', padding: '6px', border: '1px solid var(--portal-border)', borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-sm)' }}
+                  className={selectSmClass}
                 >
                   {productTypes.map(pt => (
                     <option key={pt.id} value={pt.id}>{pt.name}</option>
@@ -200,20 +171,20 @@ export function NewOrder() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 'var(--portal-text-xs)', color: 'var(--portal-text-muted)' }}>Qty (kg)</label>
+                <label className="text-xs text-muted-foreground">Qty (kg)</label>
                 <input
                   type="number"
                   value={item.quantity}
                   onChange={e => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                   min="0.1"
                   step="0.1"
-                  style={{ width: '80px', padding: '6px', border: '1px solid var(--portal-border)', borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-sm)' }}
+                  className="w-20 p-1.5 border border-input rounded text-sm bg-white odin-focus"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeItem(index)}
-                style={{ background: 'none', border: 'none', color: 'var(--portal-status-cancelled)', cursor: 'pointer', fontSize: 'var(--portal-text-lg)', padding: '4px' }}
+                className="text-red-500 bg-transparent border-none cursor-pointer text-lg p-1 hover:text-red-700"
               >
                 &times;
               </button>
@@ -222,45 +193,29 @@ export function NewOrder() {
         </div>
 
         {/* Notes */}
-        <div style={{ marginBottom: 'var(--portal-space-lg)' }}>
-          <label style={{ display: 'block', fontWeight: 500, fontSize: 'var(--portal-text-sm)', marginBottom: '4px' }}>
-            Notes (optional)
-          </label>
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-1">Notes (optional)</label>
           <textarea
             value={customerNotes}
             onChange={e => setCustomerNotes(e.target.value)}
             placeholder="Any special instructions for this order"
             rows={2}
-            style={{
-              width: '100%', padding: '10px 12px', border: '1px solid var(--portal-border)',
-              borderRadius: 'var(--portal-radius-sm)', fontSize: 'var(--portal-text-base)',
-              fontFamily: 'var(--portal-font-body)', resize: 'vertical',
-            }}
+            className="w-full px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground resize-y odin-focus"
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--portal-space-sm)' }}>
+        <div className="flex gap-3">
           <button
             type="submit"
             disabled={submitOrder.isPending || items.length === 0}
-            style={{
-              background: 'var(--portal-green)', color: 'var(--portal-white)',
-              border: 'none', padding: '12px 24px', borderRadius: 'var(--portal-radius-sm)',
-              fontSize: 'var(--portal-text-base)', fontWeight: 600, cursor: 'pointer',
-              opacity: submitOrder.isPending || items.length === 0 ? 0.6 : 1,
-            }}
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-md text-base font-semibold cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitOrder.isPending ? 'Submitting...' : 'Submit Order'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/portal/orders')}
-            style={{
-              background: 'none', border: '1px solid var(--portal-border)',
-              padding: '12px 24px', borderRadius: 'var(--portal-radius-sm)',
-              fontSize: 'var(--portal-text-base)', cursor: 'pointer',
-              color: 'var(--portal-text-muted)',
-            }}
+            className="bg-transparent border border-border px-6 py-3 rounded-md text-base cursor-pointer text-muted-foreground hover:bg-accent transition-colors"
           >
             Cancel
           </button>

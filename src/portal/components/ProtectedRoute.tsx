@@ -11,14 +11,7 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'var(--portal-font-body)',
-        color: 'var(--portal-text-muted)',
-      }}>
+      <div className="flex items-center justify-center min-h-screen text-muted-foreground">
         Loading...
       </div>
     )

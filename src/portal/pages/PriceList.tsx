@@ -3,13 +3,11 @@ import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { usePriceList } from '../hooks/usePriceList'
 import type { PriceGroup, PriceTier } from '../lib/types'
-import './PriceList.css'
 
-/** Tier display config matching Odin's colour scheme */
 const tierConfig: Record<string, { label: string; color: string; icon: string }> = {
-  retail: { label: 'Retail', color: 'var(--tier-retail, #2563eb)', icon: '🛒' },
-  commercial: { label: 'Commercial', color: 'var(--tier-commercial, #d97706)', icon: '🏪' },
-  wholesale: { label: 'Wholesale', color: 'var(--tier-wholesale, #16a34a)', icon: '🏭' },
+  retail: { label: 'Retail', color: 'text-blue-600', icon: '🛒' },
+  commercial: { label: 'Commercial', color: 'text-amber-600', icon: '🏪' },
+  wholesale: { label: 'Wholesale', color: 'text-green-600', icon: '🏭' },
 }
 
 export function PriceList() {
@@ -18,12 +16,10 @@ export function PriceList() {
   const { grouped, tiers, wholesaleThresholds, volumeDiscounts, loading, error } = usePriceList()
   const [generating, setGenerating] = useState(false)
 
-  // Filters — all multi-select toggle
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set())
 
-  // Derive available products and grades from data
   const allProducts = useMemo(() => {
     const names = new Set<string>()
     grouped.forEach(g => names.add(g.product_name))
@@ -36,7 +32,6 @@ export function PriceList() {
     return Array.from(names)
   }, [grouped])
 
-  // Customer sees only their tier; system admin sees all (or filtered)
   const customerTierName = tiers.find(t => t.id === customer?.price_tier_id)?.name || null
   const visibleTiers: PriceTier[] = useMemo(() => {
     if (!isSystemAdmin) {
@@ -48,7 +43,6 @@ export function PriceList() {
     return tiers
   }, [isSystemAdmin, tiers, customerTierName, selectedTiers])
 
-  // Apply all filters
   const filteredGroups: PriceGroup[] = useMemo(() => {
     let groups = isSystemAdmin
       ? grouped
@@ -108,7 +102,6 @@ export function PriceList() {
 
       const pdfTiers = visibleTiers.map(t => ({ key: t.name, displayName: t.display_name }))
 
-      // Filter to grades that have non-zero prices in at least one visible tier
       const pdfGroups = filteredGroups.map(g => ({
         ...g,
         grades: g.grades.filter(gr =>
@@ -144,10 +137,10 @@ export function PriceList() {
 
   return (
     <div>
-      <header className="price-list-header">
+      <header className="flex justify-between items-start gap-4 mb-6">
         <div>
-          <h1>Price List</h1>
-          <p>
+          <h1 className="text-2xl font-semibold text-foreground">Price List</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {isSystemAdmin
               ? (visibleTiers.length === tiers.length
                   ? 'All pricing tiers'
@@ -156,9 +149,9 @@ export function PriceList() {
           </p>
         </div>
 
-        <div className="price-list-controls">
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            className="price-list-download-btn"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleDownloadPdf}
             disabled={generating || loading || filteredGroups.length === 0}
           >
@@ -169,19 +162,23 @@ export function PriceList() {
 
       {/* Filters */}
       {!loading && grouped.length > 0 && (
-        <div className="price-list-filters">
-          <svg className="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="flex items-start gap-4 px-4 py-3 bg-slate-50 border border-border rounded-lg mb-4 flex-wrap">
+          <svg className="text-muted-foreground shrink-0 mt-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
 
           {isSystemAdmin && tiers.length > 0 && (
-            <div className="filter-group">
-              <label className="filter-label">Tier:</label>
-              <div className="filter-chips">
+            <div className="flex items-start gap-2">
+              <label className="text-sm font-medium text-foreground whitespace-nowrap mt-1">Tier:</label>
+              <div className="flex flex-wrap gap-1">
                 {tiers.map(tier => (
                   <button
                     key={tier.id}
-                    className={`filter-chip ${selectedTiers.has(tier.name) ? 'filter-chip--active' : ''}`}
+                    className={`px-2.5 py-0.5 border rounded-md text-[13px] cursor-pointer whitespace-nowrap transition-all ${
+                      selectedTiers.has(tier.name)
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-white text-foreground border-border hover:bg-muted'
+                    }`}
                     onClick={() => toggle(selectedTiers, tier.name, setSelectedTiers)}
                   >
                     {tier.display_name}
@@ -191,13 +188,17 @@ export function PriceList() {
             </div>
           )}
 
-          <div className="filter-group">
-            <label className="filter-label">Product:</label>
-            <div className="filter-chips">
+          <div className="flex items-start gap-2">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap mt-1">Product:</label>
+            <div className="flex flex-wrap gap-1">
               {allProducts.map(name => (
                 <button
                   key={name}
-                  className={`filter-chip ${selectedProducts.has(name) ? 'filter-chip--active' : ''}`}
+                  className={`px-2.5 py-0.5 border rounded-md text-[13px] cursor-pointer whitespace-nowrap transition-all ${
+                    selectedProducts.has(name)
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-white text-foreground border-border hover:bg-muted'
+                  }`}
                   onClick={() => toggle(selectedProducts, name, setSelectedProducts)}
                 >
                   {name}
@@ -206,13 +207,17 @@ export function PriceList() {
             </div>
           </div>
 
-          <div className="filter-group">
-            <label className="filter-label">Grade:</label>
-            <div className="filter-chips">
+          <div className="flex items-start gap-2">
+            <label className="text-sm font-medium text-foreground whitespace-nowrap mt-1">Grade:</label>
+            <div className="flex flex-wrap gap-1">
               {allGrades.map(name => (
                 <button
                   key={name}
-                  className={`filter-chip ${selectedGrades.has(name) ? 'filter-chip--active' : ''}`}
+                  className={`px-2.5 py-0.5 border rounded-md text-[13px] cursor-pointer whitespace-nowrap transition-all ${
+                    selectedGrades.has(name)
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-white text-foreground border-border hover:bg-muted'
+                  }`}
                   onClick={() => toggle(selectedGrades, name, setSelectedGrades)}
                 >
                   {name}
@@ -222,7 +227,7 @@ export function PriceList() {
           </div>
 
           {hasFilters && (
-            <button className="filter-clear" onClick={clearFilters}>
+            <button className="px-2.5 py-0.5 bg-transparent border-none text-muted-foreground text-[13px] cursor-pointer whitespace-nowrap mt-0.5 hover:text-foreground" onClick={clearFilters}>
               Clear filters
             </button>
           )}
@@ -230,24 +235,24 @@ export function PriceList() {
       )}
 
       {loading ? (
-        <div className="price-list-empty">Loading prices...</div>
+        <div className="odin-empty">Loading prices...</div>
       ) : error ? (
-        <div className="price-list-empty">Failed to load prices.</div>
+        <div className="odin-empty">Failed to load prices.</div>
       ) : filteredGroups.length === 0 ? (
-        <div className="price-list-empty">
+        <div className="odin-empty">
           {hasFilters ? 'No products match the selected filters.' : 'No products available.'}
         </div>
       ) : (
-        <div className="price-list-table-wrap">
-          <table className="price-list-table">
+        <div className="w-full overflow-x-auto border border-foreground rounded-md">
+          <table className="w-full border-collapse text-sm leading-5 text-foreground">
             <thead>
-              <tr>
-                <th>Product</th>
-                <th>Grade</th>
+              <tr className="border-b border-foreground">
+                <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap">Product</th>
+                <th className="h-10 px-2 text-left align-middle font-medium whitespace-nowrap">Grade</th>
                 {visibleTiers.map(tier => {
                   const cfg = tierConfig[tier.name]
                   return (
-                    <th key={tier.id} className="text-center tier-header" style={{ color: cfg?.color }}>
+                    <th key={tier.id} className={`h-10 px-2 text-center align-middle font-medium whitespace-nowrap ${cfg?.color || ''}`}>
                       {cfg?.icon} {tier.display_name}
                     </th>
                   )
@@ -259,18 +264,18 @@ export function PriceList() {
                 group.grades.map((grade, gi) => (
                   <tr
                     key={`${group.product_name}-${grade.grade_name}`}
-                    className={gi === 0 ? 'product-first-row' : ''}
+                    className={`border-b border-foreground last:border-b-0 hover:bg-muted/50 transition-colors ${gi === 0 ? 'border-t border-t-foreground/20' : ''}`}
                   >
                     {gi === 0 && (
-                      <td className="product-name-cell" rowSpan={group.grades.length}>
-                        <div className="product-name">{group.product_name}</div>
+                      <td className="p-2 align-top font-medium whitespace-nowrap" rowSpan={group.grades.length}>
+                        {group.product_name}
                       </td>
                     )}
-                    <td className="grade-cell">
-                      <div className="grade-name">{grade.grade_name}</div>
+                    <td className="p-2 align-middle whitespace-nowrap">
+                      {grade.grade_name}
                     </td>
                     {visibleTiers.map(tier => (
-                      <td key={tier.id} className="text-center price-cell">
+                      <td key={tier.id} className="p-1 text-center align-middle whitespace-nowrap tabular-nums">
                         £{(grade.tiers[tier.name] || 0).toFixed(2)}
                       </td>
                     ))}
@@ -282,28 +287,28 @@ export function PriceList() {
         </div>
       )}
 
-      {/* Wholesale thresholds — only relevant when commercial tier is visible */}
+      {/* Wholesale thresholds */}
       {wholesaleThresholds.length > 0 && visibleTiers.some(t => t.name === 'commercial') && (
-        <div className="price-list-section">
-          <h2>Wholesale Qualification</h2>
-          <p className="price-list-section-desc">
+        <div className="mt-8">
+          <h2 className="text-base font-medium text-foreground mb-1">Wholesale Qualification</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Commercial customers ordering above these quantities automatically qualify for wholesale pricing on that product.
           </p>
-          <div className="price-list-table-wrap">
-            <table className="price-list-table">
+          <div className="w-full overflow-x-auto border border-foreground rounded-md">
+            <table className="w-full border-collapse text-sm leading-5 text-foreground">
               <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Minimum Order</th>
-                  <th>Effect</th>
+                <tr className="border-b border-foreground">
+                  <th className="h-10 px-2 text-left align-middle font-medium">Product</th>
+                  <th className="h-10 px-2 text-left align-middle font-medium">Minimum Order</th>
+                  <th className="h-10 px-2 text-left align-middle font-medium">Effect</th>
                 </tr>
               </thead>
               <tbody>
                 {wholesaleThresholds.map(t => (
-                  <tr key={t.product_name}>
-                    <td className="product-name">{t.product_name}</td>
-                    <td>{t.min_quantity_kg}kg</td>
-                    <td style={{ color: '#737373' }}>Commercial → Wholesale pricing</td>
+                  <tr key={t.product_name} className="border-b border-foreground last:border-b-0 hover:bg-muted/50 transition-colors">
+                    <td className="p-2 font-medium">{t.product_name}</td>
+                    <td className="p-2">{t.min_quantity_kg}kg</td>
+                    <td className="p-2 text-muted-foreground">Commercial → Wholesale pricing</td>
                   </tr>
                 ))}
               </tbody>
@@ -312,30 +317,30 @@ export function PriceList() {
         </div>
       )}
 
-      {/* Volume discounts — only relevant when commercial tier is visible */}
+      {/* Volume discounts */}
       {volumeDiscounts.length > 0 && visibleTiers.some(t => t.name === 'commercial') && (
-        <div className="price-list-section">
-          <h2>Volume Discounts</h2>
-          <p className="price-list-section-desc">
+        <div className="mt-8">
+          <h2 className="text-base font-medium text-foreground mb-1">Volume Discounts</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Additional percentage discounts applied when ordering above the specified quantity.
           </p>
-          <div className="price-list-table-wrap">
-            <table className="price-list-table">
+          <div className="w-full overflow-x-auto border border-foreground rounded-md">
+            <table className="w-full border-collapse text-sm leading-5 text-foreground">
               <thead>
-                <tr>
-                  <th>Tier</th>
-                  <th>Product</th>
-                  <th>Minimum Quantity</th>
-                  <th>Discount</th>
+                <tr className="border-b border-foreground">
+                  <th className="h-10 px-2 text-left align-middle font-medium">Tier</th>
+                  <th className="h-10 px-2 text-left align-middle font-medium">Product</th>
+                  <th className="h-10 px-2 text-left align-middle font-medium">Minimum Quantity</th>
+                  <th className="h-10 px-2 text-left align-middle font-medium">Discount</th>
                 </tr>
               </thead>
               <tbody>
                 {volumeDiscounts.map((d, i) => (
-                  <tr key={i}>
-                    <td>{d.tier_display_name}</td>
-                    <td>{d.product_name || 'All products'}</td>
-                    <td>{d.min_quantity}kg</td>
-                    <td className="product-name">{d.discount_percent}%</td>
+                  <tr key={i} className="border-b border-foreground last:border-b-0 hover:bg-muted/50 transition-colors">
+                    <td className="p-2">{d.tier_display_name}</td>
+                    <td className="p-2">{d.product_name || 'All products'}</td>
+                    <td className="p-2">{d.min_quantity}kg</td>
+                    <td className="p-2 font-medium">{d.discount_percent}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -344,7 +349,7 @@ export function PriceList() {
         </div>
       )}
 
-      <p className="price-list-disclaimer">
+      <p className="mt-4 text-xs text-muted-foreground">
         Prices are estimates and may be adjusted at confirmation. Contact us for volume discounts.
       </p>
     </div>

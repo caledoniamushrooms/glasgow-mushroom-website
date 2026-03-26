@@ -2,7 +2,6 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { PortalUser } from '../lib/types'
-import '../pages/Login.css'
 
 export function Onboarding() {
   const navigate = useNavigate()
@@ -29,7 +28,6 @@ export function Onboarding() {
       return
     }
 
-    // Check if portal_user already exists and is active
     const { data: existingUser } = await supabase
       .from('portal_users')
       .select('*')
@@ -65,7 +63,6 @@ export function Onboarding() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) throw new Error('Not authenticated')
 
-      // Update portal user to active
       if (portalUser) {
         const { error: updateError } = await supabase
           .from('portal_users')
@@ -79,7 +76,6 @@ export function Onboarding() {
         if (updateError) throw updateError
       }
 
-      // Update customer profile if we have address info
       if (portalUser?.customer_id && formData.address_line_1) {
         await supabase
           .from('branches')
@@ -92,9 +88,7 @@ export function Onboarding() {
           .eq('branch_type', 'company')
       }
 
-      // Refresh the session to pick up new JWT claims
       await supabase.auth.refreshSession()
-
       navigate('/portal')
     } catch (err: any) {
       setError(err.message || 'Failed to complete onboarding')
@@ -105,31 +99,35 @@ export function Onboarding() {
 
   if (loading) {
     return (
-      <div className="login-page">
-        <div className="login-card">
-          <p className="login-loading">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
+        <div className="absolute inset-0 bg-black/55" />
+        <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
+          <p className="text-center text-muted-foreground py-8">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card" style={{ maxWidth: '480px' }}>
-        <div className="login-brand">
-          <h1>Glasgow Mushroom Co.</h1>
-          <p>Complete Your Profile</p>
+    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
+      <div className="absolute inset-0 bg-black/55" />
+      <div className="relative z-10 w-full max-w-[480px] bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>
+          <p className="text-sm text-muted-foreground mt-1">Complete Your Profile</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="login-error" role="alert">{error}</div>}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {error && (
+            <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" role="alert">{error}</div>
+          )}
 
-          <p style={{ color: 'var(--portal-text-muted)', fontSize: 'var(--portal-text-sm)' }}>
+          <p className="text-sm text-muted-foreground">
             Welcome! Please review and complete your details to get started.
           </p>
 
-          <div className="login-field">
-            <label htmlFor="display_name">Your name *</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="display_name" className="text-sm font-medium text-foreground">Your name *</label>
             <input
               id="display_name"
               type="text"
@@ -138,55 +136,60 @@ export function Onboarding() {
               placeholder="Your full name"
               required
               autoFocus
+              className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
             />
           </div>
 
-          <div className="login-field">
-            <label htmlFor="ob_phone">Phone number</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="ob_phone" className="text-sm font-medium text-foreground">Phone number</label>
             <input
               id="ob_phone"
               type="tel"
               value={formData.phone}
               onChange={e => handleChange('phone', e.target.value)}
               placeholder="Optional"
+              className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
             />
           </div>
 
-          <div className="login-field">
-            <label htmlFor="address">Delivery address</label>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="address" className="text-sm font-medium text-foreground">Delivery address</label>
             <input
               id="address"
               type="text"
               value={formData.address_line_1}
               onChange={e => handleChange('address_line_1', e.target.value)}
               placeholder="Street address"
+              className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--portal-space-sm)' }}>
-            <div className="login-field">
-              <label htmlFor="city">City</label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="city" className="text-sm font-medium text-foreground">City</label>
               <input
                 id="city"
                 type="text"
                 value={formData.city}
                 onChange={e => handleChange('city', e.target.value)}
                 placeholder="City"
+                className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
               />
             </div>
-            <div className="login-field">
-              <label htmlFor="postcode">Postcode</label>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="postcode" className="text-sm font-medium text-foreground">Postcode</label>
               <input
                 id="postcode"
                 type="text"
                 value={formData.postcode}
                 onChange={e => handleChange('postcode', e.target.value)}
                 placeholder="Postcode"
+                className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
               />
             </div>
           </div>
 
-          <button type="submit" className="login-submit" disabled={submitting}>
+          <button type="submit" className="py-3 bg-primary text-primary-foreground rounded-md text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" disabled={submitting}>
             {submitting ? 'Setting up...' : 'Complete Setup'}
           </button>
         </form>
