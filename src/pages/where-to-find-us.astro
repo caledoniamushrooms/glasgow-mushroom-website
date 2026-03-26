@@ -2,10 +2,14 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StockistCard from '../components/StockistCard.astro';
 import { stockists } from '../data/stockists.js';
+import { getImage } from 'astro:assets';
+import stockistsBannerSrc from '../assets/images/banners/stockists-banner.jpg';
+
+const stockistsBanner = await getImage({ src: stockistsBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Where to find us — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company products at these stockists and markets.">
-  <section class="stockists-hero">
+  <section class="stockists-hero" style={`--bg: url('${stockistsBanner.src}')`}>
     <h1>Where to find us</h1>
   </section>
 
@@ -22,7 +26,7 @@ import { stockists } from '../data/stockists.js';
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('/images/banners/stockists-banner.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: center;
     text-align: center;
