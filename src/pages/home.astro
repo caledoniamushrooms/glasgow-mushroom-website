@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getImage } from 'astro:assets';
-import homeHeroSrc from '../assets/images/home-hero.jpg';
+import homeHeroSrc from '../assets/images/home-hero-cropped.jpg';
 import compostBannerSrc from '../assets/images/banners/compost-club-banner.jpg';
 import stockistsBannerSrc from '../assets/images/banners/stockists-banner.jpg';
 import wholesaleBannerSrc from '../assets/images/banners/wholesale-banner.jpg';
@@ -24,7 +24,7 @@ import markets4Src from '../assets/images/markets/markets-4.jpg';
 const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
 // Hero
-const homeHero = await getImage({ src: homeHeroSrc, format: 'webp', quality: 80 });
+const homeHero = await getImage({ src: homeHeroSrc, format: 'webp', quality: 80, width: 1920 });
 
 // Callout card backgrounds
 const compostBanner = await getImage({ src: compostBannerSrc, format: 'webp', quality: 80, width: 1920 });
@@ -355,8 +355,8 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     align-items: center;
     justify-content: flex-start;
     background-image: var(--bg);
-    background-size: auto;
-    background-position: 58% 0;
+    background-size: cover;
+    background-position: center;
     background-attachment: fixed;
     padding: 60px 0 0 40px;
   }
@@ -792,7 +792,7 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   @media (max-width: 479px) {
     .hero {
       padding: 20px 0 60px 20px;
-      background-position: 50% 11%;
+      background-position: center;
     }
 
     .hero h1 {
