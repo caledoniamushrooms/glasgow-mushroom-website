@@ -1,20 +1,72 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getImage } from 'astro:assets';
+import homeHeroSrc from '../assets/images/home-hero.jpg';
+import compostBannerSrc from '../assets/images/banners/compost-club-banner.jpg';
+import stockistsBannerSrc from '../assets/images/banners/stockists-banner.jpg';
+import wholesaleBannerSrc from '../assets/images/banners/wholesale-banner.jpg';
+import productsBannerSrc from '../assets/images/banners/products-banner.jpg';
+import greyOysterSrc from '../assets/images/products/grey-oyster.jpg';
+import lionsManeSrc from '../assets/images/products/lions-mane.jpg';
+import speckledChestnutSrc from '../assets/images/products/speckled-chestnut.jpg';
+import roastedChestnutsSrc from '../assets/images/recipes/roasted-chestnuts.jpg';
+import lionsManeLinugineSrc from '../assets/images/recipes/lions-mane-linguine.jpg';
+import oysterPieSrc from '../assets/images/recipes/oyster-pie.jpg';
+import marketStall1Src from '../assets/images/markets/market-stall-1.jpg';
+import marketStall2Src from '../assets/images/markets/market-stall-2.jpg';
+import marketStall3Src from '../assets/images/markets/market-stall-3.jpg';
+import marketStall4Src from '../assets/images/markets/market-stall-4.jpg';
+import markets1Src from '../assets/images/markets/markets-1.jpg';
+import markets2Src from '../assets/images/markets/markets-2.jpg';
+import markets3Src from '../assets/images/markets/markets-3.jpg';
+import markets4Src from '../assets/images/markets/markets-4.jpg';
+
 const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
+
+// Hero
+const homeHero = await getImage({ src: homeHeroSrc, format: 'webp', quality: 80, width: 1920 });
+
+// Callout card backgrounds
+const compostBanner = await getImage({ src: compostBannerSrc, format: 'webp', quality: 80, width: 1920 });
+const stockistsBanner = await getImage({ src: stockistsBannerSrc, format: 'webp', quality: 80, width: 1920 });
+const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp', quality: 80, width: 1920 });
+
+// Product carousel
+const productsBanner = await getImage({ src: productsBannerSrc, format: 'webp', quality: 80, width: 800 });
+const greyOyster = await getImage({ src: greyOysterSrc, format: 'webp', quality: 80, width: 800 });
+const lionsMane = await getImage({ src: lionsManeSrc, format: 'webp', quality: 80, width: 800 });
+const speckledChestnut = await getImage({ src: speckledChestnutSrc, format: 'webp', quality: 80, width: 800 });
+
+// Recipe carousel
+const roastedChestnuts = await getImage({ src: roastedChestnutsSrc, format: 'webp', quality: 80, width: 800 });
+const lionsManeLinugine = await getImage({ src: lionsManeLinugineSrc, format: 'webp', quality: 80, width: 800 });
+const oysterPie = await getImage({ src: oysterPieSrc, format: 'webp', quality: 80, width: 800 });
+
+// Market stall carousel
+const marketStall1 = await getImage({ src: marketStall1Src, format: 'webp', quality: 80, width: 800 });
+const marketStall2 = await getImage({ src: marketStall2Src, format: 'webp', quality: 80, width: 800 });
+const marketStall3 = await getImage({ src: marketStall3Src, format: 'webp', quality: 80, width: 800 });
+const marketStall4 = await getImage({ src: marketStall4Src, format: 'webp', quality: 80, width: 800 });
+
+// Workshops carousel
+const markets1 = await getImage({ src: markets1Src, format: 'webp', quality: 80, width: 800 });
+const markets2 = await getImage({ src: markets2Src, format: 'webp', quality: 80, width: 800 });
+const markets3 = await getImage({ src: markets3Src, format: 'webp', quality: 80, width: 800 });
+const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80, width: 800 });
 ---
 
 <BaseLayout title="Home — Glasgow Mushroom Company">
-  <section class="hero">
+  <section class="hero" style={`--bg: url('${homeHero.src}')`}>
     <h1>Gourmet Mushrooms Grown In Glasgow</h1>
   </section>
 
   <section class="callout-grid">
     <a href="/products" class="callout-card callout-card--products" data-reveal="scale" style="transition-delay: 0s">
       <div class="product-slides">
-        <div class="product-slides__img is-active" style="background-image: url('/images/banners/products-banner.jpg')"></div>
-        <div class="product-slides__img" style="background-image: url('/images/products/grey-oyster.jpg')"></div>
-        <div class="product-slides__img" style="background-image: url('/images/products/lions-mane.jpg')"></div>
-        <div class="product-slides__img" style="background-image: url('/images/products/speckled-chestnut.jpg')"></div>
+        <div class="product-slides__img is-active" style={`background-image: url('${productsBanner.src}')`}></div>
+        <div class="product-slides__img" style={`background-image: url('${greyOyster.src}')`}></div>
+        <div class="product-slides__img" style={`background-image: url('${lionsMane.src}')`}></div>
+        <div class="product-slides__img" style={`background-image: url('${speckledChestnut.src}')`}></div>
       </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
@@ -26,9 +78,9 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
     <a href="/recipes" class="callout-card callout-card--recipes" data-reveal="scale" style="transition-delay: 0.1s">
       <div class="recipe-slides">
-        <div class="recipe-slides__img" style="background-image: url('/images/recipes/roasted-chestnuts.jpg')"></div>
-        <div class="recipe-slides__img" style="background-image: url('/images/recipes/lions-mane-linguine.jpg')"></div>
-        <div class="recipe-slides__img" style="background-image: url('/images/recipes/oyster-pie.jpg')"></div>
+        <div class="recipe-slides__img" style={`background-image: url('${roastedChestnuts.src}')`}></div>
+        <div class="recipe-slides__img" style={`background-image: url('${lionsManeLinugine.src}')`}></div>
+        <div class="recipe-slides__img" style={`background-image: url('${oysterPie.src}')`}></div>
       </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
@@ -40,10 +92,10 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
 
     <a href="/markets" class="callout-card callout-card--markets-new" data-reveal="scale" style="transition-delay: 0.2s">
       <div class="market-stall-slides">
-        <div class="market-stall-slides__img is-active" style="background-image: url('/images/markets/market-stall-3.jpg')"></div>
-        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-1.jpg')"></div>
-        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-2.jpg')"></div>
-        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-4.jpg')"></div>
+        <div class="market-stall-slides__img is-active" style={`background-image: url('${marketStall3.src}')`}></div>
+        <div class="market-stall-slides__img" style={`background-image: url('${marketStall1.src}')`}></div>
+        <div class="market-stall-slides__img" style={`background-image: url('${marketStall2.src}')`}></div>
+        <div class="market-stall-slides__img" style={`background-image: url('${marketStall4.src}')`}></div>
       </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
@@ -56,10 +108,10 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     <!-- Workshops panel — hidden until workshops page is ready -->
     <a href="/workshops" class="callout-card callout-card--workshops" data-reveal="scale" style="display: none;">
       <div class="markets-slides">
-        <div class="markets-slides__img is-active" style="background-image: url('/images/markets/markets-1.jpg')"></div>
-        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-2.jpg')"></div>
-        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-3.jpg')"></div>
-        <div class="markets-slides__img" style="background-image: url('/images/markets/markets-4.jpg')"></div>
+        <div class="markets-slides__img is-active" style={`background-image: url('${markets1.src}')`}></div>
+        <div class="markets-slides__img" style={`background-image: url('${markets2.src}')`}></div>
+        <div class="markets-slides__img" style={`background-image: url('${markets3.src}')`}></div>
+        <div class="markets-slides__img" style={`background-image: url('${markets4.src}')`}></div>
       </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
@@ -69,7 +121,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card callout-card--compost" data-reveal="scale" style="transition-delay: 0.3s">
+    <a href="https://compostclub.glasgowmushroom.co" target="_blank" rel="noopener noreferrer" class="callout-card callout-card--compost" data-reveal="scale" style={`transition-delay: 0.3s; --bg: url('${compostBanner.src}')`}>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Compost Club</h2>
@@ -78,7 +130,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/where-to-find-us" class="callout-card callout-card--stockists" data-reveal="scale" style="transition-delay: 0.4s">
+    <a href="/where-to-find-us" class="callout-card callout-card--stockists" data-reveal="scale" style={`transition-delay: 0.4s; --bg: url('${stockistsBanner.src}')`}>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Where To Find Us</h2>
@@ -87,7 +139,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/wholesale" class="callout-card callout-card--wholesale" data-reveal="scale" style="transition-delay: 0.5s">
+    <a href="/wholesale" class="callout-card callout-card--wholesale" data-reveal="scale" style={`transition-delay: 0.5s; --bg: url('${wholesaleBanner.src}')`}>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
         <h2>Distributors</h2>
@@ -302,7 +354,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    background-image: url('/images/home-hero.jpg');
+    background-image: var(--bg);
     background-size: auto;
     background-position: 58% 0;
     background-attachment: fixed;
@@ -537,11 +589,11 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     transform: scale(1.08) translateX(-4%);
   }
 
-  .callout-card--compost::before { background-image: url('/images/banners/compost-club-banner.jpg'); }
+  .callout-card--compost::before { background-image: var(--bg); }
 
-  .callout-card--stockists::before { background-image: url('/images/banners/stockists-banner.jpg'); }
+  .callout-card--stockists::before { background-image: var(--bg); }
 
-  .callout-card--wholesale::before { background-image: url('/images/banners/wholesale-banner.jpg'); }
+  .callout-card--wholesale::before { background-image: var(--bg); }
 
   /* Stockists Map */
   .stockists-map {

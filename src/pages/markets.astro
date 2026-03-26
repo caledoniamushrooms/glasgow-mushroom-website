@@ -1,6 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { markets } from '../data/markets.js';
+import { Image, getImage } from 'astro:assets';
+import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.jpg';
+import railyardLogoSrc from '../assets/images/markets/the-railyard-logo.png';
 
 const months = {};
 for (const event of markets) {
@@ -12,10 +15,12 @@ for (const event of markets) {
     dayLabel: d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
   });
 }
+
+const marketsHero = await getImage({ src: directSalesBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Markets — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets across Glasgow.">
-  <section class="markets-hero">
+  <section class="markets-hero" style={`--bg: url('${marketsHero.src}')`}>
     <h1>Markets</h1>
   </section>
 
@@ -31,7 +36,7 @@ for (const event of markets) {
           {events.map((event) => (
             <div class={`markets-card markets-card--${event.type}`}>
               <span class="markets-card__badge">{event.type}</span>
-              <img src="/images/markets/the-railyard-logo.png" alt={event.name} class="markets-card__logo" />
+              <Image src={railyardLogoSrc} alt={event.name} class="markets-card__logo" width={140} format="webp" quality={80} loading="lazy" />
               <p class="markets-card__date">{event.dayLabel}</p>
               <p class="markets-card__time">{event.time}</p>
               <p class="markets-card__location"><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.location}</a></p>
@@ -75,7 +80,7 @@ for (const event of markets) {
     align-items: center;
     justify-content: center;
     /* TODO: Replace with dedicated markets banner image */
-    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: 50% 50%;
     text-align: center;

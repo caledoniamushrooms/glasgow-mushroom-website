@@ -1,9 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getImage } from 'astro:assets';
+import wholesaleBannerSrc from '../assets/images/banners/wholesale-banner.jpg';
+import coeurSauvageSrc from '../assets/images/distributors/coeur-sauvage.png';
+import ochilFoodsSrc from '../assets/images/distributors/ochil-foods.png';
+import { Image } from 'astro:assets';
+
+const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Wholesale — Glasgow Mushroom Company" description="Wholesale and distribution enquiries for Glasgow Mushroom Company.">
-  <section class="ws-hero">
+  <section class="ws-hero" style={`--bg: url('${wholesaleBanner.src}')`}>
     <h1>Wholesale</h1>
   </section>
 
@@ -15,7 +22,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <section class="ws-distributor ws-distributor--cs">
-    <img src="/images/distributors/coeur-sauvage.png" alt="Coeur Sauvage" class="ws-distributor__logo ws-distributor__logo--cs" loading="lazy" />
+    <Image src={coeurSauvageSrc} alt="Coeur Sauvage" class="ws-distributor__logo ws-distributor__logo--cs" width={278} format="webp" quality={80} loading="lazy" />
     <div class="ws-distributor__content">
       <h3 class="ws-distributor__name">Coeur Sauvage</h3>
       <div class="ws-distributor__body">
@@ -28,7 +35,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <section class="ws-distributor ws-distributor--ochil">
-    <img src="/images/distributors/ochil-foods.png" alt="Ochil Foods" class="ws-distributor__logo ws-distributor__logo--ochil" loading="lazy" />
+    <Image src={ochilFoodsSrc} alt="Ochil Foods" class="ws-distributor__logo ws-distributor__logo--ochil" width={575} format="webp" quality={80} loading="lazy" />
     <div class="ws-distributor__content">
       <h3 class="ws-distributor__name">Ochil Foods</h3>
       <div class="ws-distributor__body">
@@ -72,7 +79,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('/images/banners/wholesale-banner.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: 50% 30%;
     text-align: center;

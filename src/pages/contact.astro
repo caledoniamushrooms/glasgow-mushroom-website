@@ -1,22 +1,30 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getImage } from 'astro:assets';
+import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.jpg';
+import commercialBannerSrc from '../assets/images/banners/commercial-enquiries-banner.jpg';
+import compostBannerSrc from '../assets/images/banners/compost-club-banner.jpg';
+
+const directSalesBanner = await getImage({ src: directSalesBannerSrc, format: 'webp', quality: 80, width: 1920 });
+const commercialBanner = await getImage({ src: commercialBannerSrc, format: 'webp', quality: 80, width: 1920 });
+const compostBanner = await getImage({ src: compostBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Contact — Glasgow Mushroom Company" description="Get in touch with Glasgow Mushroom Company.">
   <section class="contactus-section">
-    <a href="/direct-sales" class="contactus-banner contactus-banner--direct-sales">
+    <a href="/direct-sales" class="contactus-banner contactus-banner--direct-sales" style={`--bg: url('${directSalesBanner.src}')`}>
       <h1>Direct Sales</h1>
     </a>
   </section>
 
   <section class="contactus-section">
-    <a href="/wholesale" class="contactus-banner contactus-banner--commercial">
+    <a href="/wholesale" class="contactus-banner contactus-banner--commercial" style={`--bg: url('${commercialBanner.src}')`}>
       <h1>Commercial Enquiries</h1>
     </a>
   </section>
 
   <section class="contactus-section contactus-section--bottom">
-    <a href="https://compostclub.glasgowmushroom.co/" target="_blank" rel="noopener noreferrer" class="contactus-banner contactus-banner--compost">
+    <a href="https://compostclub.glasgowmushroom.co/" target="_blank" rel="noopener noreferrer" class="contactus-banner contactus-banner--compost" style={`--bg: url('${compostBanner.src}')`}>
       <h1>Compost Club</h1>
     </a>
   </section>
@@ -58,17 +66,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   .contactus-banner--direct-sales {
-    background-image: url('/images/banners/direct-sales-banner.jpg');
+    background-image: var(--bg);
     background-position: 50% 47%;
   }
 
   .contactus-banner--commercial {
-    background-image: url('/images/banners/commercial-enquiries-banner.jpg');
+    background-image: var(--bg);
     background-position: 50% 47%;
   }
 
   .contactus-banner--compost {
-    background-image: url('/images/banners/compost-club-banner.jpg');
+    background-image: var(--bg);
     background-position: 50% 57%;
   }
 

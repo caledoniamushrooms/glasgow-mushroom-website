@@ -1,9 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getImage } from 'astro:assets';
+import splashHeroSrc from '../assets/images/splash-hero.jpg';
+
+const splashHero = await getImage({ src: splashHeroSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Glasgow Mushroom Company" showNav={false} showFooter={false}>
-  <section class="splash">
+  <section class="splash" style={`--bg: url('${splashHero.src}')`}>
     <div class="splash__content">
       <img src="/images/logo-full.svg" alt="Glasgow Mushroom Company" class="splash__logo" />
       <a href="/home" class="splash__enter">Enter</a>
@@ -17,7 +21,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('/images/splash-hero.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: center;
   }
