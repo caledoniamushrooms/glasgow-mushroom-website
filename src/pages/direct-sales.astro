@@ -112,41 +112,43 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p id="dl-status" class="dl-status" aria-live="polite"></p>
   </section>
 
-  <!-- Trade Redirect -->
-  <section class="trade" data-reveal>
-    <div class="trade__card">
-      <div class="trade__text">
-        <h2>Chefs & Commercial Customers</h2>
-        <p>If you're a chef, restaurant, or buying in commercial quantities, head to our trade portal to place orders, view invoices, and manage your account.</p>
+  <!-- Enquiry + Trade side by side -->
+  <div class="twin">
+    <section class="enquiry" data-reveal>
+      <h2>Make an Enquiry</h2>
+      <div class="enquiry__card">
+        <form id="contact-form" method="POST" action="/api/contact">
+          <div class="form__field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required />
+          </div>
+          <div class="form__field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required />
+          </div>
+          <div class="form__field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" placeholder="Hi, I'd like to place a direct order…" required></textarea>
+          </div>
+          <p id="form-status" class="form__status" aria-live="polite"></p>
+          <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit" />
+        </form>
       </div>
-      <div class="trade__action">
-        <a href="/portal" class="cta-btn">Access Trade Portal</a>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Enquiry Form -->
-  <section class="enquiry" data-reveal>
-    <h2>Make an Enquiry</h2>
-    <div class="enquiry__card">
-      <form id="contact-form" method="POST" action="/api/contact">
-        <div class="form__field">
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" placeholder="Enter your name" required />
+    <section class="trade" data-reveal>
+      <div class="trade__card">
+        <div class="trade__text">
+          <h2>Chefs & Commercial Customers</h2>
+          <p>If you're a chef, restaurant, or buying in commercial quantities, head to our trade portal to place orders, view invoices, and manage your account.</p>
         </div>
-        <div class="form__field">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" name="email" placeholder="Enter your email address" required />
+        <div class="trade__action">
+          <a href="/portal" class="cta-btn">Access Trade Portal</a>
         </div>
-        <div class="form__field">
-          <label for="message">Message</label>
-          <textarea id="message" name="message" rows="5" placeholder="Hi, I'd like to place a direct order…" required></textarea>
-        </div>
-        <p id="form-status" class="form__status" aria-live="polite"></p>
-        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit" />
-      </form>
-    </div>
-  </section>
+        <img src="/images/banners/wholesale-banner.jpg" alt="" class="trade__image" />
+      </div>
+    </section>
+  </div>
 
   <!-- Contact -->
   <section class="contact" data-reveal>
@@ -291,9 +293,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   /* Price List CTA */
   .pricelist {
-    background-color: var(--color-bg);
+    position: relative;
     text-align: center;
     padding: 4rem 1.5rem;
+    background-image: url('/images/banners/recipes-banner.jpg');
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 40px;
+  }
+
+  .pricelist::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 4, 4, 0.7);
+  }
+
+  .pricelist > * {
+    position: relative;
   }
 
   .pricelist h2 {
@@ -322,22 +339,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     min-height: 1.25em;
   }
 
+  /* Twin layout */
+  .twin {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+  }
+
   /* Trade Redirect */
   .trade {
     background-color: var(--color-bg);
-    padding: 0 1.5rem 4rem;
-    max-width: 1100px;
-    margin: 0 auto;
   }
 
   .trade__card {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 2rem;
     background: var(--color-bg-footer);
     border-radius: 12px;
     padding: 2.5rem;
+    height: 100%;
+    box-sizing: border-box;
   }
 
   .trade__text h2 {
@@ -361,16 +387,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     flex-shrink: 0;
   }
 
+  .trade__image {
+    width: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-top: auto;
+    min-height: 0;
+    flex: 1 1 0;
+  }
+
   /* Enquiry Form */
   .enquiry {
     background-color: var(--color-bg);
-    padding: 4rem 1.5rem;
     text-align: center;
   }
 
   .enquiry h2 {
     font-family: var(--font-heading);
-    font-size: 3rem;
+    font-size: 2rem;
     font-weight: 700;
     color: #fff;
     margin-bottom: 1.5rem;
@@ -381,8 +415,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 2.5rem;
-    max-width: 560px;
-    margin: 0 auto;
     text-align: left;
   }
 
@@ -543,8 +575,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       grid-column: auto;
     }
 
+    .twin {
+      grid-template-columns: 1fr;
+    }
+
     .trade__card {
-      flex-direction: column;
       text-align: center;
       padding: 2rem;
     }
