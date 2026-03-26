@@ -51,3 +51,16 @@ const stockistsBanner = await getImage({ src: stockistsBannerSrc, format: 'webp'
     }
   }
 </style>
+
+<script>
+  function equaliseStockistHeights() {
+    const sections = document.querySelectorAll('.stockist-outer');
+    // Reset heights first
+    sections.forEach(s => (s as HTMLElement).style.minHeight = '');
+    const maxHeight = Math.max(...Array.from(sections).map(s => s.getBoundingClientRect().height));
+    sections.forEach(s => (s as HTMLElement).style.minHeight = `${maxHeight}px`);
+  }
+
+  equaliseStockistHeights();
+  window.addEventListener('resize', equaliseStockistHeights);
+</script>
