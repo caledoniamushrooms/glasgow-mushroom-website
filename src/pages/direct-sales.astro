@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { Image, getImage } from 'astro:assets';
 import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.jpg';
 import recipesBannerSrc from '../assets/images/banners/recipes-banner.jpg';
+import recipesBannerEventsSrc from '../assets/images/banners/recipes-banner-events.jpg';
 import stockistsBannerSrc from '../assets/images/banners/stockists-banner.jpg';
 import wholesaleBannerSrc from '../assets/images/banners/wholesale-banner.jpg';
 import instagramIconSrc from '../assets/images/icons/instagram.png';
@@ -189,7 +190,7 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
           <div class="prop-card__content"><h3>Free Glasgow Delivery</h3><p>Orders within Glasgow city centre qualify for free delivery — ideal for events, restaurants, and pop-ups. For deliveries further afield, courier charges may apply.</p></div>
         </div>
         <div class="prop-card" aria-hidden="true">
-          <Image class="prop-card__img prop-card__img--events" src={recipesBannerSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
+          <Image class="prop-card__img" src={recipesBannerEventsSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
           <div class="prop-card__content"><h3>Perfect for Events</h3><p>Planning a dinner party, supper club, or catering job? We can supply large quantities of our freshest seasonal mushrooms, harvested to order.</p></div>
         </div>
         <!-- Real cards (index 3, 4, 5) -->
@@ -202,7 +203,7 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
           <div class="prop-card__content"><h3>Free Glasgow Delivery</h3><p>Orders within Glasgow city centre qualify for free delivery — ideal for events, restaurants, and pop-ups. For deliveries further afield, courier charges may apply.</p></div>
         </div>
         <div class="prop-card">
-          <Image class="prop-card__img prop-card__img--events" src={recipesBannerSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
+          <Image class="prop-card__img" src={recipesBannerEventsSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
           <div class="prop-card__content"><h3>Perfect for Events</h3><p>Planning a dinner party, supper club, or catering job? We can supply large quantities of our freshest seasonal mushrooms, harvested to order.</p></div>
         </div>
         <!-- Clone set (head) -->
@@ -215,7 +216,7 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
           <div class="prop-card__content"><h3>Free Glasgow Delivery</h3><p>Orders within Glasgow city centre qualify for free delivery — ideal for events, restaurants, and pop-ups. For deliveries further afield, courier charges may apply.</p></div>
         </div>
         <div class="prop-card" aria-hidden="true">
-          <Image class="prop-card__img prop-card__img--events" src={recipesBannerSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
+          <Image class="prop-card__img" src={recipesBannerEventsSrc} alt="" width={400} format="webp" quality={80} loading="lazy" />
           <div class="prop-card__content"><h3>Perfect for Events</h3><p>Planning a dinner party, supper club, or catering job? We can supply large quantities of our freshest seasonal mushrooms, harvested to order.</p></div>
         </div>
       </div>
@@ -390,9 +391,6 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     display: block;
   }
 
-  .prop-card__img--events {
-    object-position: top right;
-  }
 
   .prop-card__content {
     padding: 1.5rem;
