@@ -255,10 +255,11 @@ export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThreshold
               <View key={group.product_name} wrap={false} style={!isLastGroup ? styles.productGroupBorder : undefined}>
                 {group.grades.map((grade, gradeIdx) => {
                   const isLastRow = isLastGroup && gradeIdx === group.grades.length - 1
+                  const isLastInGroup = gradeIdx === group.grades.length - 1
                   return (
                     <View
                       key={`${group.product_name}-${grade.grade_name}`}
-                      style={[styles.tableRow, isLastRow ? styles.tableRowLast : {}]}
+                      style={[styles.tableRow, (isLastRow || (isLastInGroup && !isLastGroup)) ? styles.tableRowLast : {}]}
                     >
                       <View style={{ width: productWidth, paddingHorizontal: 6 }}>
                         {gradeIdx === 0 ? (

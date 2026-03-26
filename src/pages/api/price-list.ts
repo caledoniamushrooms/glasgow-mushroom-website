@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
 import { renderToBuffer } from '@react-pdf/renderer';
+import { PDFDocument } from 'pdf-lib';
 import { PriceListPdf } from '../../portal/components/PriceListPdf';
 import type { PriceGroup } from '../../portal/lib/types';
 
@@ -101,9 +102,42 @@ export const GET: APIRoute = async ({ url }) => {
       hideGrade: true,
     });
 
-    const buffer = await renderToBuffer(pdfElement as any);
+    const priceListBuffer = await renderToBuffer(pdfElement as any);
 
-    return new Response(buffer, {
+    // Merge cover page + price list
+    const coverUrl = new URL('/pdf/cover-page.pdf', url.origin);
+    const coverRes = await fetch(coverUrl);
+    let finalBuffer: Uint8Array;
+
+    if (coverRes.ok) {
+      const coverBytes = await coverRes.arrayBuffer();
+      const coverDoc = await PDFDocument.load(coverBytes);
+      const priceListDoc = await PDFDocument.load(priceListBuffer);
+      const merged = await PDFDocument.create();
+
+      // Embed cover page (landscape) — embedPdf flattens the content,
+      // which avoids a Preview rendering bug with large copied images
+      const [embeddedCover] = await merged.embedPdf(coverDoc, [0]);
+      const coverDims = embeddedCover.size();
+      const coverPage = merged.addPage([coverDims.width, coverDims.height]);
+      coverPage.drawPage(embeddedCover);
+
+      // Copy price list pages (portrait)
+      const priceListPages = await merged.copyPages(
+        priceListDoc,
+        priceListDoc.getPageIndices(),
+      );
+      for (const page of priceListPages) {
+        merged.addPage(page);
+      }
+
+      finalBuffer = await merged.save();
+    } else {
+      // Fallback: serve price list without cover if cover file is missing
+      finalBuffer = priceListBuffer;
+    }
+
+    return new Response(finalBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
