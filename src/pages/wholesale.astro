@@ -46,6 +46,12 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
       </div>
     </div>
   </section>
+
+  <section class="ws-trade">
+    <h3 class="ws-trade__heading">Chefs & Commercial Customers</h3>
+    <p class="ws-trade__text">If you're a chef, restaurant, or buying in commercial quantities in the Glasgow area, head to our trade portal to place orders, view invoices, and manage your account.</p>
+    <a href="/portal" class="ws-trade__btn">Access Trade Portal</a>
+  </section>
 </BaseLayout>
 
 <style is:global>
@@ -199,6 +205,54 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
     color: #fff;
   }
 
+  /* Trade Portal CTA */
+  .ws-trade {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 1.5rem;
+    background-color: var(--color-bg);
+  }
+
+  .ws-trade__heading {
+    font-size: 38px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 0.75rem;
+  }
+
+  .ws-trade__text {
+    font-size: 18px;
+    font-family: var(--font-heading);
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+    max-width: 600px;
+    margin: 0 0 1.5rem;
+  }
+
+  .ws-trade__btn {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: hsl(142 71% 25%);
+    padding: 0.7rem 2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+
+  .ws-trade__btn:hover {
+    background-color: hsl(142 71% 30%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
   @media (max-width: 767px) {
     .ws-hero {
       height: 200px;
@@ -223,6 +277,14 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
     .ws-distributor__body {
       font-size: 1rem;
       padding-left: 0;
+    }
+
+    .ws-trade__heading {
+      font-size: 2rem;
+    }
+
+    .ws-trade__text {
+      font-size: 1rem;
     }
   }
 </style>

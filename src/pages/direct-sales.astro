@@ -5,49 +5,10 @@ import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.j
 import recipesBannerSrc from '../assets/images/banners/recipes-banner.jpg';
 import recipesBannerEventsSrc from '../assets/images/banners/recipes-banner-events.jpg';
 import stockistsBannerSrc from '../assets/images/banners/stockists-banner.jpg';
-import wholesaleBannerSrc from '../assets/images/banners/wholesale-banner.jpg';
-import instagramIconSrc from '../assets/images/icons/instagram.png';
 
 const heroImg = await getImage({ src: directSalesBannerSrc, format: 'webp', quality: 80, width: 1920 });
 const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
-
-<script>
-  const form = document.getElementById('contact-form') as HTMLFormElement;
-  const status = document.getElementById('form-status') as HTMLParagraphElement;
-  const submit = document.getElementById('form-submit') as HTMLInputElement;
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    submit.disabled = true;
-    submit.value = 'Sending…';
-    status.textContent = '';
-    status.className = 'form__status';
-
-    try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        body: new FormData(form),
-      });
-      const json = await res.json();
-
-      if (res.ok) {
-        status.textContent = 'Message sent! We\'ll be in touch soon.';
-        status.className = 'form__status form__status--success';
-        form.reset();
-      } else {
-        status.textContent = json.error ?? 'Something went wrong. Please try again.';
-        status.className = 'form__status form__status--error';
-      }
-    } catch {
-      status.textContent = 'Network error. Please check your connection and try again.';
-      status.className = 'form__status form__status--error';
-    } finally {
-      submit.disabled = false;
-      submit.value = 'Submit';
-    }
-  });
-</script>
 
 <script>
   const dlBtn = document.getElementById('download-pricelist') as HTMLButtonElement;
@@ -233,62 +194,11 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     <p id="dl-status" class="dl-status" aria-live="polite"></p>
   </section>
 
-  <!-- Enquiry + Trade side by side -->
-  <div class="twin">
-    <section class="enquiry" data-reveal>
-      <h2>Make an Enquiry</h2>
-      <div class="enquiry__card">
-        <form id="contact-form" method="POST" action="/api/contact">
-          <div class="form__field">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required />
-          </div>
-          <div class="form__field">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email address" required />
-          </div>
-          <div class="form__field">
-            <label for="message">Message</label>
-            <textarea id="message" name="message" rows="5" placeholder="Hi, I'd like to place a direct order…" required></textarea>
-          </div>
-          <p id="form-status" class="form__status" aria-live="polite"></p>
-          <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit" />
-        </form>
-      </div>
-    </section>
-
-    <section class="trade" data-reveal>
-      <div class="trade__card">
-        <div class="trade__text">
-          <h2>Chefs & Commercial Customers</h2>
-          <p>If you're a chef, restaurant, or buying in commercial quantities, head to our trade portal to place orders, view invoices, and manage your account.</p>
-        </div>
-        <div class="trade__action">
-          <a href="/portal" class="cta-btn">Access Trade Portal</a>
-        </div>
-        <Image src={wholesaleBannerSrc} alt="" class="trade__image" width={600} format="webp" quality={80} loading="lazy" />
-      </div>
-    </section>
-  </div>
-
-  <!-- Contact -->
-  <section class="contact" data-reveal>
-    <h2>Other Ways To Get In Touch</h2>
-    <div class="contact__icons">
-      <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-        <Image src={instagramIconSrc} alt="Instagram" width={60} height={60} format="webp" quality={80} />
-      </a>
-      <a href="https://wa.me/4401412660377" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-        <img src="/images/icons/whatsapp.svg" alt="WhatsApp" width="60" height="60" />
-      </a>
-      <a href="http://m.me/glasgowmushroomco" target="_blank" rel="noopener noreferrer" aria-label="Facebook Messenger">
-        <img src="/images/icons/facebook-messenger.svg" alt="Facebook Messenger" width="60" height="60" />
-      </a>
-      <a href="mailto:hello@glasgowmushroomcompany.co.uk" aria-label="Email">
-        <img src="/images/icons/email.svg" alt="Email" width="60" height="60" />
-      </a>
-    </div>
-    <a href="tel:+441412660377" class="contact__phone">0141 266 0377</a>
+  <!-- Order CTA -->
+  <section class="order-cta" data-reveal>
+    <h2>Ready to Order?</h2>
+    <p class="order-cta__text">Get in touch to place a direct order or ask us anything about our mushrooms.</p>
+    <a href="/contact" class="cta-btn">Contact Us</a>
   </section>
 </BaseLayout>
 
@@ -513,194 +423,29 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     min-height: 1.25em;
   }
 
-  /* Twin layout */
-  .twin {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 1fr;
-    gap: 1.5rem;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 1.5rem 4rem;
-  }
-
-  /* Trade Redirect */
-  .trade {
-    background-color: var(--color-bg);
-  }
-
-  .trade__card {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    background: var(--color-bg-footer);
-    border-radius: 12px;
-    padding: 2.5rem;
-    height: 100%;
-    box-sizing: border-box;
-  }
-
-  .trade__text h2 {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 0.5rem;
-    line-height: 1.15;
-  }
-
-  .trade__text p {
-    font-family: var(--font-heading);
-    font-size: 0.95rem;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.6;
-    max-width: 50ch;
-  }
-
-  .trade__action {
-    flex-shrink: 0;
-  }
-
-  .trade__image {
-    width: 100%;
-    border-radius: 8px;
-    object-fit: cover;
-    margin-top: auto;
-    min-height: 0;
-    flex: 1 1 0;
-  }
-
-  /* Enquiry Form */
-  .enquiry {
+  /* Order CTA */
+  .order-cta {
     background-color: var(--color-bg);
     text-align: center;
+    padding: 3rem 1.5rem 4rem;
   }
 
-  .enquiry h2 {
+  .order-cta h2 {
     font-family: var(--font-heading);
-    font-size: 2rem;
+    font-size: 3rem;
     font-weight: 700;
     color: #fff;
-    margin-bottom: 1.5rem;
-  }
-
-  .enquiry__card {
-    background: var(--color-bg-footer);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 2.5rem;
-    text-align: left;
-  }
-
-  .form__field {
-    margin-bottom: 1rem;
-  }
-
-  .form__field label {
-    display: block;
-    font-family: var(--font-heading);
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 0.4rem;
-  }
-
-  .form__field input,
-  .form__field textarea {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    color: #fff;
-    font-family: var(--font-body);
-    font-size: 0.875rem;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
-  }
-
-  .form__field input::placeholder,
-  .form__field textarea::placeholder {
-    color: rgba(255, 255, 255, 0.35);
-  }
-
-  .form__field input:focus,
-  .form__field textarea:focus {
-    outline: none;
-    border-color: hsl(142 71% 35%);
-  }
-
-  .form__submit {
-    width: 100%;
-    margin-top: 0.5rem;
-  }
-
-  .form__status {
-    font-family: var(--font-body);
-    font-size: 0.875rem;
     margin-bottom: 0.75rem;
-    min-height: 1.25em;
   }
 
-  .form__status--success {
-    color: hsl(142 71% 45%);
-  }
-
-  .form__status--error {
-    color: #ef4444;
-  }
-
-  /* Contact */
-  .contact {
-    background-color: var(--color-bg);
-    text-align: center;
-    padding: 2rem 1.5rem 4rem;
-  }
-
-  .contact h2 {
+  .order-cta__text {
     font-family: var(--font-heading);
-    font-size: 2rem;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 1.5rem;
-  }
-
-  .contact__icons {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.25rem;
-  }
-
-  .contact__icons a {
-    display: block;
-    transition: opacity 0.2s ease;
-  }
-
-  .contact__icons a:hover {
-    opacity: 0.7;
-  }
-
-  .contact__icons img {
-    display: block;
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-  }
-
-  .contact__phone {
-    display: inline-block;
-    color: #fff;
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    text-decoration: none;
-  }
-
-  .contact__phone:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 2rem;
+    max-width: 40ch;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   /* Responsive */
@@ -716,7 +461,7 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     }
 
     .pricelist h2,
-    .enquiry h2 {
+    .order-cta h2 {
       font-size: 4rem;
     }
   }
@@ -733,27 +478,6 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     }
 
 
-    .twin {
-      grid-template-columns: 1fr;
-    }
-
-    .trade__card {
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .trade__text p {
-      max-width: none;
-    }
-
-    .enquiry__card {
-      padding: 1.5rem;
-    }
-
-    .contact__icons img {
-      width: 50px;
-      height: 50px;
-    }
   }
 
   @media (max-width: 479px) {
@@ -762,12 +486,8 @@ const pricelistImg = await getImage({ src: recipesBannerSrc, format: 'webp', qua
     }
 
     .pricelist h2,
-    .enquiry h2 {
+    .order-cta h2 {
       font-size: 2rem;
-    }
-
-    .trade__text h2 {
-      font-size: 1.5rem;
     }
   }
 </style>
