@@ -14,14 +14,14 @@ for (const event of markets) {
 }
 ---
 
-<BaseLayout title="Markets & Workshops — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets and workshops.">
+<BaseLayout title="Markets — Glasgow Mushroom Company" description="Find Glasgow Mushroom Company at local markets across Glasgow.">
   <section class="markets-hero">
-    <h1>Markets & Workshops</h1>
+    <h1>Markets</h1>
   </section>
 
   <section class="markets-content">
     <div class="markets-intro">
-      <p>Find us at farmers markets across Glasgow or join one of our mushroom growing workshops. Come say hello, grab some fresh mushrooms, and learn about what we do.</p>
+      <p>We love getting out and meeting people face to face. Find us at local markets across Glasgow — come say hello and grab some fresh mushrooms.</p>
     </div>
 
     {Object.entries(months).map(([month, events]) => (
@@ -31,10 +31,10 @@ for (const event of markets) {
           {events.map((event) => (
             <div class={`markets-card markets-card--${event.type}`}>
               <span class="markets-card__badge">{event.type}</span>
-              <h3>{event.name}</h3>
+              <img src="/images/markets/the-railyard-logo.png" alt={event.name} class="markets-card__logo" />
               <p class="markets-card__date">{event.dayLabel}</p>
               <p class="markets-card__time">{event.time}</p>
-              <p class="markets-card__location">{event.location}</p>
+              <p class="markets-card__location"><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.location}</a></p>
             </div>
           ))}
         </div>
@@ -154,22 +154,17 @@ for (const event of markets) {
     color: #fff;
   }
 
-  .markets-card--workshop .markets-card__badge {
-    background-color: hsl(30 80% 50%);
-  }
-
-  .markets-card h3 {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 0.5rem;
+  .markets-card__logo {
+    display: block;
+    max-width: 140px;
+    margin: 0 auto 0.5rem;
   }
 
   .markets-card__date {
     font-family: var(--font-heading);
-    font-size: 1rem;
-    color: #555;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
     margin-bottom: 0.25rem;
   }
 
@@ -182,6 +177,16 @@ for (const event of markets) {
   .markets-card__location {
     font-size: 0.9rem;
     color: #777;
+  }
+
+  .markets-card__location a {
+    color: #555;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .markets-card__location a:hover {
+    color: #333;
   }
 
   @media (max-width: 767px) {

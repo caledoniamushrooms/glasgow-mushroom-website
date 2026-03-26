@@ -38,7 +38,23 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
     </a>
 
-    <a href="/markets" class="callout-card callout-card--markets" data-reveal="scale" style="transition-delay: 0.2s">
+    <a href="/markets" class="callout-card callout-card--markets-new" data-reveal="scale" style="transition-delay: 0.2s">
+      <div class="market-stall-slides">
+        <div class="market-stall-slides__img is-active" style="background-image: url('/images/markets/market-stall-3.jpg')"></div>
+        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-1.jpg')"></div>
+        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-2.jpg')"></div>
+        <div class="market-stall-slides__img" style="background-image: url('/images/markets/market-stall-4.jpg')"></div>
+      </div>
+      <div class="callout-card__overlay"></div>
+      <div class="callout-card__content">
+        <h2>Markets</h2>
+        <p>Find us at local markets across Glasgow.</p>
+        <span class="callout-card__btn">View Dates</span>
+      </div>
+    </a>
+
+    <!-- Workshops panel — hidden until workshops page is ready -->
+    <a href="/workshops" class="callout-card callout-card--workshops" data-reveal="scale" style="display: none;">
       <div class="markets-slides">
         <div class="markets-slides__img is-active" style="background-image: url('/images/markets/markets-1.jpg')"></div>
         <div class="markets-slides__img" style="background-image: url('/images/markets/markets-2.jpg')"></div>
@@ -47,9 +63,9 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       </div>
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
-        <h2>Markets & Workshops</h2>
-        <p>Find us at local markets or join a workshop.</p>
-        <span class="callout-card__btn">View Dates</span>
+        <h2>Workshops</h2>
+        <p>Join one of our hands-on mushroom workshops.</p>
+        <span class="callout-card__btn">View Workshops</span>
       </div>
     </a>
 
@@ -58,7 +74,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
       <div class="callout-card__content">
         <h2>Compost Club</h2>
         <p>Spent substrate collection for your garden.</p>
-        <span class="callout-card__btn">Learn More</span>
+        <span class="callout-card__btn">Book a Collection</span>
       </div>
     </a>
 
@@ -74,21 +90,36 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     <a href="/wholesale" class="callout-card callout-card--wholesale" data-reveal="scale" style="transition-delay: 0.5s">
       <div class="callout-card__overlay"></div>
       <div class="callout-card__content">
-        <h2>Wholesale Customers</h2>
-        <p>Access your account, place orders, and manage invoices.</p>
-        <span class="callout-card__btn">Trade Login</span>
+        <h2>Distributors</h2>
+        <p>For commercial customers not based in Glasgow, contact our specialist partners.</p>
+        <span class="callout-card__btn">View Distributors</span>
       </div>
     </a>
   </section>
 
+  <!-- Stockists Map -->
+  <section class="stockists-map" data-reveal>
+    <h2>Find Our Mushrooms</h2>
+    <p class="stockists-map__subtitle">Available at these retailers across Glasgow</p>
+    <div class="stockists-map__container">
+      <div id="map" class="stockists-map__canvas"></div>
+    </div>
+  </section>
+
   <section class="instagram-feed" data-reveal>
     <h2>Follow Us</h2>
-    <div class="instagram-feed__embed" id="instagram-embed">
-      <!-- Behold Instagram widget — embed code to be added once account is set up -->
-      <p class="instagram-feed__placeholder">
-        Follow us on <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer">@glasgowmushroomco</a>
-      </p>
+    <div class="instagram-slider" id="instagram-slider">
+      <!-- Demo placeholder cards for testing scroll -->
+      <div class="instagram-slider__item instagram-slider__demo">1</div>
+      <div class="instagram-slider__item instagram-slider__demo">2</div>
+      <div class="instagram-slider__item instagram-slider__demo">3</div>
+      <div class="instagram-slider__item instagram-slider__demo">4</div>
+      <div class="instagram-slider__item instagram-slider__demo">5</div>
+      <div class="instagram-slider__item instagram-slider__demo">6</div>
     </div>
+    <p class="instagram-feed__follow">
+      <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer">@glasgowmushroomco</a>
+    </p>
   </section>
 </BaseLayout>
 
@@ -204,9 +235,66 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     initCardSlides('.product-slides__img', '_productTimer', 3000);
     initCardSlides('.recipe-slides__img', '_recipeTimer', 3500);
     initCardSlides('.markets-slides__img', '_marketsTimer', 4000);
+    initCardSlides('.market-stall-slides__img', '_marketStallTimer', 4500);
   }
   initAllSlides();
   document.addEventListener('astro:page-load', initAllSlides);
+</script>
+
+<script is:inline>
+  (function() {
+    var timer = null;
+    var bound = false;
+
+    function startSlider() {
+      var slider = document.getElementById('instagram-slider');
+      if (!slider || slider.children.length <= 1) return;
+
+      // Stop any existing timer
+      if (timer) clearInterval(timer);
+
+      var animating = false;
+
+      function advance() {
+        if (animating) return;
+        animating = true;
+
+        var first = slider.children[0];
+        if (!first) { animating = false; return; }
+        var mr = parseFloat(getComputedStyle(first).marginRight) || 16;
+        var total = first.offsetWidth + mr;
+
+        first.style.transition = 'margin-left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)';
+        first.style.marginLeft = '-' + total + 'px';
+
+        first.addEventListener('transitionend', function handler() {
+          first.removeEventListener('transitionend', handler);
+          first.style.transition = 'none';
+          first.style.marginLeft = '';
+          slider.appendChild(first);
+          // Force reflow before allowing next animation
+          void slider.offsetHeight;
+          animating = false;
+        }, { once: true });
+      }
+
+      function start() { if (!timer) timer = setInterval(advance, 4000); }
+      function stop() { clearInterval(timer); timer = null; }
+
+      start();
+
+      // Only bind events once
+      if (!bound) {
+        slider.addEventListener('mouseenter', stop);
+        slider.addEventListener('mouseleave', start);
+        slider.addEventListener('touchstart', stop, { passive: true });
+        slider.addEventListener('touchend', start);
+        bound = true;
+      }
+    }
+
+    startSlider();
+  })();
 </script>
 
 <style>
@@ -240,6 +328,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     text-transform: capitalize;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     animation: fadeUp 0.9s ease forwards;
+    padding-bottom: 40px;
   }
 
   .callout-grid {
@@ -391,6 +480,7 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     transform: scale(1.08) translateX(-4%);
   }
 
+  .callout-card--workshops::before,
   .callout-card--markets::before { display: none; }
 
   .markets-slides {
@@ -419,11 +509,104 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     transform: scale(1.08) translateX(-4%);
   }
 
+  .callout-card--markets-new::before { display: none; }
+
+  .market-stall-slides {
+    position: absolute;
+    inset: 0;
+  }
+
+  .market-stall-slides__img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.08) translateX(4%);
+    transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .market-stall-slides__img.is-active {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+
+  .market-stall-slides__img.is-exiting {
+    opacity: 0;
+    transform: scale(1.08) translateX(-4%);
+  }
+
   .callout-card--compost::before { background-image: url('/images/banners/compost-club-banner.jpg'); }
 
   .callout-card--stockists::before { background-image: url('/images/banners/stockists-banner.jpg'); }
 
   .callout-card--wholesale::before { background-image: url('/images/banners/wholesale-banner.jpg'); }
+
+  /* Stockists Map */
+  .stockists-map {
+    text-align: center;
+    padding: 4rem 0;
+    background-color: var(--color-bg);
+  }
+
+  @media (min-width: 768px) {
+    .stockists-map {
+      padding: 4rem 1.5rem;
+    }
+  }
+
+  .stockists-map h2 {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .stockists-map__subtitle {
+    font-family: var(--font-heading);
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stockists-map__container {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  @media (min-width: 768px) {
+    .stockists-map__container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  .stockists-map__canvas {
+    width: 100%;
+    height: 450px;
+    background: #1a1a1a;
+  }
+
+  @media (min-width: 768px) {
+    .stockists-map__canvas {
+      height: 500px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .stockists-map__canvas {
+      height: 550px;
+    }
+
+    .stockists-map h2 {
+      font-size: 4rem;
+    }
+  }
 
   .instagram-feed {
     text-align: center;
@@ -439,16 +622,65 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY;
     margin-bottom: 1.5rem;
   }
 
-  .instagram-feed__placeholder {
-    font-family: var(--font-heading);
-    font-size: 1.125rem;
-    color: var(--color-text-muted);
+  .instagram-slider {
+    display: flex;
+    overflow: hidden;
+    padding: 0 1.5rem 1rem;
   }
 
-  .instagram-feed__placeholder a {
+  .instagram-slider__item {
+    flex: 0 0 280px;
+    margin-right: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+
+  .instagram-slider__item iframe {
+    width: 280px;
+    height: 380px;
+    border: none;
+    display: block;
+  }
+
+  .instagram-slider__demo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 380px;
+    font-family: var(--font-heading);
+    font-size: 5rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .instagram-feed__follow {
+    margin-top: 1.5rem;
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+  }
+
+  .instagram-feed__follow a {
     color: var(--color-text);
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+
+  @media (min-width: 768px) {
+    .instagram-slider__item {
+      flex: 0 0 320px;
+    }
+
+    .instagram-slider__item iframe {
+      width: 320px;
+      height: 420px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .instagram-feed h2 {
+      font-size: 4rem;
+    }
   }
 
   :global(.info-window h3) {

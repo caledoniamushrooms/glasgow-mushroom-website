@@ -1,0 +1,229 @@
+/*
+ * Portal Tailwind Theme — Adapted from Odin's Design System
+ *
+ * Source: /Users/hendrik-cm/Code/Odin/src/index.css
+ * This gives the portal exact visual parity with Odin's shadcn/ui styling.
+ * Tailwind is scoped to portal pages only — main GMC website uses global.css.
+ */
+
+@import "tailwindcss";
+
+/* ====== shadcn/ui COLOUR TOKENS ====== */
+@theme {
+  --color-background: 0 0% 100%;
+  --color-foreground: 0 0% 3.9%;
+  --color-card: 0 0% 100%;
+  --color-card-foreground: 0 0% 3.9%;
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 0 0% 3.9%;
+  --color-primary: 0 0% 9%;
+  --color-primary-foreground: 0 0% 98%;
+  --color-secondary: 0 0% 96.1%;
+  --color-secondary-foreground: 0 0% 9%;
+  --color-muted: 0 0% 96.1%;
+  --color-muted-foreground: 0 0% 45.1%;
+  --color-accent: 0 0% 96.1%;
+  --color-accent-foreground: 0 0% 9%;
+  --color-destructive: 0 84.2% 60.2%;
+  --color-destructive-foreground: 0 0% 98%;
+  --color-border: 0 0% 89.8%;
+  --color-input: 0 0% 89.8%;
+  --color-ring: 0 0% 3.9%;
+  --radius: 0.5rem;
+}
+
+:root {
+  /* shadcn/ui CSS variables (for components that use hsl(var(--*))) */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 3.9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 0 0% 3.9%;
+  --radius: 0.5rem;
+
+  /* ====== GMC/ODIN BRAND COLORS ====== */
+  --odin-green: 142 71% 25%;
+  --odin-green-dark: 142 76% 20%;
+  --odin-green-light: 142 69% 58%;
+  --odin-green-subtle: 142 47% 96%;
+  --odin-brown: 33 43% 41%;
+  --odin-cream: 47 87% 94%;
+
+  /* Override primary with GMC green */
+  --primary: var(--odin-green);
+  --primary-foreground: 0 0% 98%;
+
+  /* ====== TYPOGRAPHY ====== */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* ====== SPACING ====== */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* ====== COMPONENT DIMENSIONS ====== */
+  --header-height: 4rem;
+  --sidebar-width: 16rem;
+  --max-content-width: 75rem;
+  --input-height: 2.5rem;
+
+  /* ====== ELEVATION ====== */
+  --elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+  --elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+
+  /* ====== STATUS COLORS ====== */
+  --status-pending: 45 93% 58%;
+  --status-pending-bg: 48 100% 88%;
+  --status-paid-text: 0 0% 20%;
+  --status-paid-bg: 134 61% 84%;
+  --status-cancelled: 0 84% 60%;
+  --status-cancelled-bg: 0 93% 94%;
+  --status-modified: 217 91% 60%;
+  --status-modified-bg: 214 95% 93%;
+
+  /* ====== TRANSITIONS ====== */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+}
+
+/* ====== BASE STYLES ====== */
+.portal-body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* ====== ODIN COMPONENT UTILITIES ====== */
+
+/* Cards */
+.odin-card {
+  @apply bg-card border rounded-lg shadow-sm overflow-hidden;
+}
+.odin-card-header {
+  @apply px-6 py-4 border-b bg-muted/50;
+}
+.odin-card-title {
+  @apply text-xl font-semibold text-foreground;
+}
+.odin-card-description {
+  @apply text-sm text-muted-foreground mt-1;
+}
+.odin-card-content {
+  @apply px-6 py-4;
+}
+
+/* Tables */
+.odin-table-container {
+  @apply border rounded-lg overflow-hidden;
+}
+.odin-table-header {
+  @apply bg-muted/50 font-medium text-sm;
+}
+.odin-table-row {
+  @apply border-b hover:bg-muted/20 transition-colors;
+}
+.odin-table-cell {
+  @apply px-4 py-3 text-sm;
+}
+
+/* Forms */
+.odin-form {
+  @apply space-y-4;
+}
+.odin-form-group {
+  @apply space-y-2;
+}
+.odin-form-label {
+  @apply text-sm font-medium text-foreground;
+}
+.odin-form-row {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+.odin-form-actions {
+  @apply flex justify-end gap-3 pt-6;
+}
+
+/* Status badges */
+.odin-status-success {
+  @apply bg-green-50 text-green-800 border-green-200;
+}
+.odin-status-warning {
+  @apply bg-yellow-50 text-yellow-800 border-yellow-200;
+}
+.odin-status-error {
+  @apply bg-red-50 text-red-800 border-red-200;
+}
+.odin-status-info {
+  @apply bg-blue-50 text-blue-800 border-blue-200;
+}
+
+/* Loading & empty states */
+.odin-loading {
+  @apply flex items-center justify-center py-8;
+}
+.odin-spinner {
+  @apply animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full;
+}
+.odin-empty {
+  @apply text-center py-12 text-muted-foreground;
+}
+.odin-empty-title {
+  @apply text-lg font-medium text-foreground mb-2;
+}
+.odin-empty-description {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Focus ring — matching Odin */
+.odin-focus {
+  @apply focus-visible:border-black focus-visible:border-1 focus-visible:ring-[2px] focus-visible:ring-black/20 focus-visible:ring-offset-0 transition-[border-color,box-shadow] outline-none;
+}
+
+/* ====== PORTAL-SPECIFIC BADGES ====== */
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+.badge-paid {
+  background-color: hsl(var(--status-paid-bg));
+  color: hsl(var(--status-paid-text));
+}
+.badge-pending {
+  background-color: hsl(var(--status-pending-bg));
+  color: hsl(var(--status-pending));
+}
+.badge-cancelled {
+  background-color: hsl(var(--status-cancelled-bg));
+  color: hsl(var(--status-cancelled));
+}
+.badge-modified {
+  background-color: hsl(var(--status-modified-bg));
+  color: hsl(var(--status-modified));
+}
+.badge-draft {
+  @apply bg-gray-100 text-gray-600;
+}

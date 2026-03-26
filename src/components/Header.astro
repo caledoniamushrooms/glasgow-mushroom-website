@@ -36,6 +36,14 @@ import { navItems } from '../data/navigation.js';
             )}
           </li>
         ))}
+        <li>
+          <a href="/portal/login" class="header__trade-login" aria-label="Trade customer login" title="Trade Login">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M20 21a8 8 0 0 0-16 0"/>
+            </svg>
+          </a>
+        </li>
       </ul>
     </nav>
   </div>
@@ -74,6 +82,8 @@ import { navItems } from '../data/navigation.js';
 <style>
   .header {
     background-color: var(--color-bg);
+    position: relative;
+    z-index: 100;
   }
 
   .header__inner {
@@ -99,6 +109,24 @@ import { navItems } from '../data/navigation.js';
 
   .header__logo-img {
     filter: invert(1);
+  }
+
+  /* Trade login icon */
+  .header__trade-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: var(--color-text);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .header__trade-login:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+    opacity: 1;
   }
 
   /* Hamburger */
