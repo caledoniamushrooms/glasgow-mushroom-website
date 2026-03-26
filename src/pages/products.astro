@@ -1,11 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/ProductCard.astro';
-import { products } from '../data/products.js';
+import { products } from '../data/products';
+import { getImage } from 'astro:assets';
+import productsBannerSrc from '../assets/images/banners/products-banner.jpg';
+
+const productsBanner = await getImage({ src: productsBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Products — Glasgow Mushroom Company" description="Our range of gourmet mushrooms grown in Glasgow.">
-  <section class="products-hero">
+  <section class="products-hero" style={`--bg: url('${productsBanner.src}')`}>
     <h1>Products</h1>
   </section>
 
@@ -55,7 +59,7 @@ import { products } from '../data/products.js';
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('/images/banners/products-banner.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: 50% 28%;
     text-align: center;

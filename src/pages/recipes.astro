@@ -1,11 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import RecipeCard from '../components/RecipeCard.astro';
-import { recipes } from '../data/recipes.js';
+import { recipes } from '../data/recipes';
+import { getImage } from 'astro:assets';
+import recipesBannerSrc from '../assets/images/banners/recipes-banner.jpg';
+
+const recipesBanner = await getImage({ src: recipesBannerSrc, format: 'webp', quality: 80, width: 1920 });
 ---
 
 <BaseLayout title="Recipes — Glasgow Mushroom Company" description="Delicious recipes featuring our gourmet mushrooms.">
-  <section class="recipes-hero">
+  <section class="recipes-hero" style={`--bg: url('${recipesBanner.src}')`}>
     <h1>Recipes</h1>
   </section>
 
@@ -59,7 +63,7 @@ import { recipes } from '../data/recipes.js';
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('/images/banners/recipes-banner.jpg');
+    background-image: var(--bg);
     background-size: cover;
     background-position: 0 5%;
     text-align: center;

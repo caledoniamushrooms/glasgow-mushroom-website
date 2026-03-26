@@ -1,7 +1,11 @@
+import roastedChestnuts from '../assets/images/recipes/roasted-chestnuts.jpg';
+import lionsManeLinugine from '../assets/images/recipes/lions-mane-linguine.jpg';
+import oysterPie from '../assets/images/recipes/oyster-pie.jpg';
+
 export const recipes = [
   {
     name: 'Roasted Speckled Chestnuts on Toast',
-    image: '/images/recipes/roasted-chestnuts.jpg',
+    image: roastedChestnuts,
     description: "It's hard to go wrong with this combo of creamy ricotta and lightly roasted speckled chestnuts on toast. One of our favourites.",
     ingredients: [
       '300g whole small speckled chestnut mushrooms (if larger, halve lengthways)',
@@ -18,7 +22,7 @@ export const recipes = [
   },
   {
     name: 'Lions Mane Linguine',
-    image: '/images/recipes/lions-mane-linguine.jpg',
+    image: lionsManeLinugine,
     description: "Lion's Mane, a favorite mushroom for its health benefits and crab-like texture, offers versatile cooking options. It can be sliced into steaks for BBQ, used in faux lobster rolls, or transformed into herby 'crab' cakes. We've veganized a classic crab linguine recipe by separating Lion's Mane fronds to achieve that fluffy crab-like texture.",
     ingredients: [
       '1 pack linguine',
@@ -36,7 +40,7 @@ export const recipes = [
   },
   {
     name: 'Oyster Mushroom, Potato and Leek Pie',
-    image: '/images/recipes/oyster-pie.jpg',
+    image: oysterPie,
     description: "Oyster mushrooms work here in place of chicken or a processed alternative. The meaty texture and soft mushroomy flavour compliments the waxy potatoes and soft leeks without being overwhelming. King oyster mushrooms work especially well also. It's a lazy puff top pie, best served with a bowl of buttery peas or some steamed tenderstem. This pie is easily veganised with some basic ingredient swaps and by adding 1 tbsp nutritional yeast along with the mustard.",
     ingredients: [
       'Ready Rolled butter or vegan puff pastry',
