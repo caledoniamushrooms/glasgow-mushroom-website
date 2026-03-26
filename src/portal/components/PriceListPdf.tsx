@@ -210,17 +210,19 @@ interface PriceListPdfProps {
   generatedDate: string
   wholesaleThresholds?: WholesaleThreshold[]
   volumeDiscounts?: VolumeDiscount[]
+  logoUrl?: string
+  hideGrade?: boolean
 }
 
-export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThresholds = [], volumeDiscounts = [] }: PriceListPdfProps) {
-  const logoUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/images/logo-full.png`
+export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThresholds = [], volumeDiscounts = [], logoUrl: logoUrlProp, hideGrade = false }: PriceListPdfProps) {
+  const logoUrl = logoUrlProp ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/images/logo-full.png`
   const tierLabel = tiers.map(t => t.displayName).join(', ')
   const multiTier = tiers.length > 1
 
-  // Dynamic column widths based on number of tiers
-  const productWidth = multiTier ? '30%' : '35%'
+  // Dynamic column widths based on number of tiers and whether grade is shown
+  const productWidth = hideGrade ? '50%' : multiTier ? '30%' : '35%'
   const gradeWidth = multiTier ? '20%' : '30%'
-  const priceWidth = multiTier ? `${50 / tiers.length}%` : '35%'
+  const priceWidth = hideGrade ? '50%' : multiTier ? `${50 / tiers.length}%` : '35%'
 
   return (
     <Document>
@@ -238,7 +240,7 @@ export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThreshold
           {/* Table header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderText, { width: productWidth, paddingHorizontal: 6 }]}>Product</Text>
-            <Text style={[styles.tableHeaderText, { width: gradeWidth, paddingHorizontal: 6 }]}>Grade</Text>
+            {!hideGrade && <Text style={[styles.tableHeaderText, { width: gradeWidth, paddingHorizontal: 6 }]}>Grade</Text>}
             {tiers.map(tier => (
               <Text key={tier.key} style={[styles.tableHeaderText, { width: priceWidth, paddingHorizontal: 4, textAlign: 'right' }]}>
                 {multiTier ? tier.displayName : 'Price / kg'}
@@ -265,9 +267,11 @@ export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThreshold
                           <Text> </Text>
                         )}
                       </View>
-                      <View style={{ width: gradeWidth, paddingHorizontal: 6 }}>
-                        <Text style={styles.gradeName}>{grade.grade_name}</Text>
-                      </View>
+                      {!hideGrade && (
+                        <View style={{ width: gradeWidth, paddingHorizontal: 6 }}>
+                          <Text style={styles.gradeName}>{grade.grade_name}</Text>
+                        </View>
+                      )}
                       {tiers.map(tier => (
                         <Text key={tier.key} style={[{ width: priceWidth, paddingHorizontal: 4 }, styles.priceText]}>
                           £{(grade.tiers[tier.key] || 0).toFixed(2)}
