@@ -50,32 +50,34 @@ import { navItems } from '../data/navigation.js';
 </header>
 
 <script>
-  const hamburger = document.querySelector('.header__hamburger');
-  const nav = document.querySelector('.header__nav');
+  document.addEventListener('astro:page-load', () => {
+    const hamburger = document.querySelector('.header__hamburger');
+    const nav = document.querySelector('.header__nav');
 
-  hamburger?.addEventListener('click', () => {
-    const isOpen = nav?.classList.toggle('is-open');
-    hamburger.setAttribute('aria-expanded', String(isOpen));
-  });
+    hamburger?.addEventListener('click', () => {
+      const isOpen = nav?.classList.toggle('is-open');
+      hamburger?.setAttribute('aria-expanded', String(isOpen));
+    });
 
-  // Dropdown with hide delay so mouse can travel from link to menu
-  document.querySelectorAll('.header__nav-item--has-dropdown').forEach((item) => {
-    const dropdown = item.querySelector('.header__dropdown');
-    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    // Dropdown with hide delay so mouse can travel from link to menu
+    document.querySelectorAll('.header__nav-item--has-dropdown').forEach((item) => {
+      const dropdown = item.querySelector('.header__dropdown');
+      let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const show = () => {
-      if (hideTimer) clearTimeout(hideTimer);
-      dropdown?.classList.add('is-visible');
-    };
+      const show = () => {
+        if (hideTimer) clearTimeout(hideTimer);
+        dropdown?.classList.add('is-visible');
+      };
 
-    const hide = () => {
-      hideTimer = setTimeout(() => {
-        dropdown?.classList.remove('is-visible');
-      }, 200);
-    };
+      const hide = () => {
+        hideTimer = setTimeout(() => {
+          dropdown?.classList.remove('is-visible');
+        }, 200);
+      };
 
-    item.addEventListener('mouseenter', show);
-    item.addEventListener('mouseleave', hide);
+      item.addEventListener('mouseenter', show);
+      item.addEventListener('mouseleave', hide);
+    });
   });
 </script>
 
