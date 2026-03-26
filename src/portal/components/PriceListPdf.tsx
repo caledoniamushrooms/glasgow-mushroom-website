@@ -249,41 +249,58 @@ export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThreshold
           </View>
 
           {/* Rows */}
-          {grouped.map((group, gi) => {
-            const isLastGroup = gi === grouped.length - 1
-            return (
-              <View key={group.product_name} wrap={false} style={!isLastGroup ? styles.productGroupBorder : undefined}>
-                {group.grades.map((grade, gradeIdx) => {
-                  const isLastRow = isLastGroup && gradeIdx === group.grades.length - 1
-                  const isLastInGroup = gradeIdx === group.grades.length - 1
-                  return (
-                    <View
-                      key={`${group.product_name}-${grade.grade_name}`}
-                      style={[styles.tableRow, (isLastRow || (isLastInGroup && !isLastGroup)) ? styles.tableRowLast : {}]}
-                    >
-                      <View style={{ width: productWidth, paddingHorizontal: 6 }}>
-                        {gradeIdx === 0 ? (
-                          <Text style={styles.productName}>{group.product_name}</Text>
-                        ) : (
-                          <Text> </Text>
-                        )}
-                      </View>
-                      {!hideGrade && (
-                        <View style={{ width: gradeWidth, paddingHorizontal: 6 }}>
-                          <Text style={styles.gradeName}>{grade.grade_name}</Text>
-                        </View>
-                      )}
-                      {tiers.map(tier => (
-                        <Text key={tier.key} style={[{ width: priceWidth, paddingHorizontal: 4 }, styles.priceText]}>
-                          £{(grade.tiers[tier.key] || 0).toFixed(2)}
-                        </Text>
-                      ))}
+          {(() => {
+            const regularProducts = grouped.filter(g => !g.limited_availability)
+            const limitedProducts = grouped.filter(g => g.limited_availability)
+            const allSections = [
+              ...regularProducts.map(g => ({ ...g, _section: 'regular' as const })),
+              ...limitedProducts.map(g => ({ ...g, _section: 'limited' as const })),
+            ]
+
+            return allSections.map((group, gi) => {
+              const isLastGroup = gi === allSections.length - 1
+              const isFirstLimited = group._section === 'limited' && (gi === 0 || allSections[gi - 1]._section === 'regular')
+              return (
+                <View key={group.product_name}>
+                  {isFirstLimited && (
+                    <View style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 6, backgroundColor: '#fffbeb', borderBottom: `1px solid ${border}` }}>
+                      <Text style={{ fontSize: 9, fontWeight: 700, color: '#d97706', fontStyle: 'italic' }}>Limited availability*</Text>
                     </View>
-                  )
-                })}
-              </View>
-            )
-          })}
+                  )}
+                  <View wrap={false} style={!isLastGroup ? styles.productGroupBorder : undefined}>
+                    {group.grades.map((grade, gradeIdx) => {
+                      const isLastRow = isLastGroup && gradeIdx === group.grades.length - 1
+                      const isLastInGroup = gradeIdx === group.grades.length - 1
+                      return (
+                        <View
+                          key={`${group.product_name}-${grade.grade_name}`}
+                          style={[styles.tableRow, (isLastRow || (isLastInGroup && !isLastGroup)) ? styles.tableRowLast : {}]}
+                        >
+                          <View style={{ width: productWidth, paddingHorizontal: 6 }}>
+                            {gradeIdx === 0 ? (
+                              <Text style={styles.productName}>{group.product_name}</Text>
+                            ) : (
+                              <Text> </Text>
+                            )}
+                          </View>
+                          {!hideGrade && (
+                            <View style={{ width: gradeWidth, paddingHorizontal: 6 }}>
+                              <Text style={styles.gradeName}>{grade.grade_name}</Text>
+                            </View>
+                          )}
+                          {tiers.map(tier => (
+                            <Text key={tier.key} style={[{ width: priceWidth, paddingHorizontal: 4 }, styles.priceText]}>
+                              £{(grade.tiers[tier.key] || 0).toFixed(2)}
+                            </Text>
+                          ))}
+                        </View>
+                      )
+                    })}
+                  </View>
+                </View>
+              )
+            })
+          })()}
         </View>
 
         {/* Wholesale thresholds */}
@@ -340,7 +357,7 @@ export function PriceListPdf({ grouped, tiers, generatedDate, wholesaleThreshold
           <Text style={styles.footerBold}>Glasgow Mushroom Company</Text>
           <Text style={styles.footerText}>glasgowmushroomcompany.co.uk</Text>
           <Text style={styles.footerText}>
-            Prices valid as of {generatedDate}. Prices are estimates and may be adjusted at confirmation. Contact us for volume discounts.
+            Prices valid as of {generatedDate}. Prices are estimates and may be adjusted at confirmation. Contact us for volume discounts.{grouped.some(g => g.limited_availability) ? ' *Subject to seasonal availability.' : ''}
           </Text>
         </View>
       </Page>

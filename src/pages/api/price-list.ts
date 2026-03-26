@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ url }) => {
       .from('product_prices')
       .select(`
         price_per_kg,
-        products!inner(strain, base_price_per_kg, active),
+        products!inner(strain, base_price_per_kg, active, limited_availability),
         product_types!inner(name, price_multiplier),
         price_tiers!inner(name, display_name)
       `)
@@ -63,7 +63,7 @@ export const GET: APIRoute = async ({ url }) => {
 
       let group = productMap.get(productName);
       if (!group) {
-        group = { product_name: productName, base_price: basePrice, grades: [] };
+        group = { product_name: productName, base_price: basePrice, limited_availability: r.products.limited_availability || false, grades: [] };
         productMap.set(productName, group);
       }
 
@@ -77,9 +77,12 @@ export const GET: APIRoute = async ({ url }) => {
       grade.tiers[tierName] = price;
     }
 
-    const grouped = Array.from(productMap.values()).sort((a, b) =>
-      a.product_name.localeCompare(b.product_name),
-    );
+    const grouped = Array.from(productMap.values()).sort((a, b) => {
+      if (a.limited_availability !== b.limited_availability) {
+        return a.limited_availability ? 1 : -1;
+      }
+      return a.product_name.localeCompare(b.product_name);
+    });
 
     const tierDisplayName = (aClassRows[0] as any).price_tiers.display_name || 'Retail';
     const now = new Date();

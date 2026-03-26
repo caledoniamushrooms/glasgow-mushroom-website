@@ -102,6 +102,7 @@ export interface Product {
   name: string
   strain: string | null
   active: boolean
+  limited_availability: boolean
 }
 
 /** Product type (quality grade) */
@@ -130,6 +131,7 @@ export interface PriceEntry {
 export interface PriceGroup {
   product_name: string
   base_price: number
+  limited_availability: boolean
   grades: {
     grade_name: string
     multiplier: number

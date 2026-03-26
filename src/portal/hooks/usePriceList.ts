@@ -14,7 +14,7 @@ export function usePriceList() {
         .from('product_prices')
         .select(`
           price_per_kg,
-          products!inner(strain, base_price_per_kg, active),
+          products!inner(strain, base_price_per_kg, active, limited_availability),
           product_types!inner(name, price_multiplier),
           price_tiers!inner(name)
         `)
@@ -35,7 +35,7 @@ export function usePriceList() {
 
         let group = productMap.get(productName)
         if (!group) {
-          group = { product_name: productName, base_price: basePrice, grades: [] }
+          group = { product_name: productName, base_price: basePrice, limited_availability: (row as any).products.limited_availability || false, grades: [] }
           productMap.set(productName, group)
         }
 
@@ -49,9 +49,12 @@ export function usePriceList() {
       }
 
       // Sort products alphabetically, grades by multiplier descending (A+ first), free items last
-      const groups = Array.from(productMap.values()).sort((a, b) =>
-        a.product_name.localeCompare(b.product_name)
-      )
+      const groups = Array.from(productMap.values()).sort((a, b) => {
+        if (a.limited_availability !== b.limited_availability) {
+          return a.limited_availability ? 1 : -1
+        }
+        return a.product_name.localeCompare(b.product_name)
+      })
       for (const group of groups) {
         group.grades.sort((a, b) => {
           const aFree = Object.values(a.tiers).every(p => p === 0)

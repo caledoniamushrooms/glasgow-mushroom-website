@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, Fragment } from 'react'
 import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { usePriceList } from '../hooks/usePriceList'
@@ -260,8 +260,19 @@ export function PriceList() {
               </tr>
             </thead>
             <tbody>
-              {filteredGroups.map((group) =>
-                group.grades.map((grade, gi) => (
+              {filteredGroups.map((group, groupIdx) => {
+                const prevGroup = groupIdx > 0 ? filteredGroups[groupIdx - 1] : null
+                const showLimitedSeparator = group.limited_availability && (!prevGroup || !prevGroup.limited_availability)
+                return (
+                  <Fragment key={group.product_name}>
+                    {showLimitedSeparator && (
+                      <tr>
+                        <td colSpan={2 + visibleTiers.length} className="px-2 py-1.5 text-xs font-medium text-amber-600 bg-amber-50/50 border-y border-foreground">
+                          Limited Availability
+                        </td>
+                      </tr>
+                    )}
+                    {group.grades.map((grade, gi) => (
                   <tr
                     key={`${group.product_name}-${grade.grade_name}`}
                     className={`border-b border-foreground last:border-b-0 hover:bg-muted/50 transition-colors ${gi === 0 ? 'border-t border-t-foreground/20' : ''}`}
@@ -269,6 +280,9 @@ export function PriceList() {
                     {gi === 0 && (
                       <td className="p-2 align-top font-medium whitespace-nowrap" rowSpan={group.grades.length}>
                         {group.product_name}
+                        {group.limited_availability && (
+                          <span className="block text-xs text-amber-600 font-normal mt-0.5">Limited Availability</span>
+                        )}
                       </td>
                     )}
                     <td className="p-2 align-middle whitespace-nowrap">
@@ -280,8 +294,10 @@ export function PriceList() {
                       </td>
                     ))}
                   </tr>
-                ))
-              )}
+                ))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
