@@ -154,7 +154,12 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     <h2>Find Our Mushrooms</h2>
     <p class="stockists-map__subtitle">Available at these retailers across Glasgow</p>
     <div class="stockists-map__container">
-      <div id="map" class="stockists-map__canvas"></div>
+      <div id="map" class="stockists-map__canvas">
+        <div class="stockists-map__consent" id="map-consent">
+          <p>Accept cookies to view the map</p>
+          <button class="stockists-map__consent-btn" onclick="document.getElementById('cookie-accept')?.click()">Accept Cookies</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -175,6 +180,9 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
 
 <script is:inline>
   window.initMap = async function() {
+    var consent = document.getElementById('map-consent');
+    if (consent) consent.style.display = 'none';
+
     var mapLib = await google.maps.importLibrary("maps");
     var markerLib = await google.maps.importLibrary("marker");
 
@@ -637,9 +645,44 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   }
 
   .stockists-map__canvas {
+    position: relative;
     width: 100%;
     height: 450px;
     background: #1a1a1a;
+  }
+
+  .stockists-map__consent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+  }
+
+  .stockists-map__consent p {
+    margin: 0;
+  }
+
+  .stockists-map__consent-btn {
+    padding: 0.6rem 1.75rem;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: hsl(142 71% 25%);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .stockists-map__consent-btn:hover {
+    background-color: hsl(142 71% 30%);
   }
 
   @media (min-width: 768px) {
