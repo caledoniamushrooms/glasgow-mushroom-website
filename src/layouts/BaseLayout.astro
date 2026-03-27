@@ -38,6 +38,14 @@ const {
     />
     <title>{title}</title>
     <ClientRouter />
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NWCMVQ24FD"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-NWCMVQ24FD');
+    </script>
   </head>
   <body>
     {showNav && <Header />}
