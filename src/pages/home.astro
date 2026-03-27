@@ -166,11 +166,11 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   <section class="instagram-feed" data-reveal>
     <h2>Follow Us</h2>
     <div class="instagram-slider" id="instagram-slider">
-      <div class="instagram-slider__item"><iframe src="https://www.instagram.com/p/DWT0-iwDLqg/embed/" allowtransparency="true" loading="lazy"></iframe></div>
-      <div class="instagram-slider__item"><iframe src="https://www.instagram.com/p/DJj4_lMtbNn/embed/" allowtransparency="true" loading="lazy"></iframe></div>
-      <div class="instagram-slider__item"><iframe src="https://www.instagram.com/p/DCkGtqGT6Er/embed/" allowtransparency="true" loading="lazy"></iframe></div>
-      <div class="instagram-slider__item"><iframe src="https://www.instagram.com/p/DQOyBdzDTly/embed/" allowtransparency="true" loading="lazy"></iframe></div>
-      <div class="instagram-slider__item"><iframe src="https://www.instagram.com/p/C9w-1VJKHrG/embed/" allowtransparency="true" loading="lazy"></iframe></div>
+      <div class="instagram-slider__item"><a href="https://www.instagram.com/p/DWT0-iwDLqg/" target="_blank" rel="noopener noreferrer"></a><iframe src="https://www.instagram.com/p/DWT0-iwDLqg/embed/" allowtransparency="true" loading="lazy"></iframe></div>
+      <div class="instagram-slider__item"><a href="https://www.instagram.com/p/DJj4_lMtbNn/" target="_blank" rel="noopener noreferrer"></a><iframe src="https://www.instagram.com/p/DJj4_lMtbNn/embed/" allowtransparency="true" loading="lazy"></iframe></div>
+      <div class="instagram-slider__item"><a href="https://www.instagram.com/p/DCkGtqGT6Er/" target="_blank" rel="noopener noreferrer"></a><iframe src="https://www.instagram.com/p/DCkGtqGT6Er/embed/" allowtransparency="true" loading="lazy"></iframe></div>
+      <div class="instagram-slider__item"><a href="https://www.instagram.com/p/DQOyBdzDTly/" target="_blank" rel="noopener noreferrer"></a><iframe src="https://www.instagram.com/p/DQOyBdzDTly/embed/" allowtransparency="true" loading="lazy"></iframe></div>
+      <div class="instagram-slider__item"><a href="https://www.instagram.com/p/C9w-1VJKHrG/" target="_blank" rel="noopener noreferrer"></a><iframe src="https://www.instagram.com/p/C9w-1VJKHrG/embed/" allowtransparency="true" loading="lazy"></iframe></div>
     </div>
     <p class="instagram-feed__follow">
       <a href="https://www.instagram.com/glasgowmushroomco/" target="_blank" rel="noopener noreferrer">@glasgowmushroomco</a>
@@ -325,15 +325,22 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
         first.style.transition = 'margin-left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)';
         first.style.marginLeft = '-' + total + 'px';
 
-        first.addEventListener('transitionend', function handler() {
-          first.removeEventListener('transitionend', handler);
+        function finish() {
           first.style.transition = 'none';
           first.style.marginLeft = '';
           slider.appendChild(first);
-          // Force reflow before allowing next animation
           void slider.offsetHeight;
           animating = false;
+        }
+
+        first.addEventListener('transitionend', function handler() {
+          first.removeEventListener('transitionend', handler);
+          clearTimeout(fallback);
+          finish();
         }, { once: true });
+
+        // Fallback in case transitionend doesn't fire
+        var fallback = setTimeout(finish, 1000);
       }
 
       function start() { if (!timer) timer = setInterval(advance, 4000); }
@@ -723,28 +730,31 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
 
   .instagram-slider__item {
     flex: 0 0 280px;
+    height: 280px;
     margin-right: 1rem;
     border-radius: 8px;
     overflow: hidden;
     background: #1a1a1a;
+    position: relative;
+    cursor: pointer;
   }
 
   .instagram-slider__item iframe {
-    width: 280px;
-    height: 380px;
+    width: 400px;
+    height: 600px;
     border: none;
     display: block;
+    position: absolute;
+    top: -54px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
   }
 
-  .instagram-slider__demo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 380px;
-    font-family: var(--font-heading);
-    font-size: 5rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.3);
+  .instagram-slider__item a {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
   }
 
   .instagram-feed__follow {
@@ -762,11 +772,12 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   @media (min-width: 768px) {
     .instagram-slider__item {
       flex: 0 0 320px;
+      height: 320px;
     }
 
     .instagram-slider__item iframe {
-      width: 320px;
-      height: 420px;
+      width: 460px;
+      height: 700px;
     }
   }
 
