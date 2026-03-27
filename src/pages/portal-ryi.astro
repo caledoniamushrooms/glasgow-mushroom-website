@@ -1,0 +1,219 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<script>
+  const form = document.getElementById('ryi-form') as HTMLFormElement;
+  const status = document.getElementById('form-status') as HTMLParagraphElement;
+  const submit = document.getElementById('form-submit') as HTMLInputElement;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submit.disabled = true;
+    submit.value = 'Submitting…';
+    status.textContent = '';
+    status.className = 'form__status';
+
+    try {
+      const res = await fetch('/api/register-interest', {
+        method: 'POST',
+        body: new FormData(form),
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        status.textContent = 'Thank you! We\'ll be in touch when the portal is ready.';
+        status.className = 'form__status form__status--success';
+        form.reset();
+      } else {
+        status.textContent = json.error ?? 'Something went wrong. Please try again.';
+        status.className = 'form__status form__status--error';
+      }
+    } catch {
+      status.textContent = 'Network error. Please check your connection and try again.';
+      status.className = 'form__status form__status--error';
+    } finally {
+      submit.disabled = false;
+      submit.value = 'Register Interest';
+    }
+  });
+</script>
+
+<BaseLayout title="Trade Portal — Glasgow Mushroom Company" description="Register your interest in the Glasgow Mushroom Company trade portal for chefs and commercial customers.">
+  <section class="ryi">
+    <div class="ryi__card" data-reveal>
+      <div class="ryi__header">
+        <h1>Trade Portal</h1>
+        <p class="ryi__subtitle">Coming Soon</p>
+      </div>
+
+      <p class="ryi__message">
+        We're working on an exciting new portal where you can see all your trade information in one place. Register your interest to create an account when the portal goes live.
+      </p>
+
+      <form id="ryi-form" method="POST" action="/api/register-interest">
+        <div class="form__field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" placeholder="Your name" required />
+        </div>
+        <div class="form__field">
+          <label for="company_name">Company Name</label>
+          <input type="text" id="company_name" name="company_name" placeholder="Your company or restaurant" required />
+        </div>
+        <div class="form__field">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="Your email address" required />
+        </div>
+        <p id="form-status" class="form__status" aria-live="polite"></p>
+        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Register Interest" />
+      </form>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .ryi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 120px);
+    padding: 3rem 1.5rem;
+  }
+
+  .ryi__card {
+    background: var(--color-bg-footer);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 3rem;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .ryi__header {
+    margin-bottom: 1.5rem;
+  }
+
+  .ryi__card h1 {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+  }
+
+  .ryi__subtitle {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    color: hsl(142 71% 45%);
+    margin-top: 0.25rem;
+  }
+
+  .ryi__message {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  /* Form — mirrors contact page */
+  .form__field {
+    margin-bottom: 1rem;
+    text-align: left;
+  }
+
+  .form__field label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 0.4rem;
+  }
+
+  .form__field input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+  }
+
+  .form__field input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .form__field input:focus {
+    outline: none;
+    border-color: hsl(142 71% 35%);
+  }
+
+  .form__submit {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .form__status {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    min-height: 1.25em;
+  }
+
+  .form__status--success {
+    color: hsl(142 71% 45%);
+  }
+
+  .form__status--error {
+    color: #ef4444;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: hsl(142 71% 25%);
+    padding: 0.7rem 2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+
+  .cta-btn:hover {
+    background-color: hsl(142 71% 30%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .cta-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  @media (max-width: 479px) {
+    .ryi {
+      padding: 2rem 1rem;
+    }
+
+    .ryi__card {
+      padding: 2rem 1.5rem;
+    }
+
+    .ryi__card h1 {
+      font-size: 2rem;
+    }
+  }
+</style>
