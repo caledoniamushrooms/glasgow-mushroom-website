@@ -654,6 +654,11 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   }
 
   @media (max-width: 767px) {
+    .hero {
+      min-height: 100svh;
+      background-attachment: scroll;
+    }
+
     .hero h1 {
       font-size: 99px;
       line-height: 100px;
@@ -690,8 +695,10 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
 
   @media (max-width: 479px) {
     .hero {
+      min-height: 100svh;
       padding: 20px 0 60px 20px;
       background-position: center;
+      background-attachment: scroll;
     }
 
     .hero h1 {
