@@ -1,5 +1,7 @@
 import { useState, useMemo, type FormEvent } from 'react'
+import { format } from 'date-fns'
 import type { MarketLocation } from '../../lib/types'
+import { DatePicker } from '../ui/date-picker'
 
 interface CreateDateModalProps {
   locations: MarketLocation[]
@@ -35,7 +37,7 @@ function formatDateLabel(d: Date): string {
 export function CreateDateModal({ locations, onSave, onClose, isPending }: CreateDateModalProps) {
   const [step, setStep] = useState<'configure' | 'preview'>('configure')
   const [locationId, setLocationId] = useState(locations[0]?.id || '')
-  const [startDate, setStartDate] = useState('')
+  const [startDate, setStartDate] = useState<Date | undefined>()
   const [startTime, setStartTime] = useState('10:00')
   const [endTime, setEndTime] = useState('15:00')
   const [repeat, setRepeat] = useState(false)
@@ -47,11 +49,8 @@ export function CreateDateModal({ locations, onSave, onClose, isPending }: Creat
 
   const generatedDates = useMemo(() => {
     if (!startDate) return []
-    const base = new Date(startDate + 'T00:00:00')
-    if (isNaN(base.getTime())) return []
-
-    if (!repeat) return [base]
-    return generateRecurringDates(base, dayOfWeek, occurrences)
+    if (!repeat) return [startDate]
+    return generateRecurringDates(startDate, dayOfWeek, occurrences)
   }, [startDate, repeat, dayOfWeek, occurrences])
 
   const handlePreview = (e: FormEvent) => {
@@ -121,12 +120,10 @@ export function CreateDateModal({ locations, onSave, onClose, isPending }: Creat
 
             <div>
               <label className="block text-sm font-medium mb-1">Start Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                required
-                className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white odin-focus"
+                onChange={setStartDate}
+                placeholder="Pick a start date"
               />
             </div>
 
