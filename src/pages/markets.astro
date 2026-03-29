@@ -1,17 +1,35 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { markets } from '../data/markets.js';
-import { Image, getImage } from 'astro:assets';
-import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.jpg';
-import railyardLogoSrc from '../assets/images/markets/the-railyard-logo.png';
+export const prerender = false;
 
-const months = {};
-for (const event of markets) {
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getImage } from 'astro:assets';
+import directSalesBannerSrc from '../assets/images/banners/direct-sales-banner.jpg';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+);
+
+const today = new Date().toISOString().slice(0, 10);
+const { data: rawEvents } = await supabase
+  .from('market_events')
+  .select('*, market_locations(*)')
+  .gte('date', today)
+  .order('date');
+
+const months: Record<string, any[]> = {};
+for (const event of rawEvents || []) {
   const d = new Date(event.date + 'T00:00:00');
   const key = d.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
   if (!months[key]) months[key] = [];
   months[key].push({
-    ...event,
+    name: event.market_locations.name,
+    type: event.market_locations.type,
+    logoUrl: event.market_locations.logo_url,
+    location: event.market_locations.address,
+    locationUrl: event.market_locations.google_maps_url,
+    time: `${event.start_time.slice(0, 5)} \u2013 ${event.end_time.slice(0, 5)}`,
     dayLabel: d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
   });
 }
@@ -36,7 +54,7 @@ const marketsHero = await getImage({ src: directSalesBannerSrc, format: 'webp', 
           {events.map((event) => (
             <div class={`markets-card markets-card--${event.type}`}>
               <span class="markets-card__badge">{event.type}</span>
-              <Image src={railyardLogoSrc} alt={event.name} class="markets-card__logo" width={140} format="webp" quality={80} loading="lazy" />
+              {event.logoUrl && <img src={event.logoUrl} alt={event.name} class="markets-card__logo" width={140} loading="lazy" />}
               <p class="markets-card__date">{event.dayLabel}</p>
               <p class="markets-card__time">{event.time}</p>
               <p class="markets-card__location"><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.location}</a></p>

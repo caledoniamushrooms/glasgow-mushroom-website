@@ -154,6 +154,33 @@ export interface VolumeDiscount {
   discount_percent: number
 }
 
+/** Market location (venue) */
+export interface MarketLocation {
+  id: string
+  name: string
+  address: string
+  google_maps_url: string | null
+  logo_url: string | null
+  type: string
+  created_at: string
+  updated_at: string
+}
+
+/** Market event (a specific date at a location) */
+export interface MarketEvent {
+  id: string
+  market_location_id: string
+  date: string
+  start_time: string
+  end_time: string
+  created_at: string
+}
+
+/** Joined shape for display */
+export interface MarketEventWithLocation extends MarketEvent {
+  market_locations: MarketLocation
+}
+
 /** Customer delivery schedule entry */
 export interface DeliverySchedule {
   id: string

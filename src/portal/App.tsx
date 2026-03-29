@@ -16,6 +16,7 @@ import { NewOrder } from './pages/NewOrder'
 import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
+import { Markets } from './pages/Markets'
 import '../styles/portal-tailwind.css'
 
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ export default function App() {
               <Route path="/portal/price-list" element={<PriceList />} />
               <Route path="/portal/profile" element={<Profile />} />
               <Route path="/portal/team" element={<Team />} />
+              <Route path="/portal/markets" element={<Markets />} />
             </Route>
 
             {/* Catch-all redirect */}
