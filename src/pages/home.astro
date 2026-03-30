@@ -60,6 +60,10 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     <h1>Gourmet Mushrooms Grown In Glasgow</h1>
   </section>
 
+  <section class="partners" id="partners-section" style="display: none;">
+    <div class="partners__track" id="partners-track"></div>
+  </section>
+
   <section class="callout-grid">
     <a href="/products" class="callout-card callout-card--products" data-reveal="scale" style="transition-delay: 0s">
       <div class="product-slides">
@@ -164,6 +168,91 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   </section>
 
 </BaseLayout>
+
+<script is:inline>
+  function initPartnerLogos() {
+    (async function() {
+      try {
+        var res = await fetch('/api/partner-logos');
+        if (!res.ok) return;
+        var logos = await res.json();
+        if (!logos.length) return;
+
+        var section = document.getElementById('partners-section');
+        var track = document.getElementById('partners-track');
+        if (!section || !track) return;
+
+        var html = logos.map(function(l) {
+          var name = l.customers ? l.customers.name : '';
+          var url = l.customers ? l.customers.website_url : '';
+          var img = '<img src="' + l.logo_url + '" alt="' + name + '" loading="lazy" />';
+          if (url) {
+            return '<div class="partners__item"><a href="' + url + '" target="_blank" rel="noopener noreferrer">' + img + '</a></div>';
+          }
+          return '<div class="partners__item">' + img + '</div>';
+        }).join('');
+
+        // Repeat enough times to fill at least 2x viewport width for seamless scroll
+        var repeats = Math.max(2, Math.ceil((window.innerWidth * 2) / (logos.length * 200)));
+        var repeated = '';
+        for (var i = 0; i < repeats; i++) repeated += html;
+        track.innerHTML = repeated + repeated;
+
+        section.style.display = '';
+
+        // JS-driven scroll with edge acceleration
+        var offset = 0;
+        var baseSpeed = 0.5; // px per frame at 60fps
+        var fastSpeed = 3;   // px per frame when hovering edges
+        var currentSpeed = baseSpeed;
+        var halfWidth = track.scrollWidth / 2;
+        var edgeZone = 0.15; // 15% on each side
+
+        section.addEventListener('mouseenter', function(e) {
+          updateSpeed(e);
+        });
+
+        section.addEventListener('mousemove', function(e) {
+          updateSpeed(e);
+        });
+
+        section.addEventListener('mouseleave', function() {
+          currentSpeed = baseSpeed;
+        });
+
+        function updateSpeed(e) {
+          var rect = section.getBoundingClientRect();
+          var x = (e.clientX - rect.left) / rect.width;
+
+          if (x < edgeZone) {
+            // Left edge — scroll faster (backwards)
+            currentSpeed = -fastSpeed;
+          } else if (x > 1 - edgeZone) {
+            // Right edge — scroll faster (forwards)
+            currentSpeed = fastSpeed;
+          } else {
+            // Middle — pause
+            currentSpeed = 0;
+          }
+        }
+
+        var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reducedMotion) {
+          (function animate() {
+            offset += currentSpeed;
+            // Seamless loop: reset when we've scrolled past the first half
+            if (offset >= halfWidth) offset -= halfWidth;
+            if (offset < 0) offset += halfWidth;
+            track.style.transform = 'translateX(-' + offset + 'px)';
+            requestAnimationFrame(animate);
+          })();
+        }
+      } catch(e) { /* section stays hidden */ }
+    })();
+  }
+  initPartnerLogos();
+  document.addEventListener('astro:page-load', initPartnerLogos);
+</script>
 
 <script is:inline>
   window.initMap = async function() {
@@ -705,6 +794,71 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
       font-size: 54px;
       line-height: 72px;
       max-width: 51%;
+    }
+  }
+
+  /* ── Partner logos marquee ── */
+  /* :global() needed because content is injected via JS innerHTML */
+
+  :global(.partners) {
+    background-color: var(--color-bg);
+    padding: 2rem 0;
+    overflow: hidden;
+  }
+
+  :global(.partners__track) {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+
+  :global(.partners__item) {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3rem;
+  }
+
+  :global(.partners__item a) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global(.partners__item img) {
+    max-height: 60px;
+    max-width: 180px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+
+  :global(.partners__item img:hover) {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.partners__track) {
+      flex-wrap: wrap;
+      justify-content: center;
+      width: auto;
+    }
+
+    :global(.partners__item) {
+      padding: 1rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :global(.partners) {
+      padding: 3rem 0;
+    }
+
+    :global(.partners__item img) {
+      max-height: 70px;
+      max-width: 220px;
     }
   }
 </style>
