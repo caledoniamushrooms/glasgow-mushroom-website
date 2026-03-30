@@ -154,11 +154,11 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
   }
 
   .ws-distributor__logo--cs {
-    max-width: 278px;
+    max-width: min(278px, calc(100% - 3rem));
   }
 
   .ws-distributor__logo--ochil {
-    max-width: 575px;
+    max-width: min(575px, calc(100% - 3rem));
   }
 
   .ws-distributor__content {
