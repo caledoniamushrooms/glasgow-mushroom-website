@@ -14,11 +14,41 @@ const anonClient = createClient(supabaseUrl, supabaseAnonKey);
 /** Service role client — bypasses RLS, used for admin writes after auth check */
 const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
+const ALLOWED_ORIGINS = [
+  'https://odin.caledoniamushrooms.co',
+  'http://localhost:4321',
+  'http://localhost:3000',
+];
+
+function corsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('origin') || '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Headers': 'authorization, content-type',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    };
+  }
+  return {};
+}
+
 function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json', ...headers },
   });
+}
+
+/** Wrap a handler to inject CORS headers into every response */
+function withCors(handler: (ctx: { request: Request }) => Promise<Response>): APIRoute {
+  return async (ctx) => {
+    const res = await handler(ctx);
+    const cors = corsHeaders(ctx.request);
+    for (const [k, v] of Object.entries(cors)) {
+      res.headers.set(k, v);
+    }
+    return res;
+  };
 }
 
 /**
@@ -46,12 +76,19 @@ async function verifySystemAdmin(token: string): Promise<boolean> {
 }
 
 /**
+ * OPTIONS — CORS preflight
+ */
+export const OPTIONS: APIRoute = withCors(async () => {
+  return new Response(null, { status: 204 });
+});
+
+/**
  * GET — public list of active partner logos
  */
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = withCors(async () => {
   const { data, error } = await serviceClient
     .from('partner_logos')
-    .select('id, logo_url, sort_order, customers(name, website_url)')
+    .select('id, logo_url, logo_url_dark, sort_order, customers(name, website_url)')
     .eq('active', true)
     .order('sort_order')
     .order('created_at');
@@ -61,7 +98,7 @@ export const GET: APIRoute = async () => {
   }
 
   return jsonResponse(data, 200, { 'Cache-Control': 'public, max-age=300' });
-};
+});
 
 /**
  * POST — upload a new partner logo (system_admin only)
@@ -72,7 +109,7 @@ export const GET: APIRoute = async () => {
  *
  * The image is processed to white-on-transparent PNG via Sharp.
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = withCors(async ({ request }) => {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return jsonResponse({ error: 'Unauthorized' }, 401);
@@ -227,4 +264,4 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   return jsonResponse(logo, 201);
-};
+});
