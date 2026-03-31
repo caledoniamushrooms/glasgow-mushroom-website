@@ -13,6 +13,7 @@ export function Team() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ type: 'promote' | 'demote' | 'remove'; member: PortalUser } | null>(null)
 
   const teamQuery = useQuery({
     queryKey: ['team', customerId],
@@ -38,6 +39,7 @@ export function Team() {
           customer_id: customerId,
           email,
           display_name: name,
+          role: 'member',
         },
       })
       if (error) throw error
@@ -51,6 +53,34 @@ export function Team() {
     },
   })
 
+  const changeRole = useMutation({
+    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: 'admin' | 'member' }) => {
+      const { error } = await supabase
+        .from('portal_users')
+        .update({ role: newRole })
+        .eq('id', memberId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team'] })
+      setConfirmAction(null)
+    },
+  })
+
+  const removeMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase
+        .from('portal_users')
+        .update({ status: 'suspended' })
+        .eq('id', memberId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team'] })
+      setConfirmAction(null)
+    },
+  })
+
   const handleInvite = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -61,7 +91,24 @@ export function Team() {
     }
   }
 
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return
+    setError(null)
+    try {
+      if (confirmAction.type === 'remove') {
+        await removeMember.mutateAsync(confirmAction.member.id)
+      } else {
+        const newRole = confirmAction.type === 'promote' ? 'admin' : 'member'
+        await changeRole.mutateAsync({ memberId: confirmAction.member.id, newRole })
+      }
+    } catch (err) {
+      setError((err as Error).message || 'Action failed')
+    }
+  }
+
   const team = teamQuery.data || []
+  const activeTeam = team.filter(m => m.status !== 'suspended')
+  const suspendedTeam = team.filter(m => m.status === 'suspended')
 
   if (teamQuery.isLoading) return <div className="odin-loading">Loading team...</div>
 
@@ -84,6 +131,49 @@ export function Team() {
 
       {error && (
         <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm mb-4">{error}</div>
+      )}
+
+      {/* Confirmation dialog */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-[380px] w-full">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {confirmAction.type === 'promote' && 'Promote to Manager'}
+              {confirmAction.type === 'demote' && 'Demote to Member'}
+              {confirmAction.type === 'remove' && 'Remove Team Member'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {confirmAction.type === 'promote' && (
+                <>Are you sure you want to promote <strong>{confirmAction.member.display_name}</strong> to manager? They will be able to invite and manage team members.</>
+              )}
+              {confirmAction.type === 'demote' && (
+                <>Are you sure you want to change <strong>{confirmAction.member.display_name}</strong> to a regular member? They will no longer be able to manage the team.</>
+              )}
+              {confirmAction.type === 'remove' && (
+                <>Are you sure you want to remove <strong>{confirmAction.member.display_name}</strong> from the team? They will lose access to the portal.</>
+              )}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="bg-transparent border border-border px-4 py-2 rounded-md text-sm cursor-pointer text-muted-foreground hover:bg-accent transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={changeRole.isPending || removeMember.isPending}
+                className={`px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity disabled:opacity-50 ${
+                  confirmAction.type === 'remove'
+                    ? 'bg-red-600 text-white hover:opacity-90'
+                    : 'bg-primary text-primary-foreground hover:opacity-90'
+                }`}
+              >
+                {(changeRole.isPending || removeMember.isPending) ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Invite form */}
@@ -121,7 +211,7 @@ export function Team() {
         </form>
       )}
 
-      {/* Team list */}
+      {/* Active team list */}
       <div className="odin-table-container overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -131,10 +221,13 @@ export function Team() {
               <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Role</th>
               <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Status</th>
               <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Last Login</th>
+              {isAdmin && (
+                <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {team.map(member => (
+            {activeTeam.map(member => (
               <tr key={member.id} className="odin-table-row">
                 <td className="odin-table-cell font-semibold">
                   {member.display_name}
@@ -145,7 +238,7 @@ export function Team() {
                 <td className="odin-table-cell text-muted-foreground">{member.email}</td>
                 <td className="odin-table-cell">
                   <span className={`badge ${member.role === 'admin' ? 'badge-modified' : 'badge-draft'}`}>
-                    {member.role}
+                    {member.role === 'admin' ? 'Manager' : 'Member'}
                   </span>
                 </td>
                 <td className="odin-table-cell">
@@ -158,15 +251,66 @@ export function Team() {
                     ? new Date(member.last_login_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : 'Never'}
                 </td>
+                {isAdmin && (
+                  <td className="odin-table-cell">
+                    {member.id !== portalUser?.id && member.status === 'active' && (
+                      <div className="flex gap-2">
+                        {member.role === 'member' ? (
+                          <button
+                            onClick={() => setConfirmAction({ type: 'promote', member })}
+                            className="text-xs text-primary hover:underline cursor-pointer"
+                          >
+                            Promote
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmAction({ type: 'demote', member })}
+                            className="text-xs text-primary hover:underline cursor-pointer"
+                          >
+                            Demote
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setConfirmAction({ type: 'remove', member })}
+                          className="text-xs text-red-600 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Suspended members */}
+      {suspendedTeam.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-sm font-medium text-muted-foreground mb-3">Removed Members</h2>
+          <div className="odin-table-container overflow-x-auto">
+            <table className="w-full border-collapse text-sm opacity-60">
+              <tbody>
+                {suspendedTeam.map(member => (
+                  <tr key={member.id} className="odin-table-row">
+                    <td className="odin-table-cell">{member.display_name}</td>
+                    <td className="odin-table-cell text-muted-foreground">{member.email}</td>
+                    <td className="odin-table-cell">
+                      <span className="badge badge-cancelled">Suspended</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {!isAdmin && (
         <p className="mt-4 text-xs text-muted-foreground">
-          Only account admins can invite new team members.
+          Only account managers can invite and manage team members.
         </p>
       )}
     </div>

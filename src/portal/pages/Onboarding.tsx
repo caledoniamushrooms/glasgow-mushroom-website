@@ -9,12 +9,14 @@ export function Onboarding() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [portalUser, setPortalUser] = useState<PortalUser | null>(null)
+  const [isExistingCustomer, setIsExistingCustomer] = useState(false)
   const [formData, setFormData] = useState({
     display_name: '',
     phone: '',
     address_line_1: '',
     city: '',
     postcode: '',
+    preferred_fulfilment: '',
   })
 
   useEffect(() => {
@@ -45,6 +47,33 @@ export function Onboarding() {
         ...prev,
         display_name: existingUser.display_name || '',
       }))
+
+      // Pre-populate from existing customer data
+      if (existingUser.customer_id) {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('name, email, phone')
+          .eq('id', existingUser.customer_id)
+          .single()
+
+        const { data: branch } = await supabase
+          .from('branches')
+          .select('address_line_1, city, postcode, phone')
+          .eq('customer_id', existingUser.customer_id)
+          .eq('branch_type', 'company')
+          .single()
+
+        if (customer || branch) {
+          setIsExistingCustomer(true)
+          setFormData(prev => ({
+            ...prev,
+            phone: prev.phone || customer?.phone || branch?.phone || '',
+            address_line_1: branch?.address_line_1 || '',
+            city: branch?.city || '',
+            postcode: branch?.postcode || '',
+          }))
+        }
+      }
     }
 
     setLoading(false)
@@ -109,22 +138,43 @@ export function Onboarding() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
+    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4 py-12" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
       <div className="absolute inset-0 bg-black/55" />
-      <div className="relative z-10 w-full max-w-[480px] bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
+      <div className="relative z-10 w-full max-w-[520px] bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-6">
           <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>
           <p className="text-sm text-muted-foreground mt-1">Complete Your Profile</p>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          {isExistingCustomer
+            ? 'Welcome! We\'ve pre-filled your details from our records. Please review and update anything that\'s changed.'
+            : 'Welcome! Please complete your details to get started with your trade account.'}
+        </p>
+
+        {/* How ordering works */}
+        <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6 text-sm">
+          <p className="font-medium text-foreground mb-2">How ordering works</p>
+          <div className="flex flex-wrap items-center gap-1 text-muted-foreground text-xs">
+            <span className="bg-white border border-border rounded px-2 py-0.5">Place order</span>
+            <span>&#8594;</span>
+            <span className="bg-white border border-border rounded px-2 py-0.5">We review</span>
+            <span>&#8594;</span>
+            <span className="bg-white border border-border rounded px-2 py-0.5">Confirmed</span>
+            <span>&#8594;</span>
+            <span className="bg-white border border-border rounded px-2 py-0.5">Dispatched</span>
+            <span>&#8594;</span>
+            <span className="bg-white border border-border rounded px-2 py-0.5">Delivered</span>
+          </div>
+          <p className="text-muted-foreground mt-2">
+            Orders are invoiced weekly. You can track everything from your dashboard.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
             <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" role="alert">{error}</div>
           )}
-
-          <p className="text-sm text-muted-foreground">
-            Welcome! Please review and complete your details to get started.
-          </p>
 
           <div className="flex flex-col gap-1">
             <label htmlFor="display_name" className="text-sm font-medium text-foreground">Your name *</label>
@@ -150,6 +200,21 @@ export function Onboarding() {
               placeholder="Optional"
               className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
             />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="preferred_fulfilment" className="text-sm font-medium text-foreground">Preferred fulfilment</label>
+            <select
+              id="preferred_fulfilment"
+              value={formData.preferred_fulfilment}
+              onChange={e => handleChange('preferred_fulfilment', e.target.value)}
+              className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground odin-focus"
+            >
+              <option value="">Select an option...</option>
+              <option value="delivery">Delivery (within our delivery zone)</option>
+              <option value="collection">Collection from farm</option>
+              <option value="courier">Courier (nationwide)</option>
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">

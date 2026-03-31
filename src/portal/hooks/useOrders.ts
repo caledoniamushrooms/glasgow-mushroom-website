@@ -104,6 +104,56 @@ export function useOrders() {
     },
   })
 
+  const updateOrder = useMutation({
+    mutationFn: async (order: {
+      id: string
+      branch_id: string | null
+      requested_date: string
+      customer_notes: string
+      items: Array<{ product_id: string; product_type_id: string; quantity: number; estimated_price: number | null }>
+    }) => {
+      if (!customerId || !portalUser) throw new Error('Not authenticated')
+
+      // Update portal order
+      const { error: orderError } = await supabase
+        .from('portal_orders')
+        .update({
+          branch_id: order.branch_id,
+          requested_date: order.requested_date,
+          customer_notes: order.customer_notes || null,
+        })
+        .eq('id', order.id)
+        .eq('status', 'submitted')
+
+      if (orderError) throw orderError
+
+      // Delete existing items and re-insert
+      const { error: deleteError } = await supabase
+        .from('portal_order_items')
+        .delete()
+        .eq('portal_order_id', order.id)
+
+      if (deleteError) throw deleteError
+
+      const items = order.items.map(item => ({
+        portal_order_id: order.id,
+        product_id: item.product_id,
+        product_type_id: item.product_type_id,
+        quantity: item.quantity,
+        estimated_price: item.estimated_price,
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('portal_order_items')
+        .insert(items)
+
+      if (itemsError) throw itemsError
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal-orders'] })
+    },
+  })
+
   const cancelOrder = useMutation({
     mutationFn: async (orderId: string) => {
       const { error } = await supabase
@@ -135,6 +185,7 @@ export function useOrders() {
     loading: ordersQuery.isLoading,
     error: ordersQuery.error,
     submitOrder,
+    updateOrder,
     cancelOrder,
   }
 }

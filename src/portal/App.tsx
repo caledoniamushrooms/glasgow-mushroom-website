@@ -16,6 +16,8 @@ import { NewOrder } from './pages/NewOrder'
 import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
+import { EditOrder } from './pages/EditOrder'
+import { StockoutReport } from './pages/StockoutReport'
 import '../styles/portal-tailwind.css'
 
 const queryClient = new QueryClient({
@@ -50,6 +52,8 @@ export default function App() {
               <Route path="/portal" element={<Dashboard />} />
               <Route path="/portal/orders" element={<Orders />} />
               <Route path="/portal/orders/new" element={<NewOrder />} />
+              <Route path="/portal/orders/:id/edit" element={<EditOrder />} />
+              <Route path="/portal/orders/stockout" element={<StockoutReport />} />
               <Route path="/portal/orders/recurring" element={<RecurringOrders />} />
               <Route path="/portal/invoices" element={<Invoices />} />
               <Route path="/portal/payments" element={<Payments />} />

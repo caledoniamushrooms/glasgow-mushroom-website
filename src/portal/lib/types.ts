@@ -81,6 +81,7 @@ export interface PortalOrder {
   cancelled_by: 'customer' | 'operator' | null
   cancelled_reason: string | null
   modification_summary: string | null
+  is_urgent: boolean
   created_at: string
   items?: PortalOrderItem[]
 }
@@ -152,6 +153,20 @@ export interface VolumeDiscount {
   tier_display_name: string
   min_quantity: number
   discount_percent: number
+}
+
+/** Active promotion */
+export interface Promotion {
+  id: string
+  name: string
+  description: string | null
+  product_id: string | null
+  product_type_id: string | null
+  price_tier_id: string | null
+  discount_percent: number
+  start_date: string
+  end_date: string
+  active: boolean
 }
 
 /** Customer delivery schedule entry */

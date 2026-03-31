@@ -9,12 +9,14 @@ export function Register() {
     email: '',
     phone: '',
     message: '',
+    preferred_fulfilment: '',
+    sample_requested: false,
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -32,6 +34,8 @@ export function Register() {
           email: formData.email,
           phone: formData.phone || null,
           message: formData.message || null,
+          preferred_fulfilment: formData.preferred_fulfilment || null,
+          sample_requested: formData.sample_requested,
         })
 
       if (insertError) throw insertError
@@ -75,12 +79,39 @@ export function Register() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
+    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4 py-12" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
       <div className="absolute inset-0 bg-black/55" />
-      <div className="relative z-10 w-full max-w-[480px] bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
+      <div className="relative z-10 w-full max-w-[520px] bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-6">
           <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>
-          <p className="text-sm text-muted-foreground mt-1">Register as a B2B Customer</p>
+          <p className="text-sm text-muted-foreground mt-1">Register as a Trade Customer</p>
+        </div>
+
+        {/* What to expect panel */}
+        <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6 text-sm">
+          <p className="font-medium text-foreground mb-2">What to expect as a trade customer</p>
+          <ul className="space-y-1.5 text-muted-foreground">
+            <li className="flex gap-2">
+              <span className="text-primary shrink-0">&#10003;</span>
+              <span><strong>Fulfilment options</strong> — delivery within our zone, collection from our farm, or courier nationwide</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary shrink-0">&#10003;</span>
+              <span><strong>Wholesale pricing</strong> — tiered pricing based on your order volume</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary shrink-0">&#10003;</span>
+              <span><strong>Simple ordering</strong> — place and manage orders online, with real-time status updates</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary shrink-0">&#10003;</span>
+              <span><strong>Weekly invoicing</strong> — consolidated weekly invoices with online payment</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary shrink-0">&#10003;</span>
+              <span><strong>Free samples</strong> — request a complimentary sample box to try our mushrooms</span>
+            </li>
+          </ul>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -142,6 +173,21 @@ export function Register() {
           </div>
 
           <div className="flex flex-col gap-1">
+            <label htmlFor="preferred_fulfilment" className="text-sm font-medium text-foreground">Preferred fulfilment</label>
+            <select
+              id="preferred_fulfilment"
+              value={formData.preferred_fulfilment}
+              onChange={e => handleChange('preferred_fulfilment', e.target.value)}
+              className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground odin-focus"
+            >
+              <option value="">Select an option...</option>
+              <option value="delivery">Delivery (within our delivery zone)</option>
+              <option value="collection">Collection from farm</option>
+              <option value="courier">Courier (nationwide)</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
             <label htmlFor="message" className="text-sm font-medium text-foreground">Tell us about your business</label>
             <textarea
               id="message"
@@ -152,6 +198,18 @@ export function Register() {
               className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 resize-y odin-focus"
             />
           </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.sample_requested}
+              onChange={e => handleChange('sample_requested', e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-input text-primary accent-primary"
+            />
+            <span className="text-sm text-foreground">
+              I'd like to request a <strong>free sample box</strong> to try your mushrooms
+            </span>
+          </label>
 
           <button type="submit" className="py-3 bg-primary text-primary-foreground rounded-md text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed" disabled={submitting}>
             {submitting ? 'Submitting...' : 'Submit Registration'}
