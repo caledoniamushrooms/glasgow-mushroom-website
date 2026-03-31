@@ -35,7 +35,7 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
   </section>
 
   <section class="ws-distributor ws-distributor--ochil">
-    <Image src={ochilFoodsSrc} alt="Ochil Foods" class="ws-distributor__logo ws-distributor__logo--ochil" width={575} format="webp" quality={80} loading="lazy" />
+    <Image src={ochilFoodsSrc} alt="Ochil Foods" class="ws-distributor__logo ws-distributor__logo--ochil" width={575} format="webp" quality={80} loading="lazy" style="max-width: 100%; height: auto;" />
     <div class="ws-distributor__content">
       <h3 class="ws-distributor__name">Ochil Foods</h3>
       <div class="ws-distributor__body">
@@ -135,7 +135,8 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 0;
+    padding: 40px 1.5rem;
+    overflow: hidden;
   }
 
   .ws-distributor--cs {
@@ -148,6 +149,7 @@ const wholesaleBanner = await getImage({ src: wholesaleBannerSrc, format: 'webp'
 
   .ws-distributor__logo {
     display: block;
+    width: 100%;
     height: auto;
     margin-bottom: 1.5rem;
   }
