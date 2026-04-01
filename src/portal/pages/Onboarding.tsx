@@ -129,7 +129,7 @@ export function Onboarding() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-        <div className="absolute inset-0 bg-black/55" />
+        <div className="fixed inset-0 bg-black/55" />
         <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
           <p className="text-center text-muted-foreground py-8">Loading...</p>
         </div>
@@ -139,7 +139,7 @@ export function Onboarding() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4 py-12" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="fixed inset-0 bg-black/55" />
       <div className="relative z-10 w-full max-w-[520px] bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-6">
           <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>

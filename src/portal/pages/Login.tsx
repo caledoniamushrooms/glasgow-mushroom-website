@@ -15,7 +15,7 @@ export function Login() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-        <div className="absolute inset-0 bg-black/55" />
+        <div className="fixed inset-0 bg-black/55" />
         <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
           <p className="text-center text-muted-foreground py-8">Loading...</p>
         </div>
@@ -57,7 +57,7 @@ export function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="fixed inset-0 bg-black/55" />
       <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <img src="/images/logo-full.svg" alt="Glasgow Mushroom Co." className="max-w-[200px] h-auto mx-auto block" />

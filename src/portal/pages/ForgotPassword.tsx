@@ -25,7 +25,7 @@ export function ForgotPassword() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4" style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-      <div className="absolute inset-0 bg-black/55" />
+      <div className="fixed inset-0 bg-black/55" />
       <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>
