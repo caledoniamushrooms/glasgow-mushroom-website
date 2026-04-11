@@ -45,4 +45,15 @@ export const stockists = [
     textColor: '#ffffff',
     headingColor: 'rgb(249, 229, 117)',
   },
+  {
+    name: 'Dig In',
+    logo: '/images/stockists/dig-in.png',
+    description: 'We are proud to supply Govan\'s very own community greengrocer with our fresh mushrooms. Run for and by the community, Dig In is all about affordable, wholesome food and bringing people together — values close to our own hearts.',
+    addresses: [
+      { text: '193 Crossloan Rd, Glasgow G51 3QE', mapUrl: 'https://maps.google.com/?q=Dig+In+193+Crossloan+Rd+Glasgow+G51+3QE' },
+    ],
+    bgColor: '#ffffff',
+    textColor: '#333333',
+    headingColor: '#b34a3a',
+  },
 ];
