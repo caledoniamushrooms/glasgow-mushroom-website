@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
+import { useViewAs } from '../components/ViewAsProvider'
 
 export interface DeliveryNote {
   id: string
@@ -20,8 +21,9 @@ export interface DeliveryNote {
 
 export function useDeliveryNotes() {
   const { portalUser } = useAuthContext()
-  const customerId = portalUser?.customer_id
-  const branchId = portalUser?.branch_id
+  const { viewAsCustomerId } = useViewAs()
+  const customerId = viewAsCustomerId || portalUser?.customer_id
+  const branchId = viewAsCustomerId ? null : (portalUser?.branch_id ?? null)
 
   const notesQuery = useQuery({
     queryKey: ['delivery-notes', customerId, branchId],

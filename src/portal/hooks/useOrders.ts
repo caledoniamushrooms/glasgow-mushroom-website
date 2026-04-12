@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
+import { useViewAs } from '../components/ViewAsProvider'
 import type { PortalOrder, Product, ProductType } from '../lib/types'
 
 export function useOrders() {
   const { portalUser } = useAuthContext()
-  const customerId = portalUser?.customer_id
-  const branchId = portalUser?.branch_id
+  const { viewAsCustomerId } = useViewAs()
+  const customerId = viewAsCustomerId || portalUser?.customer_id
+  const branchId = viewAsCustomerId ? null : (portalUser?.branch_id ?? null)
   const queryClient = useQueryClient()
 
   const ordersQuery = useQuery({

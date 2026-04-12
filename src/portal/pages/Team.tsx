@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
+import { useViewAs } from '../components/ViewAsProvider'
 import type { PortalUser } from '../lib/types'
 
 export function Team() {
   const { portalUser, isAdmin } = useAuthContext()
-  const customerId = portalUser?.customer_id
+  const { viewAsCustomerId } = useViewAs()
+  const customerId = viewAsCustomerId || portalUser?.customer_id
   const queryClient = useQueryClient()
 
   const [showInvite, setShowInvite] = useState(false)
