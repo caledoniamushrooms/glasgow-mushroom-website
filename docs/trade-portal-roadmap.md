@@ -2,40 +2,51 @@
 
 This is a living document tracking the build status of every trade portal component. Update status as work progresses.
 
-Statuses: `unstarted` | `planning` | `in-progress` | `built` | `blocked`
+Statuses: `unstarted` | `planned` | `in-progress` | `built` | `blocked`
+
+Implementation plans: `docs/plans/module-system.md`
 
 ---
 
-## Phase 1 — Admin Dashboard
+## Phase A — Foundation
+
+| # | Component | Status | Notes |
+|---|-----------|--------|-------|
+| 1 | Module toggle persistence | planned | `customer_modules` table + `useModules` hook + RLS |
+| 2 | Registration request review + account creation | planned | Admin page + `portal-registration` edge function |
+
+## Phase B — Module Infrastructure
+
+| # | Component | Status | Notes |
+|---|-----------|--------|-------|
+| 3 | Module-aware navigation | planned | PortalLayout sidebar filtered by enabled modules |
+| 4 | Dashboard module awareness | planned | Widgets conditional on enabled modules |
+| 5 | ModuleGate component | planned | Reusable route-level guard, applied to all module routes |
+
+## Phase C — Gates on Existing Modules
+
+| # | Module | Key | Status | Notes |
+|---|--------|-----|--------|-------|
+| 5 | Pricing | `pricing` | planned | Built, needs ModuleGate wrap |
+| 6 | Ordering | `ordering` | planned | Built, needs ModuleGate wrap |
+| 8 | Accounts | `accounts` | planned | Built (invoices + payments), needs ModuleGate wrap |
+| 9 | Team | `team` | planned | Built, needs ModuleGate wrap + edge function from #2 |
+
+## Phase D — Feature Work
+
+| # | Module | Key | Status | Notes |
+|---|--------|-----|--------|-------|
+| 7 | Recurring Orders create form | `recurring_orders` | planned | Mutation exists, needs UI form + ModuleGate |
+| 10 | Delivery Notes | `delivery_notes` | planned | New table + page, staff-created, customer read-only |
+| 11 | Promotions | `promotions` | planned | New table + page, customer-targeted via RLS |
+| 12 | Stockouts | `stockouts` | planned | New table + page, customer submits restock requests |
+
+## Always-On (not modules)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Customer list with module toggles | unstarted | Row per customer, column per module, checkbox toggles |
-| Registration request review | unstarted | List pending requests, approve/reject |
-| Account creation on approval | unstarted | Creates auth user, customer, portal_user, branch records |
-| Invite existing customer | unstarted | Send invite email to known customer |
-| Module toggle persistence | unstarted | `customer_modules` table, RLS policies |
-
-## Phase 2 — Customer Dashboard
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Module-aware navigation | unstarted | Sidebar only shows links for enabled modules |
-| Profile (always-on) | built | Business details, branches, delivery schedule |
-| Dashboard module | built | Widgets for balance, invoices, payments, orders — needs module-awareness |
-
-## Phase 3 — Customer Modules
-
-| Module | Key | Status | Notes |
-|--------|-----|--------|-------|
-| Pricing | `pricing` | built | Price list, volume discounts, PDF download |
-| Ordering | `ordering` | built | New orders, order management, history |
-| Recurring Orders | `recurring_orders` | built | Standing orders, schedule (listing only — no create form yet) |
-| Accounts | `accounts` | built | Invoices + payments (currently separate pages, need combining under one module) |
-| Delivery Notes | `delivery_notes` | unstarted | |
-| Promotions | `promotions` | unstarted | |
-| Team | `team` | built | Invite members, role management |
-| Stockouts | `stockouts` | unstarted | |
+| Profile | built | Business details, branches, delivery schedule |
+| Markets | built | system_admin only, market locations + events |
 
 ## Infrastructure
 
@@ -47,7 +58,6 @@ Statuses: `unstarted` | `planning` | `in-progress` | `built` | `blocked`
 | Onboarding flow | built | `/portal/onboarding`, collects profile, sets status to active |
 | Auth + RLS | built | `useAuth` hook, RLS policies, JWT claims |
 | Realtime subscriptions | built | Auto-invalidates query caches on data changes |
-| Supabase Edge Function (portal-registration) | unstarted | Account creation, invite emails — called from Team.tsx but not implemented |
 
 ---
 
