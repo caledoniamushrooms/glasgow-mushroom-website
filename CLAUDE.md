@@ -50,6 +50,15 @@ Static content is plain JS arrays exported from `src/data/`:
 
 `home.astro` embeds a Google Maps JS API map with a dark custom style. The API key is a placeholder string `GOOGLE_MAPS_API_KEY` — replace with a real key before deploying.
 
+### Trade Portal
+
+The portal is a React SPA mounted at `/portal` using React Router, TanStack Query, Supabase, and Tailwind CSS. Source lives in `src/portal/`.
+
+- **Spec:** `docs/trade-portal-onboarding.md` — onboarding flows, module definitions, rollout phases
+- **Roadmap:** `docs/trade-portal-roadmap.md` — living document tracking build status of every component and module
+- **Modules:** Portal features are organised into toggleable modules that admins enable per customer. See the spec for the full module list.
+- **Implementation process:** Every module must start in plan mode. Produce a detailed implementation plan, get alignment, then build. Update the roadmap as work progresses.
+
 ### Visual reference
 
 When making visual changes, compare against the live Webflow site at **glasgowmushroom.co** using Chrome DevTools MCP screenshots. Target breakpoints: 320px, 768px, 1024px, 1440px.
