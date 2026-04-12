@@ -11,7 +11,12 @@ export function Customers() {
 
   const [search, setSearch] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('admin-selected-customers')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
   const [modalCustomer, setModalCustomer] = useState<CustomerWithModules | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -26,26 +31,20 @@ export function Customers() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const filteredDropdown = search
-    ? customers.filter(c =>
-        !selectedIds.has(c.id) &&
-        (c.name.toLowerCase().includes(search.toLowerCase()) ||
-         c.email.toLowerCase().includes(search.toLowerCase()))
-      )
-    : []
+  const filteredDropdown = customers.filter(c =>
+    !search ||
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.email.toLowerCase().includes(search.toLowerCase())
+  )
 
   const selectedCustomers = customers.filter(c => selectedIds.has(c.id))
 
-  const addCustomer = (id: string) => {
-    setSelectedIds(prev => new Set(prev).add(id))
-    setSearch('')
-    setDropdownOpen(false)
-  }
-
-  const removeCustomer = (id: string) => {
+  const toggleCustomer = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
-      next.delete(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      localStorage.setItem('admin-selected-customers', JSON.stringify([...next]))
       return next
     })
   }
@@ -80,32 +79,59 @@ export function Customers() {
         </p>
       </header>
 
-      {/* Searchable dropdown */}
+      {/* Customer selector dropdown */}
       <div ref={dropdownRef} className="relative mb-6 max-w-[400px]">
-        <input
-          value={search}
-          onChange={e => { setSearch(e.target.value); setDropdownOpen(true) }}
-          onFocus={() => { if (search) setDropdownOpen(true) }}
-          placeholder="Search customers by name or email..."
-          className="w-full px-3 py-2.5 border border-input rounded-md text-sm bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
-        />
-        {dropdownOpen && filteredDropdown.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-md shadow-lg z-20 max-h-[240px] overflow-y-auto">
-            {filteredDropdown.slice(0, 20).map(c => (
-              <button
-                key={c.id}
-                onClick={() => addCustomer(c.id)}
-                className="w-full px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors cursor-pointer bg-transparent border-none flex justify-between items-center"
-              >
-                <div>
-                  <span className="font-medium text-foreground">{c.name}</span>
-                  <span className="text-muted-foreground ml-2">{c.email}</span>
-                </div>
-                {c.customer_type_name && (
-                  <span className="text-xs text-muted-foreground">{c.customer_type_name}</span>
-                )}
-              </button>
-            ))}
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="w-full px-3 py-2.5 border border-input rounded-md text-sm bg-white text-foreground odin-focus flex items-center justify-between cursor-pointer"
+        >
+          <span className={selectedIds.size > 0 ? 'text-foreground' : 'text-muted-foreground/60'}>
+            {selectedIds.size > 0 ? `${selectedIds.size} customer${selectedIds.size !== 1 ? 's' : ''} selected` : 'Select customers...'}
+          </span>
+          <svg className={`w-4 h-4 text-muted-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {dropdownOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-md shadow-lg z-20 max-h-[320px] overflow-hidden flex flex-col">
+            {/* Search filter */}
+            <div className="p-2 border-b border-border">
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Filter..."
+                autoFocus
+                className="w-full px-2.5 py-1.5 border border-input rounded text-sm bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
+              />
+            </div>
+            {/* Customer list */}
+            <div className="overflow-y-auto max-h-[260px]">
+              {filteredDropdown.length === 0 ? (
+                <p className="px-3 py-2.5 text-sm text-muted-foreground">No customers found.</p>
+              ) : (
+                filteredDropdown.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleCustomer(c.id)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors cursor-pointer bg-transparent border-none flex items-center gap-3"
+                  >
+                    <div className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${selectedIds.has(c.id) ? 'bg-primary border-primary' : 'border-input'}`}>
+                      {selectedIds.has(c.id) && (
+                        <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-foreground">{c.name}</span>
+                      {c.customer_type_name && (
+                        <span className="text-xs text-muted-foreground ml-2">{c.customer_type_name}</span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -124,7 +150,6 @@ export function Customers() {
                 <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Type</th>
                 <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Tier</th>
                 <th className="odin-table-cell text-center text-xs uppercase tracking-wide">Modules</th>
-                <th className="odin-table-cell text-center text-xs uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -142,14 +167,6 @@ export function Customers() {
                   <td className="odin-table-cell text-muted-foreground">{c.tier_name || '—'}</td>
                   <td className="odin-table-cell text-center">
                     <span className="badge badge-paid">{enabledCount(c)} / {MODULE_KEYS.length}</span>
-                  </td>
-                  <td className="odin-table-cell text-center" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => removeCustomer(c.id)}
-                      className="text-muted-foreground text-xs hover:text-red-600 bg-transparent border-none cursor-pointer p-0"
-                    >
-                      Remove
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -212,8 +229,8 @@ export function Customers() {
                         <span className={`text-sm font-medium ${enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {MODULE_LABELS[key]}
                         </span>
-                        <div className={`w-9 h-5 rounded-full relative transition-colors ${enabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
-                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        <div className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${enabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                          <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                         </div>
                       </button>
                       {enabled && (
