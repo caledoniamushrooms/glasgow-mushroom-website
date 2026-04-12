@@ -12,34 +12,34 @@ Implementation plans: `docs/plans/module-system.md`
 
 | # | Component | Status | Notes |
 |---|-----------|--------|-------|
-| 1 | Module toggle persistence | planned | `customer_modules` table + `useModules` hook + RLS |
-| 2 | Registration request review + account creation | planned | Admin page + `portal-registration` edge function |
+| 1 | Module toggle persistence | built | `customer_modules` table + `useModules` hook + RLS + realtime |
+| 2 | Registration request review + account creation | built | Admin page + `useRegistrations` hook. Edge function not yet deployed. |
 
 ## Phase B — Module Infrastructure
 
 | # | Component | Status | Notes |
 |---|-----------|--------|-------|
-| 3 | Module-aware navigation | planned | PortalLayout sidebar filtered by enabled modules |
-| 4 | Dashboard module awareness | planned | Widgets conditional on enabled modules |
-| 5 | ModuleGate component | planned | Reusable route-level guard, applied to all module routes |
+| 3 | Module-aware navigation | built | PortalLayout sidebar filtered by `moduleKey` on each nav item |
+| 4 | Dashboard module awareness | built | Widgets conditional on accounts/ordering modules; empty state when no modules |
+| 5 | ModuleGate component | built | Reusable route guard, applied to all module routes in App.tsx |
 
 ## Phase C — Gates on Existing Modules
 
 | # | Module | Key | Status | Notes |
 |---|--------|-----|--------|-------|
-| 5 | Pricing | `pricing` | planned | Built, needs ModuleGate wrap |
-| 6 | Ordering | `ordering` | planned | Built, needs ModuleGate wrap |
-| 8 | Accounts | `accounts` | planned | Built (invoices + payments), needs ModuleGate wrap |
-| 9 | Team | `team` | planned | Built, needs ModuleGate wrap + edge function from #2 |
+| 5 | Pricing | `pricing` | built | ModuleGate wrapped |
+| 6 | Ordering | `ordering` | built | ModuleGate wrapped (orders + new order) |
+| 8 | Accounts | `accounts` | built | ModuleGate wrapped (invoices + payments) |
+| 9 | Team | `team` | built | ModuleGate wrapped; invite depends on edge function |
 
 ## Phase D — Feature Work
 
 | # | Module | Key | Status | Notes |
 |---|--------|-----|--------|-------|
-| 7 | Recurring Orders create form | `recurring_orders` | planned | Mutation exists, needs UI form + ModuleGate |
-| 10 | Delivery Notes | `delivery_notes` | planned | New table + page, staff-created, customer read-only |
-| 11 | Promotions | `promotions` | planned | New table + page, customer-targeted via RLS |
-| 12 | Stockouts | `stockouts` | planned | New table + page, customer submits restock requests |
+| 7 | Recurring Orders create form | `recurring_orders` | built | Create form + ModuleGate; uses existing `createRecurring` mutation |
+| 10 | Delivery Notes | `delivery_notes` | built | New table + page; staff-created, customer read-only |
+| 11 | Promotions | `promotions` | built | New table + page; customer-targeted via RLS |
+| 12 | Stockouts | `stockouts` | built | New table + page; submit form + request history |
 
 ## Always-On (not modules)
 
@@ -57,7 +57,9 @@ Implementation plans: `docs/plans/module-system.md`
 | Login (password + magic link) | built | `/portal/login` |
 | Onboarding flow | built | `/portal/onboarding`, collects profile, sets status to active |
 | Auth + RLS | built | `useAuth` hook, RLS policies, JWT claims |
-| Realtime subscriptions | built | Auto-invalidates query caches on data changes |
+| Realtime subscriptions | built | customer_modules, delivery_notes, stockout_requests added |
+| Supabase Edge Function (portal-registration) | unstarted | Account creation, invite emails — called from admin + Team.tsx |
+| DB migration (module system tables) | built | `20260412000000_module_system_tables.sql` — not yet pushed to Supabase |
 
 ---
 
