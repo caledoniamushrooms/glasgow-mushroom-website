@@ -7,15 +7,15 @@ export interface Promotion {
   name: string
   description: string | null
   start_date: string
-  end_date: string | null
-  discount_type: 'percentage' | 'fixed' | 'free_sample' | 'bundle' | 'info_only'
-  discount_value: number | null
-  applicable_product_ids: string[] | null
-  applicable_customer_ids: string[] | null
-  min_order_quantity: number | null
+  end_date: string
+  discount_percent: number
+  price_tier_id: string | null
+  customer_type_id: string | null
+  product_id: string | null
+  product_type_id: string | null
   active: boolean
-  image_url: string | null
   created_at: string
+  updated_at: string
 }
 
 export function usePromotions() {
@@ -26,19 +26,17 @@ export function usePromotions() {
     queryKey: ['promotions', customerId],
     queryFn: async (): Promise<Promotion[]> => {
       if (!customerId) return []
-      // RLS handles customer targeting — just fetch all active promotions
+      const today = new Date().toISOString().split('T')[0]
       const { data, error } = await supabase
         .from('promotions')
         .select('*')
         .eq('active', true)
-        .lte('start_date', new Date().toISOString().split('T')[0])
+        .lte('start_date', today)
+        .gte('end_date', today)
         .order('start_date', { ascending: false })
 
       if (error) throw error
-      // Client-side filter for end_date (or() with null is cleaner in RLS)
-      return (data || []).filter(
-        p => !p.end_date || p.end_date >= new Date().toISOString().split('T')[0]
-      )
+      return data || []
     },
     enabled: !!customerId,
   })
