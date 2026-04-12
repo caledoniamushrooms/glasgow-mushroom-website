@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, Fragment } from 'react'
 import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
+import { useViewAs } from '../components/ViewAsProvider'
 import { usePriceList } from '../hooks/usePriceList'
 import type { PriceGroup, PriceTier } from '../lib/types'
 
@@ -12,6 +13,8 @@ const tierConfig: Record<string, { label: string; color: string; icon: string }>
 
 export function PriceList() {
   const { isSystemAdmin } = useAuthContext()
+  const { isViewingAs } = useViewAs()
+  const showAllTiers = isSystemAdmin && !isViewingAs
   const { customer } = useCustomer()
   const { grouped, tiers, wholesaleThresholds, volumeDiscounts, loading, error } = usePriceList()
   const [generating, setGenerating] = useState(false)
@@ -34,7 +37,7 @@ export function PriceList() {
 
   const customerTierName = tiers.find(t => t.id === customer?.price_tier_id)?.name || null
   const visibleTiers: PriceTier[] = useMemo(() => {
-    if (!isSystemAdmin) {
+    if (!showAllTiers) {
       return tiers.filter(t => t.name === customerTierName)
     }
     if (selectedTiers.size > 0) {
@@ -44,7 +47,7 @@ export function PriceList() {
   }, [isSystemAdmin, tiers, customerTierName, selectedTiers])
 
   const filteredGroups: PriceGroup[] = useMemo(() => {
-    let groups = isSystemAdmin
+    let groups = showAllTiers
       ? grouped
       : grouped.map(g => ({
           ...g,
@@ -68,7 +71,7 @@ export function PriceList() {
     }
 
     return groups
-  }, [grouped, isSystemAdmin, customerTierName, selectedProducts, selectedGrades])
+  }, [grouped, showAllTiers, customerTierName, selectedProducts, selectedGrades])
 
   const toggle = (set: Set<string>, value: string, setter: (s: Set<string>) => void) => {
     const next = new Set(set)
@@ -141,7 +144,7 @@ export function PriceList() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Price List</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isSystemAdmin
+            {showAllTiers
               ? (visibleTiers.length === tiers.length
                   ? 'All pricing tiers'
                   : visibleTiers.map(t => t.display_name).join(', ') + ' pricing')
@@ -167,7 +170,7 @@ export function PriceList() {
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
 
-          {isSystemAdmin && tiers.length > 0 && (
+          {showAllTiers && tiers.length > 0 && (
             <div className="flex items-start gap-2">
               <label className="text-sm font-medium text-foreground whitespace-nowrap mt-1">Tier:</label>
               <div className="flex flex-wrap gap-1">
