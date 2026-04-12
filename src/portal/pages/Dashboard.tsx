@@ -2,13 +2,15 @@ import { Link } from 'react-router-dom'
 import { useAuthContext } from '../components/AuthProvider'
 import { useInvoices } from '../hooks/useInvoices'
 import { useModules } from '../hooks/useModules'
+import { useViewAs } from '../components/ViewAsProvider'
 import { AdminDashboard } from './admin/AdminDashboard'
 
 export function Dashboard() {
   const { portalUser, isSystemAdmin } = useAuthContext()
+  const { isViewingAs } = useViewAs()
   const { isModuleEnabled } = useModules()
 
-  if (isSystemAdmin) return <AdminDashboard />
+  if (isSystemAdmin && !isViewingAs) return <AdminDashboard />
   const { outstandingBalance, unpaidCount, invoices, payments, loading } = useInvoices()
 
   const showAccounts = isModuleEnabled('accounts')

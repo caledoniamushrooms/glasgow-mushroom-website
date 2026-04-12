@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './components/AuthProvider'
+import { ViewAsProvider } from './components/ViewAsProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ModuleGate } from './components/ModuleGate'
 import { PortalLayout } from './components/PortalLayout'
@@ -38,6 +39,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ViewAsProvider>
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
@@ -100,6 +102,7 @@ export default function App() {
             <Route path="/portal/*" element={<Navigate to="/portal" replace />} />
           </Routes>
         </BrowserRouter>
+        </ViewAsProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

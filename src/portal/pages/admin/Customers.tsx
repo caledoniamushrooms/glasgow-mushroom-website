@@ -1,11 +1,20 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminCustomers } from '../../hooks/useAdminCustomers'
+import { useViewAs } from '../../components/ViewAsProvider'
 import { MODULE_KEYS, MODULE_LABELS, type ModuleKey } from '../../lib/modules'
 
 export function Customers() {
   const { customers, loading, error, toggleModule } = useAdminCustomers()
+  const { startViewAs } = useViewAs()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [toggling, setToggling] = useState<string | null>(null)
+
+  const handleViewAs = (customerId: string, customerName: string) => {
+    startViewAs(customerId, customerName)
+    navigate('/portal')
+  }
 
   const filtered = search
     ? customers.filter(c =>
@@ -63,6 +72,7 @@ export function Customers() {
                     {MODULE_LABELS[key]}
                   </th>
                 ))}
+                <th className="odin-table-cell text-center text-xs uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -87,6 +97,14 @@ export function Customers() {
                       </td>
                     )
                   })}
+                  <td className="odin-table-cell text-center">
+                    <button
+                      onClick={() => handleViewAs(customer.id, customer.name)}
+                      className="text-primary text-xs no-underline hover:underline bg-transparent border-none cursor-pointer p-0"
+                    >
+                      View as
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

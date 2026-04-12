@@ -4,6 +4,7 @@ import { useAuthContext } from './AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { useRealtime } from '../hooks/useRealtime'
 import { useModules } from '../hooks/useModules'
+import { useViewAs } from './ViewAsProvider'
 import type { ModuleKey } from '../lib/modules'
 
 interface NavItem {
@@ -38,10 +39,13 @@ export function PortalLayout() {
   const { portalUser, isSystemAdmin, signOut } = useAuthContext()
   const { customer, currentBranch } = useCustomer()
   const { isModuleEnabled } = useModules()
+  const { isViewingAs, viewAsCustomerName, stopViewAs } = useViewAs()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useRealtime()
+
+  const showAdminNav = isSystemAdmin && !isViewingAs
 
   const visibleNavItems = navItems.filter(
     item => item.moduleKey === null || isModuleEnabled(item.moduleKey)
@@ -83,9 +87,9 @@ export function PortalLayout() {
         {/* Brand */}
         <div className="px-4 py-5 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground leading-tight">
-            {isSystemAdmin ? 'Admin' : (customer?.name || 'Glasgow Mushroom Co.')}
+            {showAdminNav ? 'Admin' : (customer?.name || 'Glasgow Mushroom Co.')}
           </h2>
-          {!isSystemAdmin && currentBranch && (
+          {!showAdminNav && currentBranch && (
             <p className="text-xs text-muted-foreground mt-1">{currentBranch.name}</p>
           )}
           <p className="text-sm text-muted-foreground mt-1">{portalUser?.display_name}</p>
@@ -93,7 +97,7 @@ export function PortalLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 py-2 overflow-y-auto">
-          {(isSystemAdmin ? adminNavItems : visibleNavItems).map(item => (
+          {(showAdminNav ? adminNavItems : visibleNavItems).map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -135,8 +139,21 @@ export function PortalLayout() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 mt-16 lg:mt-0 lg:ml-60 p-4 md:p-6 lg:p-8 min-h-screen">
-        <Outlet />
+      <main className="flex-1 mt-16 lg:mt-0 lg:ml-60 min-h-screen">
+        {isViewingAs && (
+          <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm">
+            <span>Viewing as <strong>{viewAsCustomerName}</strong></span>
+            <button
+              onClick={() => { stopViewAs(); navigate('/portal/admin/customers') }}
+              className="bg-white/20 hover:bg-white/30 text-primary-foreground px-3 py-1 rounded text-xs font-medium cursor-pointer transition-colors"
+            >
+              Exit View As
+            </button>
+          </div>
+        )}
+        <div className="p-4 md:p-6 lg:p-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
+import { useViewAs } from '../components/ViewAsProvider'
 import type { ModuleKey } from '../lib/modules'
 import { MODULE_KEYS } from '../lib/modules'
 
@@ -15,7 +16,8 @@ interface CustomerModule {
 
 export function useModules() {
   const { portalUser, isSystemAdmin } = useAuthContext()
-  const customerId = portalUser?.customer_id
+  const { isViewingAs, viewAsCustomerId } = useViewAs()
+  const customerId = viewAsCustomerId || portalUser?.customer_id
 
   const modulesQuery = useQuery({
     queryKey: ['customer-modules', customerId],
@@ -33,8 +35,10 @@ export function useModules() {
     enabled: !!customerId,
   })
 
+  const bypassModuleCheck = isSystemAdmin && !isViewingAs
+
   const enabledModules = new Set<ModuleKey>(
-    isSystemAdmin
+    bypassModuleCheck
       ? MODULE_KEYS
       : (modulesQuery.data || [])
           .filter(m => MODULE_KEYS.includes(m.module_key as ModuleKey))
@@ -42,7 +46,7 @@ export function useModules() {
   )
 
   const isModuleEnabled = (key: ModuleKey): boolean => {
-    if (isSystemAdmin) return true
+    if (bypassModuleCheck) return true
     return enabledModules.has(key)
   }
 
