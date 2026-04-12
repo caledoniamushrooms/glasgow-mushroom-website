@@ -19,6 +19,7 @@ import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
 import { Markets } from './pages/Markets'
 import { Registrations } from './pages/admin/Registrations'
+import { Customers } from './pages/admin/Customers'
 import { DeliveryNotes } from './pages/DeliveryNotes'
 import { Promotions } from './pages/Promotions'
 import { Stockouts } from './pages/Stockouts'
@@ -86,6 +87,9 @@ export default function App() {
               <Route path="/portal/profile" element={<Profile />} />
 
               {/* Admin (system_admin only) */}
+              <Route path="/portal/admin/customers" element={
+                <ProtectedRoute requireSystemAdmin><Customers /></ProtectedRoute>
+              } />
               <Route path="/portal/admin/registrations" element={
                 <ProtectedRoute requireSystemAdmin><Registrations /></ProtectedRoute>
               } />

@@ -27,9 +27,11 @@ const navItems: NavItem[] = [
   { to: '/portal/team', label: 'Team', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', moduleKey: 'team' },
 ]
 
-const adminNavItems = [
-  { to: '/portal/admin/registrations', label: 'Registrations', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' },
-  { to: '/portal/markets', label: 'Markets', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+const adminNavItems: NavItem[] = [
+  { to: '/portal', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', moduleKey: null },
+  { to: '/portal/admin/customers', label: 'Customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', moduleKey: null },
+  { to: '/portal/admin/registrations', label: 'Registrations', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', moduleKey: null },
+  { to: '/portal/markets', label: 'Markets', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', moduleKey: null },
 ]
 
 export function PortalLayout() {
@@ -81,9 +83,9 @@ export function PortalLayout() {
         {/* Brand */}
         <div className="px-4 py-5 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground leading-tight">
-            {customer?.name || 'Glasgow Mushroom Co.'}
+            {isSystemAdmin ? 'Admin' : (customer?.name || 'Glasgow Mushroom Co.')}
           </h2>
-          {currentBranch && (
+          {!isSystemAdmin && currentBranch && (
             <p className="text-xs text-muted-foreground mt-1">{currentBranch.name}</p>
           )}
           <p className="text-sm text-muted-foreground mt-1">{portalUser?.display_name}</p>
@@ -91,7 +93,7 @@ export function PortalLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 py-2 overflow-y-auto">
-          {visibleNavItems.map(item => (
+          {(isSystemAdmin ? adminNavItems : visibleNavItems).map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -111,31 +113,6 @@ export function PortalLayout() {
               {item.label}
             </NavLink>
           ))}
-          {isSystemAdmin && (
-            <>
-              <div className="border-t border-border my-2 mx-4" />
-              <p className="px-4 pt-1 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">Admin</p>
-              {adminNavItems.map(item => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors border-l-[3px] ${
-                      isActive
-                        ? 'text-foreground bg-accent/50 border-l-primary font-semibold'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/30 border-l-transparent'
-                    }`
-                  }
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                  </svg>
-                  {item.label}
-                </NavLink>
-              ))}
-            </>
-          )}
         </nav>
 
         {/* Footer */}
