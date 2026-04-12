@@ -13,7 +13,7 @@ Implementation plans: `docs/plans/module-system.md`
 | # | Component | Status | Notes |
 |---|-----------|--------|-------|
 | 1 | Module toggle persistence | built | `customer_modules` table + `useModules` hook + RLS + realtime |
-| 2 | Registration request review + account creation | built | Admin page + `useRegistrations` hook. Edge function not yet deployed. |
+| 2 | Registration request review + account creation | built | Admin page + `useRegistrations` hook + edge function deployed |
 
 ## Phase B — Module Infrastructure
 
@@ -30,7 +30,7 @@ Implementation plans: `docs/plans/module-system.md`
 | 5 | Pricing | `pricing` | built | ModuleGate wrapped |
 | 6 | Ordering | `ordering` | built | ModuleGate wrapped (orders + new order) |
 | 8 | Accounts | `accounts` | built | ModuleGate wrapped (invoices + payments) |
-| 9 | Team | `team` | built | ModuleGate wrapped; invite depends on edge function |
+| 9 | Team | `team` | built | ModuleGate wrapped; invite uses deployed edge function |
 
 ## Phase D — Feature Work
 
@@ -38,7 +38,7 @@ Implementation plans: `docs/plans/module-system.md`
 |---|--------|-----|--------|-------|
 | 7 | Recurring Orders create form | `recurring_orders` | built | Create form + ModuleGate; uses existing `createRecurring` mutation |
 | 10 | Delivery Notes | `delivery_notes` | built | New table + page; staff-created, customer read-only |
-| 11 | Promotions | `promotions` | built | New table + page; customer-targeted via RLS |
+| 11 | Promotions | `promotions` | built | Existing table + page; uses existing RLS policies |
 | 12 | Stockouts | `stockouts` | built | New table + page; submit form + request history |
 
 ## Always-On (not modules)
@@ -58,8 +58,8 @@ Implementation plans: `docs/plans/module-system.md`
 | Onboarding flow | built | `/portal/onboarding`, collects profile, sets status to active |
 | Auth + RLS | built | `useAuth` hook, RLS policies, JWT claims |
 | Realtime subscriptions | built | customer_modules, delivery_notes, stockout_requests added |
-| Supabase Edge Function (portal-registration) | unstarted | Account creation, invite emails — called from admin + Team.tsx |
-| DB migration (module system tables) | built | `20260412000000_module_system_tables.sql` — not yet pushed to Supabase |
+| Supabase Edge Function (portal-registration) | built | Deployed — approve/reject registrations + invite existing customers |
+| DB migration (module system tables) | built | Tables created in Supabase: customer_modules, delivery_notes, stockout_requests |
 
 ---
 
