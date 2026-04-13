@@ -1,8 +1,10 @@
 import { useState, useCallback, useMemo, Fragment } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { useViewAs } from '../components/ViewAsProvider'
 import { usePriceList } from '../hooks/usePriceList'
+import { supabase } from '../lib/supabase'
 import type { PriceGroup, PriceTier } from '../lib/types'
 
 const tierConfig: Record<string, { label: string; color: string; icon: string }> = {
@@ -15,13 +17,34 @@ export function PriceList() {
   const { isSystemAdmin } = useAuthContext()
   const { isViewingAs } = useViewAs()
   const showAllTiers = isSystemAdmin && !isViewingAs
-  const { customer } = useCustomer()
+  const { customer, branches } = useCustomer()
   const { grouped, tiers, wholesaleThresholds, volumeDiscounts, loading, error } = usePriceList()
   const [generating, setGenerating] = useState(false)
 
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set())
+
+  // Resolve price tiers from branches → customer_types → default_price_tier_id
+  const branchTierIds = useQuery({
+    queryKey: ['branch-tier-ids', customer?.id],
+    queryFn: async (): Promise<string[]> => {
+      if (!customer?.id) return []
+      const { data } = await supabase
+        .from('branches')
+        .select('customer_types:type_id(default_price_tier_id)')
+        .eq('customer_id', customer.id)
+
+      if (!data) return []
+      const ids = new Set<string>()
+      for (const b of data as any[]) {
+        const tierId = b.customer_types?.default_price_tier_id
+        if (tierId) ids.add(tierId)
+      }
+      return Array.from(ids)
+    },
+    enabled: !!customer?.id,
+  })
 
   const allProducts = useMemo(() => {
     const names = new Set<string>()
@@ -35,16 +58,25 @@ export function PriceList() {
     return Array.from(names)
   }, [grouped])
 
-  const customerTierName = tiers.find(t => t.id === customer?.price_tier_id)?.name || null
+  // Resolve tier: customer.price_tier_id override, or from branch customer_types
+  const resolvedTierIds = customer?.price_tier_id
+    ? [customer.price_tier_id]
+    : (branchTierIds.data || [])
+
+  const customerTierNames = tiers
+    .filter(t => resolvedTierIds.includes(t.id))
+    .map(t => t.name)
+
+  const customerTierName = customerTierNames[0] || null
   const visibleTiers: PriceTier[] = useMemo(() => {
     if (!showAllTiers) {
-      return tiers.filter(t => t.name === customerTierName)
+      return tiers.filter(t => customerTierNames.includes(t.name))
     }
     if (selectedTiers.size > 0) {
       return tiers.filter(t => selectedTiers.has(t.name))
     }
     return tiers
-  }, [isSystemAdmin, tiers, customerTierName, selectedTiers])
+  }, [showAllTiers, tiers, customerTierNames, selectedTiers])
 
   const filteredGroups: PriceGroup[] = useMemo(() => {
     let groups = showAllTiers
@@ -148,8 +180,8 @@ export function PriceList() {
               ? (visibleTiers.length === tiers.length
                   ? 'All pricing tiers'
                   : visibleTiers.map(t => t.display_name).join(', ') + ' pricing')
-              : customerTierName
-                ? `${tiers.find(t => t.name === customerTierName)?.display_name || customerTierName} pricing`
+              : visibleTiers.length > 0
+                ? visibleTiers.map(t => t.display_name).join(', ') + ' pricing'
                 : 'No pricing tier assigned — contact your account manager'}
           </p>
         </div>
