@@ -58,6 +58,10 @@ The portal is a React SPA mounted at `/portal` using React Router, TanStack Quer
 - **Roadmap:** `docs/trade-portal-roadmap.md` — living document tracking build status of every component and module
 - **Modules:** Portal features are organised into toggleable modules that admins enable per customer. See the spec for the full module list.
 - **Implementation process:** Every module must start in plan mode. Produce a detailed implementation plan, get alignment, then build. Update the roadmap as work progresses.
+- **Odin reference:** The Odin admin app lives at `/Users/hendrik-cm/Code/Odin`. The portal shares Odin's Supabase database and should reuse its patterns where possible:
+  - `CreateSaleModal.jsx` → portal order form
+  - `resolveSalePricing` edge function → shared pricing logic
+  - When building portal features that mirror Odin functionality, read the Odin source first to stay consistent.
 
 ### Visual reference
 
