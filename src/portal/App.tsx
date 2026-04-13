@@ -12,6 +12,7 @@ import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
 import { Invoices } from './pages/Invoices'
 import { Payments } from './pages/Payments'
+import { Accounts } from './pages/Accounts'
 import { Profile } from './pages/Profile'
 import { Orders } from './pages/Orders'
 import { NewOrder } from './pages/NewOrder'
@@ -66,9 +67,11 @@ export default function App() {
               {/* Recurring orders */}
               <Route path="/portal/orders/recurring" element={<ModuleGate moduleKey="recurring_orders"><RecurringOrders /></ModuleGate>} />
 
-              {/* Accounts (invoices + payments) */}
-              <Route path="/portal/invoices" element={<ModuleGate moduleKey="accounts"><Invoices /></ModuleGate>} />
-              <Route path="/portal/payments" element={<ModuleGate moduleKey="accounts"><Payments /></ModuleGate>} />
+              {/* Accounts (combined invoices + payments) */}
+              <Route path="/portal/accounts" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
+              {/* Legacy routes redirect to accounts */}
+              <Route path="/portal/invoices" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
+              <Route path="/portal/payments" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
 
               {/* Pricing */}
               <Route path="/portal/price-list" element={<ModuleGate moduleKey="pricing"><PriceList /></ModuleGate>} />

@@ -148,7 +148,9 @@ export function PriceList() {
               ? (visibleTiers.length === tiers.length
                   ? 'All pricing tiers'
                   : visibleTiers.map(t => t.display_name).join(', ') + ' pricing')
-              : `${tiers.find(t => t.name === customerTierName)?.display_name || ''} pricing`}
+              : customerTierName
+                ? `${tiers.find(t => t.name === customerTierName)?.display_name || customerTierName} pricing`
+                : 'No pricing tier assigned — contact your account manager'}
           </p>
         </div>
 

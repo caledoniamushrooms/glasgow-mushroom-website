@@ -49,19 +49,19 @@ export function Dashboard() {
                   <p className="text-3xl font-bold text-foreground">
                     {loading ? '...' : `\u00A3${outstandingBalance.toFixed(2)}`}
                   </p>
-                  <Link to="/portal/invoices" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View invoices</Link>
+                  <Link to="/portal/accounts" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View invoices</Link>
                 </div>
 
                 <div className="odin-card p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Unpaid Invoices</h3>
                   <p className="text-3xl font-bold text-foreground">{loading ? '...' : unpaidCount}</p>
-                  <Link to="/portal/invoices" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View all</Link>
+                  <Link to="/portal/accounts" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View all</Link>
                 </div>
 
                 <div className="odin-card p-6">
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Recent Payments</h3>
                   <p className="text-3xl font-bold text-foreground">{loading ? '...' : payments.length}</p>
-                  <Link to="/portal/payments" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View payments</Link>
+                  <Link to="/portal/accounts" className="inline-block mt-2 text-xs text-primary no-underline hover:underline">View payments</Link>
                 </div>
               </>
             )}

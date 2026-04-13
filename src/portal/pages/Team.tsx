@@ -24,6 +24,7 @@ export function Team() {
         .from('portal_users')
         .select('*')
         .eq('customer_id', customerId)
+        .neq('role', 'system_admin')
         .order('created_at')
 
       if (error) throw error
