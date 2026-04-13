@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { useViewAs } from '../components/ViewAsProvider'
+import { useCustomer } from './useCustomer'
 import type { Invoice, Payment } from '../lib/types'
 
 export function useInvoices() {
@@ -9,6 +10,8 @@ export function useInvoices() {
   const { viewAsCustomerId } = useViewAs()
   const customerId = viewAsCustomerId || portalUser?.customer_id
   const branchId = viewAsCustomerId ? null : (portalUser?.branch_id ?? null)
+  const { branches } = useCustomer()
+  const hasMultipleBranches = branches.length > 1
 
   const invoicesQuery = useQuery({
     queryKey: ['invoices', customerId, branchId],
@@ -44,6 +47,12 @@ export function useInvoices() {
         }
       }
 
+      // Build branch name map
+      const branchMap = new Map<string, string>()
+      for (const branch of branches) {
+        branchMap.set(branch.id, branch.name)
+      }
+
       return (balances || []).map((b: any) => {
         const urls = pdfMap.get(b.invoice_id)
         return {
@@ -51,6 +60,7 @@ export function useInvoices() {
           id: b.invoice_id,
           pdf_url: urls?.pdf_url || urls?.xero_pdf_url || null,
           online_payment_url: urls?.online_payment_url || null,
+          branch_name: b.branch_id ? branchMap.get(b.branch_id) || null : null,
         }
       })
     },
@@ -86,6 +96,7 @@ export function useInvoices() {
     payments: paymentsQuery.data || [],
     outstandingBalance,
     unpaidCount,
+    hasMultipleBranches,
     loading: invoicesQuery.isLoading || paymentsQuery.isLoading,
     error: invoicesQuery.error || paymentsQuery.error,
     refetchInvoices: invoicesQuery.refetch,

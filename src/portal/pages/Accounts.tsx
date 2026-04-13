@@ -13,7 +13,7 @@ const STATUS_CLASSES: Record<string, string> = {
 type Tab = 'invoices' | 'payments'
 
 export function Accounts() {
-  const { invoices, payments, loading, error, outstandingBalance } = useInvoices()
+  const { invoices, payments, loading, error, outstandingBalance, hasMultipleBranches } = useInvoices()
   const [tab, setTab] = useState<Tab>('invoices')
   const [pdfNotFound, setPdfNotFound] = useState<string | null>(null)
 
@@ -80,6 +80,7 @@ export function Accounts() {
               <thead>
                 <tr className="odin-table-header">
                   <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Invoice</th>
+                  {hasMultipleBranches && <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Branch</th>}
                   <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Date</th>
                   <th className="odin-table-cell text-right text-xs uppercase tracking-wide">Total</th>
                   <th className="odin-table-cell text-right text-xs uppercase tracking-wide">Due</th>
@@ -96,6 +97,7 @@ export function Accounts() {
                     <td className="odin-table-cell font-semibold">
                       <span className="text-primary group-hover:underline">{inv.invoice_no}</span>
                     </td>
+                    {hasMultipleBranches && <td className="odin-table-cell text-muted-foreground">{(inv as any).branch_name || '—'}</td>}
                     <td className="odin-table-cell text-muted-foreground">{new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     <td className="odin-table-cell text-right">&pound;{inv.invoice_total?.toFixed(2)}</td>
                     <td className="odin-table-cell text-right font-semibold">&pound;{(inv.amount_due || 0).toFixed(2)}</td>
