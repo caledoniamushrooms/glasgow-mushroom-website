@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useInvoices } from '../hooks/useInvoices'
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -84,7 +83,6 @@ export function Accounts() {
                     </td>
                     <td className="odin-table-cell">
                       <div className="flex gap-3">
-                        <Link to={`/portal/invoices/${inv.id}`} className="text-primary font-medium no-underline hover:underline">View</Link>
                         {inv.online_payment_url && (inv.amount_due || 0) > 0 && (
                           <a href={inv.online_payment_url} target="_blank" rel="noopener noreferrer" className="text-white bg-primary px-2.5 py-0.5 rounded text-xs font-medium no-underline hover:opacity-90">Pay</a>
                         )}
