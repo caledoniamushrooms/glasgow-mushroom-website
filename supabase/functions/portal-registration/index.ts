@@ -36,22 +36,28 @@ Deno.serve(async (req) => {
 
     const { data: callerPortalUser } = await supabaseAdmin
       .from("portal_users")
-      .select("role, status")
+      .select("role, status, customer_id")
       .eq("auth_user_id", user.id)
       .eq("status", "active")
       .single()
 
-    if (!callerPortalUser || callerPortalUser.role !== "system_admin") {
-      return errorResponse(403, "Only system admins can perform this action")
+    if (!callerPortalUser) {
+      return errorResponse(403, "No active portal account found")
     }
+
+    const isSystemAdmin = callerPortalUser.role === "system_admin"
+    const isAdmin = callerPortalUser.role === "admin" || isSystemAdmin
 
     switch (action) {
       case "approve_registration":
+        if (!isSystemAdmin) return errorResponse(403, "Only system admins can approve registrations")
         return await approveRegistration(supabaseAdmin, params, user.id)
       case "reject_registration":
+        if (!isSystemAdmin) return errorResponse(403, "Only system admins can reject registrations")
         return await rejectRegistration(supabaseAdmin, params, user.id)
       case "invite_existing":
-        return await inviteExisting(supabaseAdmin, params, user.id)
+        if (!isAdmin) return errorResponse(403, "Only admins can invite users")
+        return await inviteExisting(supabaseAdmin, params, user.id, callerPortalUser, isSystemAdmin)
       default:
         return errorResponse(400, `Unknown action: ${action}`)
     }
@@ -195,23 +201,36 @@ async function rejectRegistration(
 
 async function inviteExisting(
   supabase: ReturnType<typeof createClient>,
-  params: { customer_id: string; email: string; display_name: string },
+  params: { customer_id: string; email: string; display_name: string; role?: string },
   invitedBy: string,
+  callerPortalUser: { role: string; customer_id: string },
+  isSystemAdmin: boolean,
 ) {
   const { customer_id, email, display_name } = params
+  const role = params.role === "admin" ? "admin" : "member"
+
   if (!customer_id || !email || !display_name) {
     return errorResponse(400, "customer_id, email, and display_name are required")
   }
 
-  // Check customer exists
+  // Customer admins can only invite to their own customer
+  if (!isSystemAdmin && callerPortalUser.customer_id !== customer_id) {
+    return errorResponse(403, "You can only invite users to your own account")
+  }
+
+  // Check customer exists and has portal enabled
   const { data: customer, error: customerError } = await supabase
     .from("customers")
-    .select("id")
+    .select("id, portal_enabled")
     .eq("id", customer_id)
     .single()
 
   if (customerError || !customer) {
     return errorResponse(404, "Customer not found")
+  }
+
+  if (!customer.portal_enabled) {
+    return errorResponse(400, "Portal access is not enabled for this customer")
   }
 
   // Check for duplicate email
@@ -246,7 +265,7 @@ async function inviteExisting(
     .insert({
       auth_user_id: authData.user.id,
       customer_id,
-      role: "member",
+      role,
       display_name,
       email,
       status: "pending",

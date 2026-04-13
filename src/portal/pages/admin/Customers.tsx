@@ -1,64 +1,76 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAdminCustomers, type CustomerWithModules } from '../../hooks/useAdminCustomers'
+import { useAdminCustomers, type CustomerWithDetails } from '../../hooks/useAdminCustomers'
 import { useViewAs } from '../../components/ViewAsProvider'
 import { MODULE_KEYS, MODULE_LABELS, type ModuleKey } from '../../lib/modules'
 
+type FilterTab = 'all' | 'enabled' | 'not_enabled'
+
 export function Customers() {
-  const { customers, loading, error, toggleModule } = useAdminCustomers()
+  const { customers, loading, error, togglePortalAccess, toggleModule, inviteUser } = useAdminCustomers()
   const { startViewAs } = useViewAs()
   const navigate = useNavigate()
 
   const [search, setSearch] = useState('')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem('admin-selected-customers')
-      return saved ? new Set(JSON.parse(saved)) : new Set()
-    } catch { return new Set() }
-  })
+  const [filter, setFilter] = useState<FilterTab>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [inviteForm, setInviteForm] = useState<{ customerId: string; role: 'admin' | 'member' } | null>(null)
+  const [inviteName, setInviteName] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteError, setInviteError] = useState<string | null>(null)
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
+  const filtered = customers.filter(c => {
+    if (filter === 'enabled' && !c.portal_enabled) return false
+    if (filter === 'not_enabled' && c.portal_enabled) return false
+    if (search) {
+      const q = search.toLowerCase()
+      if (!c.name.toLowerCase().includes(q) && !c.email.toLowerCase().includes(q)) return false
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    return true
+  })
 
-  const filteredDropdown = customers.filter(c =>
-    !search ||
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const selectedCustomers = customers.filter(c => selectedIds.has(c.id))
-
-  const toggleCustomer = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      localStorage.setItem('admin-selected-customers', JSON.stringify([...next]))
-      return next
-    })
-  }
-
-  const enabledCount = (c: CustomerWithModules) =>
+  const enabledCount = (c: CustomerWithDetails) =>
     MODULE_KEYS.filter(k => c.modules[k]).length
 
-  const handleToggle = async (customerId: string, moduleKey: ModuleKey, currentValue: boolean) => {
-    await toggleModule.mutateAsync({ customerId, moduleKey, enabled: !currentValue })
+  const portalEnabledCount = customers.filter(c => c.portal_enabled).length
+
+  const handleTogglePortal = async (customerId: string, current: boolean) => {
+    await togglePortalAccess.mutateAsync({ customerId, enabled: !current })
   }
 
-  const handleViewAs = (customer: CustomerWithModules) => {
-    startViewAs(customer.id, customer.name)
+  const handleToggleModule = async (customerId: string, moduleKey: ModuleKey, current: boolean) => {
+    await toggleModule.mutateAsync({ customerId, moduleKey, enabled: !current })
+  }
+
+  const handleViewAs = (c: CustomerWithDetails) => {
+    startViewAs(c.id, c.name)
     navigate('/portal')
+  }
+
+  const handleInvite = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!inviteForm) return
+    setInviteError(null)
+    try {
+      await inviteUser.mutateAsync({
+        customerId: inviteForm.customerId,
+        email: inviteEmail,
+        displayName: inviteName,
+        role: inviteForm.role,
+      })
+      setInviteForm(null)
+      setInviteName('')
+      setInviteEmail('')
+    } catch (err) {
+      setInviteError((err as Error).message || 'Failed to send invitation')
+    }
+  }
+
+  const closeInviteForm = () => {
+    setInviteForm(null)
+    setInviteName('')
+    setInviteEmail('')
+    setInviteError(null)
   }
 
   if (loading) return <div className="odin-loading">Loading customers...</div>
@@ -66,102 +78,75 @@ export function Customers() {
 
   return (
     <div>
-      <header className="mb-8">
+      <header className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Search and manage customer accounts ({customers.length} total)
+          {customers.length} total · {portalEnabledCount} portal enabled
         </p>
       </header>
 
-      {/* Customer selector dropdown */}
-      <div ref={dropdownRef} className="relative mb-6 max-w-[400px]">
-        <button
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="w-full px-3 py-2.5 border border-input rounded-md text-sm bg-white text-foreground odin-focus flex items-center justify-between cursor-pointer"
-        >
-          <span className={selectedIds.size > 0 ? 'text-foreground' : 'text-muted-foreground/60'}>
-            {selectedIds.size > 0 ? `${selectedIds.size} customer${selectedIds.size !== 1 ? 's' : ''} selected` : 'Select customers...'}
-          </span>
-          <svg className={`w-4 h-4 text-muted-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {dropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-md shadow-lg z-20 max-h-[320px] overflow-hidden flex flex-col">
-            {/* Search filter */}
-            <div className="p-2 border-b border-border">
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Filter..."
-                autoFocus
-                className="w-full px-2.5 py-1.5 border border-input rounded text-sm bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
-              />
-            </div>
-            {/* Customer list */}
-            <div className="overflow-y-auto max-h-[260px]">
-              {filteredDropdown.length === 0 ? (
-                <p className="px-3 py-2.5 text-sm text-muted-foreground">No customers found.</p>
-              ) : (
-                filteredDropdown.map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => toggleCustomer(c.id)}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors cursor-pointer bg-transparent border-none flex items-center gap-3"
-                  >
-                    <div className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center ${selectedIds.has(c.id) ? 'bg-primary border-primary' : 'border-input'}`}>
-                      {selectedIds.has(c.id) && (
-                        <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-foreground">{c.name}</span>
-                      {c.customer_type_name && (
-                        <span className="text-xs text-muted-foreground ml-2">{c.customer_type_name}</span>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+      {/* Search + filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name or email..."
+          className="flex-1 max-w-[320px] px-3 py-2 border border-input rounded-md text-sm bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus"
+        />
+        <div className="flex gap-1">
+          {([
+            ['all', 'All'],
+            ['enabled', 'Portal Enabled'],
+            ['not_enabled', 'Not Enabled'],
+          ] as [FilterTab, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                filter === key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-transparent text-muted-foreground hover:bg-accent'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Selected customers — collapsible rows */}
-      {selectedCustomers.length === 0 ? (
+      {/* Customer list */}
+      {filtered.length === 0 ? (
         <div className="odin-empty">
-          <p>Select customers above to manage their profiles.</p>
+          <p>{search ? 'No customers match your search.' : 'No customers found.'}</p>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {selectedCustomers.map(c => {
+        <div className="grid gap-2">
+          {filtered.map(c => {
             const isExpanded = expandedId === c.id
             return (
               <div key={c.id} className="odin-card overflow-hidden">
                 {/* Summary row */}
                 <button
-                  className="w-full flex items-center justify-between px-5 py-4 bg-transparent border-none cursor-pointer text-left hover:bg-accent/30 transition-colors"
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-transparent border-none cursor-pointer text-left hover:bg-accent/30 transition-colors"
                   onClick={() => setExpandedId(isExpanded ? null : c.id)}
                 >
-                  <div className="flex items-center gap-6 flex-1 min-w-0">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-foreground">{c.name}</div>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-foreground text-sm">{c.name}</div>
                       <div className="text-xs text-muted-foreground">{c.email}</div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {c.customer_type_name && (
-                        <span className="text-xs text-muted-foreground">{c.customer_type_name}</span>
-                      )}
-                      {c.tier_name && (
-                        <span className="text-xs text-muted-foreground">· {c.tier_name}</span>
-                      )}
-                      <span className="badge badge-paid">{enabledCount(c)} / {MODULE_KEYS.length}</span>
-                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{c.customer_type_name || ''}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{c.tier_name || ''}</span>
+                    <span className={`badge shrink-0 ${c.portal_enabled ? 'badge-paid' : 'badge-draft'}`}>
+                      {c.portal_enabled ? 'Enabled' : 'Not enabled'}
+                    </span>
+                    {c.portal_enabled && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {c.team.length} user{c.team.length !== 1 ? 's' : ''} · {enabledCount(c)} module{enabledCount(c) !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
-                  <svg className={`w-4 h-4 text-muted-foreground shrink-0 ml-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className={`w-4 h-4 text-muted-foreground shrink-0 ml-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -169,40 +154,149 @@ export function Customers() {
                 {/* Expanded content */}
                 {isExpanded && (
                   <div className="border-t border-border">
-                    {/* Module toggles */}
-                    <div className="px-5 py-4">
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Modules</h4>
-                      <div className="grid gap-1">
-                        {MODULE_KEYS.map(key => {
-                          const enabled = c.modules[key]
-                          return (
-                            <label key={key} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={enabled}
-                                onChange={() => handleToggle(c.id, key, enabled)}
-                                className="w-4 h-4 accent-primary cursor-pointer shrink-0"
-                              />
-                              <span className={`text-sm font-medium ${enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                {MODULE_LABELS[key]}
-                              </span>
-                              {enabled && key === 'pricing' && c.tier_name && (
-                                <span className="text-xs text-muted-foreground ml-auto">{c.tier_name}</span>
-                              )}
-                            </label>
-                          )
-                        })}
+                    {/* Portal access */}
+                    <div className="px-5 py-4 flex items-center justify-between border-b border-border">
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground">Portal Access</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {c.portal_enabled ? 'This customer can access the trade portal' : 'Portal access is disabled for this customer'}
+                        </p>
                       </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={c.portal_enabled}
+                          onChange={() => handleTogglePortal(c.id, c.portal_enabled)}
+                          className="w-4 h-4 accent-primary cursor-pointer"
+                        />
+                        <span className="text-sm font-medium">{c.portal_enabled ? 'Enabled' : 'Disabled'}</span>
+                      </label>
                     </div>
 
+                    {c.portal_enabled && (
+                      <>
+                        {/* Team */}
+                        <div className="px-5 py-4 border-b border-border">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Team</h4>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { closeInviteForm(); setInviteForm({ customerId: c.id, role: 'admin' }) }}
+                                className="bg-primary text-primary-foreground px-3 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-90"
+                              >
+                                Invite Admin
+                              </button>
+                              <button
+                                onClick={() => { closeInviteForm(); setInviteForm({ customerId: c.id, role: 'member' }) }}
+                                className="bg-transparent border border-border px-3 py-1 rounded text-xs font-medium cursor-pointer text-muted-foreground hover:bg-accent"
+                              >
+                                Invite Team
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Invite form */}
+                          {inviteForm?.customerId === c.id && (
+                            <form onSubmit={handleInvite} className="bg-muted/30 rounded-md p-3 mb-3">
+                              <p className="text-xs font-medium text-foreground mb-2">
+                                Invite {inviteForm.role === 'admin' ? 'an admin' : 'a team member'}
+                              </p>
+                              {inviteError && (
+                                <div className="px-2.5 py-1.5 bg-red-50 border border-red-200 rounded text-red-700 text-xs mb-2">{inviteError}</div>
+                              )}
+                              <div className="grid grid-cols-2 gap-2 mb-2">
+                                <input
+                                  value={inviteName}
+                                  onChange={e => setInviteName(e.target.value)}
+                                  placeholder="Name"
+                                  required
+                                  className="px-2.5 py-1.5 border border-input rounded text-sm bg-white odin-focus"
+                                />
+                                <input
+                                  type="email"
+                                  value={inviteEmail}
+                                  onChange={e => setInviteEmail(e.target.value)}
+                                  placeholder="Email"
+                                  required
+                                  className="px-2.5 py-1.5 border border-input rounded text-sm bg-white odin-focus"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="submit"
+                                  disabled={inviteUser.isPending}
+                                  className="bg-primary text-primary-foreground px-3 py-1.5 rounded text-xs font-medium cursor-pointer hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {inviteUser.isPending ? 'Sending...' : 'Send Invite'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={closeInviteForm}
+                                  className="bg-transparent border border-border px-3 py-1.5 rounded text-xs cursor-pointer text-muted-foreground hover:bg-accent"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </form>
+                          )}
+
+                          {/* Team list */}
+                          {c.team.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">No portal users yet. Invite an admin to get started.</p>
+                          ) : (
+                            <div className="grid gap-1">
+                              {c.team.map(u => (
+                                <div key={u.id} className="flex items-center justify-between px-3 py-2 bg-muted/20 rounded text-sm">
+                                  <div>
+                                    <span className="font-medium text-foreground">{u.display_name}</span>
+                                    <span className="text-muted-foreground text-xs ml-2">{u.email}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`badge ${u.role === 'admin' || u.role === 'system_admin' ? 'badge-modified' : 'badge-draft'}`}>
+                                      {u.role}
+                                    </span>
+                                    <span className={`badge ${u.status === 'active' ? 'badge-paid' : 'badge-pending'}`}>
+                                      {u.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Modules */}
+                        <div className="px-5 py-4 border-b border-border">
+                          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Modules</h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+                            {MODULE_KEYS.map(key => (
+                              <label key={key} className="flex items-center gap-2 py-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={c.modules[key]}
+                                  onChange={() => handleToggleModule(c.id, key, c.modules[key])}
+                                  className="w-4 h-4 accent-primary cursor-pointer shrink-0"
+                                />
+                                <span className={`text-sm ${c.modules[key] ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                  {MODULE_LABELS[key]}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
                     {/* Actions */}
-                    <div className="flex justify-end gap-3 px-5 py-3 border-t border-border bg-muted/20">
-                      <button
-                        onClick={() => handleViewAs(c)}
-                        className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity"
-                      >
-                        View As
-                      </button>
+                    <div className="flex justify-end gap-3 px-5 py-3 bg-muted/20">
+                      {c.portal_enabled && (
+                        <button
+                          onClick={() => handleViewAs(c)}
+                          className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity"
+                        >
+                          View As
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
