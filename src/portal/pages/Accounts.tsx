@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useInvoices } from '../hooks/useInvoices'
-import { supabase } from '../lib/supabase'
 
 const STATUS_CLASSES: Record<string, string> = {
   paid: 'badge badge-paid',
@@ -16,61 +15,15 @@ type Tab = 'invoices' | 'payments'
 export function Accounts() {
   const { invoices, payments, loading, error, outstandingBalance } = useInvoices()
   const [tab, setTab] = useState<Tab>('invoices')
-  const [openingPdf, setOpeningPdf] = useState<string | null>(null)
   const [pdfNotFound, setPdfNotFound] = useState<string | null>(null)
 
-  const handleInvoiceClick = async (invoiceNo: string) => {
-    setOpeningPdf(invoiceNo)
-    setPdfNotFound(null)
-    try {
-      // Search storage bucket for this invoice's PDF
-      const year = '2025' // Try 2025 first, then 2026
-      for (const y of ['2026', '2025']) {
-        const { data } = await supabase.storage
-          .from('invoices')
-          .list(y, { search: invoiceNo })
-
-        if (data && data.length > 0) {
-          // Get the latest version (highest timestamp)
-          const sorted = data
-            .filter(f => f.name.startsWith(invoiceNo))
-            .sort((a, b) => b.name.localeCompare(a.name))
-          if (sorted.length > 0) {
-            const { data: urlData } = supabase.storage
-              .from('invoices')
-              .getPublicUrl(`${y}/${sorted[0].name}`)
-            window.open(urlData.publicUrl, '_blank')
-            setOpeningPdf(null)
-            return
-          }
-        }
-      }
-
-      // Also check root level files
-      const { data: rootFiles } = await supabase.storage
-        .from('invoices')
-        .list('', { search: invoiceNo })
-
-      if (rootFiles && rootFiles.length > 0) {
-        const match = rootFiles.find(f => f.name.includes(invoiceNo))
-        if (match) {
-          const { data: urlData } = supabase.storage
-            .from('invoices')
-            .getPublicUrl(match.name)
-          window.open(urlData.publicUrl, '_blank')
-          setOpeningPdf(null)
-          return
-        }
-      }
-
-      setPdfNotFound(invoiceNo)
-      setTimeout(() => setPdfNotFound(null), 4000)
-    } catch (err) {
-      console.error('Failed to find invoice PDF:', err)
+  const handleInvoiceClick = (invoiceNo: string, pdfUrl: string | null) => {
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank')
+    } else {
       setPdfNotFound(invoiceNo)
       setTimeout(() => setPdfNotFound(null), 4000)
     }
-    setOpeningPdf(null)
   }
 
   if (loading) return <div className="odin-loading">Loading accounts...</div>
@@ -138,11 +91,10 @@ export function Accounts() {
                   <tr
                     key={(inv as any).invoice_id || inv.id}
                     className="odin-table-row cursor-pointer hover:bg-accent/50 transition-colors group"
-                    onClick={() => handleInvoiceClick(inv.invoice_no)}
+                    onClick={() => handleInvoiceClick(inv.invoice_no, inv.pdf_url)}
                   >
                     <td className="odin-table-cell font-semibold">
                       <span className="text-primary group-hover:underline">{inv.invoice_no}</span>
-                      {openingPdf === inv.invoice_no && <span className="text-xs text-muted-foreground ml-2">Opening...</span>}
                     </td>
                     <td className="odin-table-cell text-muted-foreground">{new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     <td className="odin-table-cell text-right">&pound;{inv.invoice_total?.toFixed(2)}</td>

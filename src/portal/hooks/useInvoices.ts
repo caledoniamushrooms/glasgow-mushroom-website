@@ -14,6 +14,8 @@ export function useInvoices() {
     queryKey: ['invoices', customerId, branchId],
     queryFn: async (): Promise<Invoice[]> => {
       if (!customerId) return []
+
+      // Fetch from view for calculated fields
       let query = supabase
         .from('invoice_balances')
         .select('*')
@@ -24,9 +26,33 @@ export function useInvoices() {
         query = query.eq('branch_id', branchId)
       }
 
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
+      const { data: balances, error: balError } = await query
+      if (balError) throw balError
+
+      // Fetch PDF URLs from invoices table
+      const invoiceIds = (balances || []).map((b: any) => b.invoice_id).filter(Boolean)
+      let pdfMap = new Map<string, { pdf_url: string | null; xero_pdf_url: string | null; online_payment_url: string | null }>()
+
+      if (invoiceIds.length > 0) {
+        const { data: invoiceRows } = await supabase
+          .from('invoices')
+          .select('id, pdf_url, xero_pdf_url, online_payment_url')
+          .in('id', invoiceIds)
+
+        for (const row of invoiceRows || []) {
+          pdfMap.set(row.id, { pdf_url: row.pdf_url, xero_pdf_url: row.xero_pdf_url, online_payment_url: row.online_payment_url })
+        }
+      }
+
+      return (balances || []).map((b: any) => {
+        const urls = pdfMap.get(b.invoice_id)
+        return {
+          ...b,
+          id: b.invoice_id,
+          pdf_url: urls?.pdf_url || urls?.xero_pdf_url || null,
+          online_payment_url: urls?.online_payment_url || null,
+        }
+      })
     },
     enabled: !!customerId,
   })
