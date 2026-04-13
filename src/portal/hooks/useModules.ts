@@ -10,6 +10,7 @@ interface CustomerModule {
   customer_id: string
   module_key: string
   enabled: boolean
+  config: Record<string, any> | null
   enabled_at: string
   enabled_by: string | null
 }
@@ -50,9 +51,16 @@ export function useModules() {
     return enabledModules.has(key)
   }
 
+  const getModuleConfig = (key: ModuleKey): Record<string, any> => {
+    if (bypassModuleCheck) return {}
+    const mod = (modulesQuery.data || []).find(m => m.module_key === key)
+    return mod?.config || {}
+  }
+
   return {
     enabledModules,
     isModuleEnabled,
+    getModuleConfig,
     loading: modulesQuery.isLoading,
     error: modulesQuery.error,
   }

@@ -4,6 +4,10 @@ import type { ModuleKey } from '../lib/modules'
 import { MODULE_KEYS } from '../lib/modules'
 import type { PortalUser } from '../lib/types'
 
+export interface ModuleConfig {
+  visible_grades?: string[] // product_type IDs visible to this customer
+}
+
 export interface CustomerWithDetails {
   id: string
   name: string
@@ -14,7 +18,7 @@ export interface CustomerWithDetails {
   created_at: string
   tier_name: string | null
   customer_type_name: string | null
-  modules: Record<ModuleKey, boolean>
+  modules: Record<ModuleKey, { enabled: boolean; config: ModuleConfig }>
   team: PortalUser[]
 }
 
@@ -49,10 +53,10 @@ export function useAdminCustomers() {
       if (puError) throw puError
 
       // Group modules by customer
-      const modulesByCustomer = new Map<string, Array<{ module_key: string; enabled: boolean }>>()
+      const modulesByCustomer = new Map<string, Array<{ module_key: string; enabled: boolean; config: ModuleConfig }>>()
       for (const mod of modules || []) {
         const existing = modulesByCustomer.get(mod.customer_id) || []
-        existing.push(mod)
+        existing.push({ module_key: mod.module_key, enabled: mod.enabled, config: (mod as any).config || {} })
         modulesByCustomer.set(mod.customer_id, existing)
       }
 
@@ -66,10 +70,13 @@ export function useAdminCustomers() {
 
       return (customers || []).map((c: any) => {
         const customerModules = modulesByCustomer.get(c.id) || []
-        const moduleMap = {} as Record<ModuleKey, boolean>
+        const moduleMap = {} as Record<ModuleKey, { enabled: boolean; config: ModuleConfig }>
         for (const key of MODULE_KEYS) {
           const found = customerModules.find(m => m.module_key === key)
-          moduleMap[key] = found ? found.enabled : false
+          moduleMap[key] = {
+            enabled: found ? found.enabled : false,
+            config: found?.config || {},
+          }
         }
 
         const firstBranch = c.branches?.[0]
@@ -155,12 +162,39 @@ export function useAdminCustomers() {
     },
   })
 
+  const updateModuleConfig = useMutation({
+    mutationFn: async ({ customerId, moduleKey, config }: {
+      customerId: string
+      moduleKey: ModuleKey
+      config: ModuleConfig
+    }) => {
+      const { error } = await supabase
+        .from('customer_modules')
+        .upsert(
+          {
+            customer_id: customerId,
+            module_key: moduleKey,
+            enabled: true,
+            config,
+            enabled_at: new Date().toISOString(),
+          },
+          { onConflict: 'customer_id,module_key' }
+        )
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+    },
+  })
+
   return {
     customers: customersQuery.data || [],
     loading: customersQuery.isLoading,
     error: customersQuery.error,
     togglePortalAccess,
     toggleModule,
+    updateModuleConfig,
     inviteUser,
   }
 }

@@ -1,13 +1,26 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAdminCustomers, type CustomerWithDetails } from '../../hooks/useAdminCustomers'
 import { useViewAs } from '../../components/ViewAsProvider'
 import { MODULE_KEYS, MODULE_LABELS, type ModuleKey } from '../../lib/modules'
+import { supabase } from '../../lib/supabase'
 
 type FilterTab = 'all' | 'enabled' | 'not_enabled'
 
 export function Customers() {
-  const { customers, loading, error, togglePortalAccess, toggleModule, inviteUser } = useAdminCustomers()
+  const { customers, loading, error, togglePortalAccess, toggleModule, updateModuleConfig, inviteUser } = useAdminCustomers()
+
+  // Fetch product types (grades) for pricing config
+  const gradesQuery = useQuery({
+    queryKey: ['product-types-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('product_types').select('id, name').order('name')
+      if (error) throw error
+      return data || []
+    },
+  })
+  const allGrades = gradesQuery.data || []
   const { startViewAs } = useViewAs()
   const navigate = useNavigate()
 
@@ -30,7 +43,7 @@ export function Customers() {
   })
 
   const enabledCount = (c: CustomerWithDetails) =>
-    MODULE_KEYS.filter(k => c.modules[k]).length
+    MODULE_KEYS.filter(k => c.modules[k]?.enabled).length
 
   const portalEnabledCount = customers.filter(c => c.portal_enabled).length
 
@@ -268,20 +281,80 @@ export function Customers() {
                         {/* Modules */}
                         <div className="px-5 py-4 border-b border-border">
                           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Modules</h4>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
-                            {MODULE_KEYS.map(key => (
-                              <label key={key} className="flex items-center gap-2 py-1.5 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={c.modules[key]}
-                                  onChange={() => handleToggleModule(c.id, key, c.modules[key])}
-                                  className="w-4 h-4 accent-primary cursor-pointer shrink-0"
-                                />
-                                <span className={`text-sm ${c.modules[key] ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                  {MODULE_LABELS[key]}
-                                </span>
-                              </label>
-                            ))}
+                          <div className="grid gap-1">
+                            {MODULE_KEYS.map(key => {
+                              const mod = c.modules[key]
+                              const isEnabled = mod?.enabled
+                              const visibleGrades = mod?.config?.visible_grades || []
+
+                              const handleGradeToggle = (gradeId: string) => {
+                                const current = new Set(visibleGrades)
+                                if (current.has(gradeId)) current.delete(gradeId)
+                                else current.add(gradeId)
+                                updateModuleConfig.mutate({
+                                  customerId: c.id,
+                                  moduleKey: key,
+                                  config: { ...mod?.config, visible_grades: Array.from(current) },
+                                })
+                              }
+
+                              const handleSelectAllGrades = () => {
+                                updateModuleConfig.mutate({
+                                  customerId: c.id,
+                                  moduleKey: key,
+                                  config: { ...mod?.config, visible_grades: allGrades.map(g => g.id) },
+                                })
+                              }
+
+                              const handleClearGrades = () => {
+                                updateModuleConfig.mutate({
+                                  customerId: c.id,
+                                  moduleKey: key,
+                                  config: { ...mod?.config, visible_grades: [] },
+                                })
+                              }
+
+                              return (
+                                <div key={key}>
+                                  <label className="flex items-center gap-2 py-1.5 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() => handleToggleModule(c.id, key, isEnabled)}
+                                      className="w-4 h-4 accent-primary cursor-pointer shrink-0"
+                                    />
+                                    <span className={`text-sm ${isEnabled ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                      {MODULE_LABELS[key]}
+                                    </span>
+                                  </label>
+
+                                  {isEnabled && key === 'pricing' && allGrades.length > 0 && (
+                                    <div className="ml-6 mt-1 mb-2 p-3 bg-muted/30 rounded-md">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Visible Grades</span>
+                                        <div className="flex gap-2">
+                                          <button onClick={handleSelectAllGrades} className="text-xs text-primary bg-transparent border-none cursor-pointer hover:underline p-0">All</button>
+                                          <button onClick={handleClearGrades} className="text-xs text-muted-foreground bg-transparent border-none cursor-pointer hover:underline p-0">None</button>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                        {allGrades.map(g => (
+                                          <label key={g.id} className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={visibleGrades.includes(g.id)}
+                                              onChange={() => handleGradeToggle(g.id)}
+                                              className="w-3.5 h-3.5 accent-primary cursor-pointer"
+                                            />
+                                            <span className="text-xs text-foreground">{g.name}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       </>

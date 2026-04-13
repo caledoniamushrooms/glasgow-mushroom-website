@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
 import { useViewAs } from '../components/ViewAsProvider'
+import { useModules } from '../hooks/useModules'
 import { usePriceList } from '../hooks/usePriceList'
 import { supabase } from '../lib/supabase'
 import type { PriceGroup, PriceTier } from '../lib/types'
@@ -16,14 +17,38 @@ const tierConfig: Record<string, { label: string; color: string; icon: string }>
 export function PriceList() {
   const { isSystemAdmin } = useAuthContext()
   const { isViewingAs } = useViewAs()
+  const { getModuleConfig } = useModules()
   const showAllTiers = isSystemAdmin && !isViewingAs
   const { customer, branches } = useCustomer()
+
+  // Get admin-configured visible grades for this customer
+  const pricingConfig = getModuleConfig('pricing')
+  const visibleGradeIds: string[] | null = pricingConfig.visible_grades?.length > 0
+    ? pricingConfig.visible_grades
+    : null // null = show all (no restriction)
   const { grouped, tiers, wholesaleThresholds, volumeDiscounts, loading, error } = usePriceList()
   const [generating, setGenerating] = useState(false)
 
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set())
+
+  // Fetch product type ID→name map for grade filtering
+  const productTypesQuery = useQuery({
+    queryKey: ['product-types-map'],
+    queryFn: async () => {
+      const { data } = await supabase.from('product_types').select('id, name')
+      const map = new Map<string, string>()
+      for (const pt of data || []) map.set(pt.id, pt.name)
+      return map
+    },
+  })
+  const gradeIdToName = productTypesQuery.data || new Map<string, string>()
+
+  // Admin-configured visible grade names
+  const visibleGradeNames: Set<string> | null = visibleGradeIds
+    ? new Set(visibleGradeIds.map(id => gradeIdToName.get(id)).filter(Boolean) as string[])
+    : null
 
   // Resolve price tiers from branches → customer_types → default_price_tier_id
   const branchTierIds = useQuery({
@@ -84,8 +109,14 @@ export function PriceList() {
       : grouped.map(g => ({
           ...g,
           grades: g.grades.filter(gr => {
-            const price = customerTierName ? gr.tiers[customerTierName] : undefined
-            return price !== undefined && price > 0
+            // Filter by admin-configured visible grades
+            if (visibleGradeNames && !visibleGradeNames.has(gr.grade_name)) return false
+            // Filter by customer's tier pricing
+            const hasPrice = customerTierNames.some(tierName => {
+              const price = gr.tiers[tierName]
+              return price !== undefined && price > 0
+            })
+            return hasPrice
           }),
         })).filter(g => g.grades.length > 0)
 
