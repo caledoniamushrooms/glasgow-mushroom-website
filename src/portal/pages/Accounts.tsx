@@ -17,9 +17,11 @@ export function Accounts() {
   const { invoices, payments, loading, error, outstandingBalance } = useInvoices()
   const [tab, setTab] = useState<Tab>('invoices')
   const [openingPdf, setOpeningPdf] = useState<string | null>(null)
+  const [pdfNotFound, setPdfNotFound] = useState<string | null>(null)
 
   const handleInvoiceClick = async (invoiceNo: string) => {
     setOpeningPdf(invoiceNo)
+    setPdfNotFound(null)
     try {
       // Search storage bucket for this invoice's PDF
       const year = '2025' // Try 2025 first, then 2026
@@ -61,10 +63,12 @@ export function Accounts() {
         }
       }
 
-      alert(`No PDF found for ${invoiceNo}`)
+      setPdfNotFound(invoiceNo)
+      setTimeout(() => setPdfNotFound(null), 4000)
     } catch (err) {
       console.error('Failed to find invoice PDF:', err)
-      alert('Failed to load invoice PDF')
+      setPdfNotFound(invoiceNo)
+      setTimeout(() => setPdfNotFound(null), 4000)
     }
     setOpeningPdf(null)
   }
@@ -106,6 +110,12 @@ export function Accounts() {
           </button>
         ))}
       </div>
+
+      {pdfNotFound && (
+        <div className="px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-sm mb-4">
+          No PDF available for {pdfNotFound}. It may not have been generated yet.
+        </div>
+      )}
 
       {/* Invoices tab */}
       {tab === 'invoices' && (
