@@ -50,10 +50,10 @@ export function useInvoices() {
   })
 
   const outstandingBalance = (invoicesQuery.data || [])
-    .reduce((sum, inv) => sum + (inv.amount_due || 0), 0)
+    .reduce((sum, inv) => sum + (inv.amount_due ?? 0), 0)
 
   const unpaidCount = (invoicesQuery.data || [])
-    .filter(inv => inv.status !== 'paid' && (inv.amount_due || 0) > 0).length
+    .filter(inv => inv.calculated_status !== 'paid' && (inv.amount_due ?? 0) > 0).length
 
   return {
     invoices: invoicesQuery.data || [],

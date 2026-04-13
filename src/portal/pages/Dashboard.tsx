@@ -90,7 +90,7 @@ export function Dashboard() {
                         {new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
-                    <span className="font-semibold text-sm">&pound;{inv.total?.toFixed(2)}</span>
+                    <span className="font-semibold text-sm">&pound;{inv.invoice_total?.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

@@ -39,18 +39,19 @@ export interface Branch {
   email: string | null
 }
 
-/** Invoice with calculated balance */
+/** Invoice with calculated balance (from invoice_balances view) */
 export interface Invoice {
   id: string
   invoice_no: string
   customer_id: string
   date: string
-  total: number
-  status: string
+  invoice_total: number
+  status: string | null
+  calculated_status: string
   pdf_url: string | null
   online_payment_url: string | null
-  amount_due?: number
-  total_paid?: number
+  amount_due: number
+  amount_paid: number
 }
 
 /** Payment record */

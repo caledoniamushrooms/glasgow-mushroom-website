@@ -74,13 +74,13 @@ export function Accounts() {
               </thead>
               <tbody>
                 {invoices.map(inv => (
-                  <tr key={inv.id} className="odin-table-row">
+                  <tr key={(inv as any).invoice_id || inv.id} className="odin-table-row">
                     <td className="odin-table-cell font-semibold">{inv.invoice_no}</td>
                     <td className="odin-table-cell text-muted-foreground">{new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                    <td className="odin-table-cell text-right">&pound;{inv.total?.toFixed(2)}</td>
+                    <td className="odin-table-cell text-right">&pound;{inv.invoice_total?.toFixed(2)}</td>
                     <td className="odin-table-cell text-right font-semibold">&pound;{(inv.amount_due || 0).toFixed(2)}</td>
                     <td className="odin-table-cell">
-                      <span className={STATUS_CLASSES[inv.status] || 'badge'}>{inv.status}</span>
+                      <span className={STATUS_CLASSES[inv.calculated_status] || 'badge'}>{inv.calculated_status}</span>
                     </td>
                     <td className="odin-table-cell">
                       <div className="flex gap-3">
