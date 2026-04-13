@@ -137,11 +137,11 @@ export function Accounts() {
                 {invoices.map(inv => (
                   <tr
                     key={(inv as any).invoice_id || inv.id}
-                    className="odin-table-row cursor-pointer hover:bg-accent/50 transition-colors"
+                    className="odin-table-row cursor-pointer hover:bg-accent/50 transition-colors group"
                     onClick={() => handleInvoiceClick(inv.invoice_no)}
                   >
                     <td className="odin-table-cell font-semibold">
-                      <span className="text-primary">{inv.invoice_no}</span>
+                      <span className="text-primary group-hover:underline">{inv.invoice_no}</span>
                       {openingPdf === inv.invoice_no && <span className="text-xs text-muted-foreground ml-2">Opening...</span>}
                     </td>
                     <td className="odin-table-cell text-muted-foreground">{new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
