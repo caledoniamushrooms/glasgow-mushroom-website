@@ -1,16 +1,40 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuthContext } from '../components/AuthProvider'
 import { useInvoices } from '../hooks/useInvoices'
 import { useModules } from '../hooks/useModules'
 import { useViewAs } from '../components/ViewAsProvider'
 import { AdminDashboard } from './admin/AdminDashboard'
+import type { ModuleKey } from '../lib/modules'
+
+const MODULE_ROUTES: Record<ModuleKey, string> = {
+  dashboard: '/portal',
+  ordering: '/portal/orders',
+  recurring_orders: '/portal/orders/recurring',
+  accounts: '/portal/accounts',
+  pricing: '/portal/price-list',
+  delivery_notes: '/portal/delivery-notes',
+  promotions: '/portal/promotions',
+  team: '/portal/team',
+  stockouts: '/portal/stockouts',
+}
 
 export function Dashboard() {
   const { portalUser, isSystemAdmin } = useAuthContext()
   const { isViewingAs } = useViewAs()
-  const { isModuleEnabled } = useModules()
+  const { isModuleEnabled, enabledModules, loading: modulesLoading } = useModules()
 
   if (isSystemAdmin && !isViewingAs) return <AdminDashboard />
+
+  // If dashboard module is disabled, redirect to first enabled module
+  if (!modulesLoading && !isModuleEnabled('dashboard')) {
+    for (const [key, route] of Object.entries(MODULE_ROUTES)) {
+      if (key !== 'dashboard' && isModuleEnabled(key as ModuleKey)) {
+        return <Navigate to={route} replace />
+      }
+    }
+    // No modules enabled at all — show profile
+    return <Navigate to="/portal/profile" replace />
+  }
   const { outstandingBalance, unpaidCount, invoices, payments, loading } = useInvoices()
 
   const showAccounts = isModuleEnabled('accounts')

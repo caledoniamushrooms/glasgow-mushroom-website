@@ -57,8 +57,8 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              {/* Dashboard */}
-              <Route path="/portal" element={<ModuleGate moduleKey="dashboard"><Dashboard /></ModuleGate>} />
+              {/* Dashboard — handles its own module check + redirect */}
+              <Route path="/portal" element={<Dashboard />} />
 
               {/* Ordering */}
               <Route path="/portal/orders" element={<ModuleGate moduleKey="ordering"><Orders /></ModuleGate>} />
