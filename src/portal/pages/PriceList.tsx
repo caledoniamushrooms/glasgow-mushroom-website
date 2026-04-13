@@ -228,8 +228,8 @@ export function PriceList() {
         </div>
       </header>
 
-      {/* Filters */}
-      {!loading && grouped.length > 0 && (
+      {/* Filters — admin only */}
+      {showAllTiers && !loading && grouped.length > 0 && (
         <div className="flex items-start gap-4 px-4 py-3 bg-slate-50 border border-border rounded-lg mb-4 flex-wrap">
           <svg className="text-muted-foreground shrink-0 mt-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
