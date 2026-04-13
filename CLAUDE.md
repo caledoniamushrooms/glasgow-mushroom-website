@@ -62,3 +62,21 @@ The portal is a React SPA mounted at `/portal` using React Router, TanStack Quer
 ### Visual reference
 
 When making visual changes, compare against the live Webflow site at **glasgowmushroom.co** using Chrome DevTools MCP screenshots. Target breakpoints: 320px, 768px, 1024px, 1440px.
+
+## Database Safety Rules
+
+This project shares a Supabase database with the main Odin application. Changes to RLS policies, triggers, and FK constraints can break production for all users.
+
+### RLS Helper Functions
+- Any function used in RLS policies that queries an RLS-protected table MUST be `SECURITY DEFINER` with `SET search_path = public`
+- Without SECURITY DEFINER, the function runs as the calling role, RLS policies on the queried table fire, and if any of those policies call the same function → infinite recursion (PostgreSQL error 54001:
+stack depth limit exceeded)
+- Example: `is_system_admin()` queries `portal_users`. The `portal_users` table has an RLS policy that calls `is_system_admin()`. Without SECURITY DEFINER this recurses infinitely and crashes ALL queries
+across the entire app — not just portal queries
+- `is_staff()` is safe because it only reads `auth.jwt()` (no table access)
+
+### Pre-Push Migration Checklist
+1. Does any new function query an RLS-protected table? → Must be SECURITY DEFINER
+2. Does any new RLS policy call a function that queries the same table? → Recursion risk
+3. Does any new FK create a cycle (A → B → C → A)? → Can break PostgREST
+4. Test with `SET ROLE authenticated` before pushing to production
