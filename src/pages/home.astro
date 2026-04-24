@@ -200,47 +200,59 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
 
         section.style.display = '';
 
-        // JS-driven scroll with edge acceleration
-        var offset = 0;
-        var baseSpeed = 0.5; // px per frame at 60fps
-        var fastSpeed = 3;   // px per frame when hovering edges
-        var currentSpeed = baseSpeed;
-        var halfWidth = track.scrollWidth / 2;
-        var edgeZone = 0.15; // 15% on each side
-
-        section.addEventListener('mouseenter', function(e) {
-          updateSpeed(e);
-        });
-
-        section.addEventListener('mousemove', function(e) {
-          updateSpeed(e);
-        });
-
-        section.addEventListener('mouseleave', function() {
-          currentSpeed = baseSpeed;
-        });
-
-        function updateSpeed(e) {
-          var rect = section.getBoundingClientRect();
-          var x = (e.clientX - rect.left) / rect.width;
-
-          if (x < edgeZone) {
-            // Left edge — scroll faster (backwards)
-            currentSpeed = -fastSpeed;
-          } else if (x > 1 - edgeZone) {
-            // Right edge — scroll faster (forwards)
-            currentSpeed = fastSpeed;
-          } else {
-            // Middle — pause
-            currentSpeed = 0;
-          }
-        }
-
         var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!reducedMotion) {
+        var isTouch = window.matchMedia('(hover: none)').matches;
+        var halfWidth = track.scrollWidth / 2;
+
+        if (reducedMotion) {
+          // No animation — CSS handles wrap layout
+        } else if (isTouch) {
+          // Touch: native scrollLeft with auto-scroll that pauses on touch
+          var userActive = false;
+          var resumeTimer = null;
+
+          section.addEventListener('touchstart', function() {
+            userActive = true;
+            if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
+          }, { passive: true });
+
+          section.addEventListener('touchend', function() {
+            if (resumeTimer) clearTimeout(resumeTimer);
+            // Wait for iOS native momentum to settle before resuming
+            resumeTimer = setTimeout(function() { userActive = false; }, 1500);
+          }, { passive: true });
+
+          (function animate() {
+            if (!userActive) {
+              section.scrollLeft += 0.5;
+              // Seamless loop — only wrap while idle so we don't fight momentum
+              if (section.scrollLeft >= halfWidth) section.scrollLeft -= halfWidth;
+              else if (section.scrollLeft < 0) section.scrollLeft += halfWidth;
+            }
+            requestAnimationFrame(animate);
+          })();
+        } else {
+          // Desktop: transform-based scroll with edge acceleration
+          var offset = 0;
+          var baseSpeed = 0.5; // px per frame at 60fps
+          var fastSpeed = 3;   // px per frame when hovering edges
+          var currentSpeed = baseSpeed;
+          var edgeZone = 0.15; // 15% on each side
+
+          section.addEventListener('mouseenter', function(e) { updateSpeed(e); });
+          section.addEventListener('mousemove', function(e) { updateSpeed(e); });
+          section.addEventListener('mouseleave', function() { currentSpeed = baseSpeed; });
+
+          function updateSpeed(e) {
+            var rect = section.getBoundingClientRect();
+            var x = (e.clientX - rect.left) / rect.width;
+            if (x < edgeZone) currentSpeed = -fastSpeed;
+            else if (x > 1 - edgeZone) currentSpeed = fastSpeed;
+            else currentSpeed = 0;
+          }
+
           (function animate() {
             offset += currentSpeed;
-            // Seamless loop: reset when we've scrolled past the first half
             if (offset >= halfWidth) offset -= halfWidth;
             if (offset < 0) offset += halfWidth;
             track.style.transform = 'translateX(-' + offset + 'px)';
@@ -806,6 +818,18 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     overflow: hidden;
   }
 
+  @media (hover: none) {
+    :global(.partners) {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    :global(.partners::-webkit-scrollbar) {
+      display: none;
+    }
+  }
+
   :global(.partners__track) {
     display: flex;
     width: max-content;
@@ -817,7 +841,7 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 3rem;
+    padding: 0 1rem;
   }
 
   :global(.partners__item a) {
@@ -854,6 +878,10 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   @media (min-width: 768px) {
     :global(.partners) {
       padding: 3rem 0;
+    }
+
+    :global(.partners__item) {
+      padding: 0 3rem;
     }
 
     :global(.partners__item img) {
