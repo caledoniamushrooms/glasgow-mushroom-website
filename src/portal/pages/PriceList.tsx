@@ -1,7 +1,11 @@
 import { useState, useCallback, useMemo, Fragment } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthContext } from '../components/AuthProvider'
 import { useCustomer } from '../hooks/useCustomer'
+import { useViewAs } from '../components/ViewAsProvider'
+import { useModules } from '../hooks/useModules'
 import { usePriceList } from '../hooks/usePriceList'
+import { supabase } from '../lib/supabase'
 import type { PriceGroup, PriceTier } from '../lib/types'
 
 const tierConfig: Record<string, { label: string; color: string; icon: string }> = {
@@ -12,13 +16,60 @@ const tierConfig: Record<string, { label: string; color: string; icon: string }>
 
 export function PriceList() {
   const { isSystemAdmin } = useAuthContext()
-  const { customer } = useCustomer()
+  const { isViewingAs } = useViewAs()
+  const { getModuleConfig } = useModules()
+  const showAllTiers = isSystemAdmin && !isViewingAs
+  const { customer, branches } = useCustomer()
+
+  // Get admin-configured visible grades for this customer
+  const pricingConfig = getModuleConfig('pricing')
+  const visibleGradeIds: string[] | null = pricingConfig.visible_grades?.length > 0
+    ? pricingConfig.visible_grades
+    : null // null = show all (no restriction)
   const { grouped, tiers, wholesaleThresholds, volumeDiscounts, loading, error } = usePriceList()
   const [generating, setGenerating] = useState(false)
 
   const [selectedTiers, setSelectedTiers] = useState<Set<string>>(new Set())
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set())
+
+  // Fetch product type ID→name map for grade filtering
+  const productTypesQuery = useQuery({
+    queryKey: ['product-types-map'],
+    queryFn: async () => {
+      const { data } = await supabase.from('product_types').select('id, name')
+      const map = new Map<string, string>()
+      for (const pt of data || []) map.set(pt.id, pt.name)
+      return map
+    },
+  })
+  const gradeIdToName = productTypesQuery.data || new Map<string, string>()
+
+  // Admin-configured visible grade names
+  const visibleGradeNames: Set<string> | null = visibleGradeIds
+    ? new Set(visibleGradeIds.map(id => gradeIdToName.get(id)).filter(Boolean) as string[])
+    : null
+
+  // Resolve price tiers from branches → customer_types → default_price_tier_id
+  const branchTierIds = useQuery({
+    queryKey: ['branch-tier-ids', customer?.id],
+    queryFn: async (): Promise<string[]> => {
+      if (!customer?.id) return []
+      const { data } = await supabase
+        .from('branches')
+        .select('customer_types:type_id(default_price_tier_id)')
+        .eq('customer_id', customer.id)
+
+      if (!data) return []
+      const ids = new Set<string>()
+      for (const b of data as any[]) {
+        const tierId = b.customer_types?.default_price_tier_id
+        if (tierId) ids.add(tierId)
+      }
+      return Array.from(ids)
+    },
+    enabled: !!customer?.id,
+  })
 
   const allProducts = useMemo(() => {
     const names = new Set<string>()
@@ -32,25 +83,40 @@ export function PriceList() {
     return Array.from(names)
   }, [grouped])
 
-  const customerTierName = tiers.find(t => t.id === customer?.price_tier_id)?.name || null
+  // Resolve tier: customer.price_tier_id override, or from branch customer_types
+  const resolvedTierIds = customer?.price_tier_id
+    ? [customer.price_tier_id]
+    : (branchTierIds.data || [])
+
+  const customerTierNames = tiers
+    .filter(t => resolvedTierIds.includes(t.id))
+    .map(t => t.name)
+
+  const customerTierName = customerTierNames[0] || null
   const visibleTiers: PriceTier[] = useMemo(() => {
-    if (!isSystemAdmin) {
-      return tiers.filter(t => t.name === customerTierName)
+    if (!showAllTiers) {
+      return tiers.filter(t => customerTierNames.includes(t.name))
     }
     if (selectedTiers.size > 0) {
       return tiers.filter(t => selectedTiers.has(t.name))
     }
     return tiers
-  }, [isSystemAdmin, tiers, customerTierName, selectedTiers])
+  }, [showAllTiers, tiers, customerTierNames, selectedTiers])
 
   const filteredGroups: PriceGroup[] = useMemo(() => {
-    let groups = isSystemAdmin
+    let groups = showAllTiers
       ? grouped
       : grouped.map(g => ({
           ...g,
           grades: g.grades.filter(gr => {
-            const price = customerTierName ? gr.tiers[customerTierName] : undefined
-            return price !== undefined && price > 0
+            // Filter by admin-configured visible grades
+            if (visibleGradeNames && !visibleGradeNames.has(gr.grade_name)) return false
+            // Filter by customer's tier pricing
+            const hasPrice = customerTierNames.some(tierName => {
+              const price = gr.tiers[tierName]
+              return price !== undefined && price > 0
+            })
+            return hasPrice
           }),
         })).filter(g => g.grades.length > 0)
 
@@ -68,7 +134,7 @@ export function PriceList() {
     }
 
     return groups
-  }, [grouped, isSystemAdmin, customerTierName, selectedProducts, selectedGrades])
+  }, [grouped, showAllTiers, customerTierName, selectedProducts, selectedGrades])
 
   const toggle = (set: Set<string>, value: string, setter: (s: Set<string>) => void) => {
     const next = new Set(set)
@@ -141,11 +207,13 @@ export function PriceList() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Price List</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isSystemAdmin
+            {showAllTiers
               ? (visibleTiers.length === tiers.length
                   ? 'All pricing tiers'
                   : visibleTiers.map(t => t.display_name).join(', ') + ' pricing')
-              : `${tiers.find(t => t.name === customerTierName)?.display_name || ''} pricing`}
+              : visibleTiers.length > 0
+                ? visibleTiers.map(t => t.display_name).join(', ') + ' pricing'
+                : 'No pricing tier assigned — contact your account manager'}
           </p>
         </div>
 
@@ -160,14 +228,14 @@ export function PriceList() {
         </div>
       </header>
 
-      {/* Filters */}
-      {!loading && grouped.length > 0 && (
+      {/* Filters — admin only */}
+      {showAllTiers && !loading && grouped.length > 0 && (
         <div className="flex items-start gap-4 px-4 py-3 bg-slate-50 border border-border rounded-lg mb-4 flex-wrap">
           <svg className="text-muted-foreground shrink-0 mt-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
 
-          {isSystemAdmin && tiers.length > 0 && (
+          {showAllTiers && tiers.length > 0 && (
             <div className="flex items-start gap-2">
               <label className="text-sm font-medium text-foreground whitespace-nowrap mt-1">Tier:</label>
               <div className="flex flex-wrap gap-1">

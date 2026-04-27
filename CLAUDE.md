@@ -50,6 +50,37 @@ Static content is plain JS arrays exported from `src/data/`:
 
 `home.astro` embeds a Google Maps JS API map with a dark custom style. The API key is a placeholder string `GOOGLE_MAPS_API_KEY` — replace with a real key before deploying.
 
+### Trade Portal
+
+The portal is a React SPA mounted at `/portal` using React Router, TanStack Query, Supabase, and Tailwind CSS. Source lives in `src/portal/`.
+
+- **Spec:** `docs/trade-portal-onboarding.md` — onboarding flows, module definitions, rollout phases
+- **Roadmap:** `docs/trade-portal-roadmap.md` — living document tracking build status of every component and module
+- **Modules:** Portal features are organised into toggleable modules that admins enable per customer. See the spec for the full module list.
+- **Implementation process:** Every module must start in plan mode. Produce a detailed implementation plan, get alignment, then build. Update the roadmap as work progresses.
+- **Odin reference:** The Odin admin app lives at `/Users/hendrik-cm/Code/Odin`. The portal shares Odin's Supabase database and should reuse its patterns where possible:
+  - `CreateSaleModal.jsx` → portal order form
+  - `resolveSalePricing` edge function → shared pricing logic
+  - When building portal features that mirror Odin functionality, read the Odin source first to stay consistent.
+
 ### Visual reference
 
 When making visual changes, compare against the live Webflow site at **glasgowmushroom.co** using Chrome DevTools MCP screenshots. Target breakpoints: 320px, 768px, 1024px, 1440px.
+
+## Database Safety Rules
+
+This project shares a Supabase database with the main Odin application. Changes to RLS policies, triggers, and FK constraints can break production for all users.
+
+### RLS Helper Functions
+- Any function used in RLS policies that queries an RLS-protected table MUST be `SECURITY DEFINER` with `SET search_path = public`
+- Without SECURITY DEFINER, the function runs as the calling role, RLS policies on the queried table fire, and if any of those policies call the same function → infinite recursion (PostgreSQL error 54001:
+stack depth limit exceeded)
+- Example: `is_system_admin()` queries `portal_users`. The `portal_users` table has an RLS policy that calls `is_system_admin()`. Without SECURITY DEFINER this recurses infinitely and crashes ALL queries
+across the entire app — not just portal queries
+- `is_staff()` is safe because it only reads `auth.jwt()` (no table access)
+
+### Pre-Push Migration Checklist
+1. Does any new function query an RLS-protected table? → Must be SECURITY DEFINER
+2. Does any new RLS policy call a function that queries the same table? → Recursion risk
+3. Does any new FK create a cycle (A → B → C → A)? → Can break PostgREST
+4. Test with `SET ROLE authenticated` before pushing to production

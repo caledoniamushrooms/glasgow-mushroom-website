@@ -54,13 +54,29 @@ const stockistsBanner = await getImage({ src: stockistsBannerSrc, format: 'webp'
 
 <script>
   function equaliseStockistHeights() {
-    const sections = document.querySelectorAll('.stockist-outer');
-    // Reset heights first
-    sections.forEach(s => (s as HTMLElement).style.minHeight = '');
-    const maxHeight = Math.max(...Array.from(sections).map(s => s.getBoundingClientRect().height));
-    sections.forEach(s => (s as HTMLElement).style.minHeight = `${maxHeight}px`);
+    const cards = document.querySelectorAll('.stockist-outer');
+    if (!cards.length) return;
+
+    // Reset heights first so we measure natural sizes
+    cards.forEach(card => (card as HTMLElement).style.minHeight = '');
+
+    // Only equalise above mobile breakpoint
+    if (window.innerWidth <= 767) return;
+
+    let maxHeight = 0;
+    cards.forEach(card => {
+      const height = (card as HTMLElement).offsetHeight;
+      if (height > maxHeight) maxHeight = height;
+    });
+
+    cards.forEach(card => (card as HTMLElement).style.minHeight = `${maxHeight}px`);
   }
 
+  let resizeTimer: ReturnType<typeof setTimeout>;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(equaliseStockistHeights, 150);
+  });
+
   equaliseStockistHeights();
-  window.addEventListener('resize', equaliseStockistHeights);
 </script>

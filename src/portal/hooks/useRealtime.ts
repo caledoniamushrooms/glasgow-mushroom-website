@@ -42,6 +42,30 @@ export function useRealtime() {
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['payments'] })
       })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'customer_modules',
+        filter: `customer_id=eq.${customerId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['customer-modules'] })
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'delivery_notes',
+        filter: `customer_id=eq.${customerId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'stockout_requests',
+        filter: `customer_id=eq.${customerId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['stockout-requests'] })
+      })
       .subscribe()
 
     return () => {

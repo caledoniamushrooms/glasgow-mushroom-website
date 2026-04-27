@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './components/AuthProvider'
+import { ViewAsProvider } from './components/ViewAsProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { ModuleGate } from './components/ModuleGate'
 import { PortalLayout } from './components/PortalLayout'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
@@ -10,6 +12,7 @@ import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
 import { Invoices } from './pages/Invoices'
 import { Payments } from './pages/Payments'
+import { Accounts } from './pages/Accounts'
 import { Profile } from './pages/Profile'
 import { Orders } from './pages/Orders'
 import { NewOrder } from './pages/NewOrder'
@@ -33,6 +36,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ViewAsProvider>
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
@@ -49,15 +53,47 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
+              {/* Dashboard — handles its own module check + redirect */}
               <Route path="/portal" element={<Dashboard />} />
-              <Route path="/portal/orders" element={<Orders />} />
-              <Route path="/portal/orders/new" element={<NewOrder />} />
-              <Route path="/portal/orders/recurring" element={<RecurringOrders />} />
-              <Route path="/portal/invoices" element={<Invoices />} />
-              <Route path="/portal/payments" element={<Payments />} />
-              <Route path="/portal/price-list" element={<PriceList />} />
+
+              {/* Ordering */}
+              <Route path="/portal/orders" element={<ModuleGate moduleKey="ordering"><Orders /></ModuleGate>} />
+              <Route path="/portal/orders/new" element={<ModuleGate moduleKey="ordering"><NewOrder /></ModuleGate>} />
+
+              {/* Recurring orders */}
+              <Route path="/portal/orders/recurring" element={<ModuleGate moduleKey="recurring_orders"><RecurringOrders /></ModuleGate>} />
+
+              {/* Accounts (combined invoices + payments) */}
+              <Route path="/portal/accounts" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
+              {/* Legacy routes redirect to accounts */}
+              <Route path="/portal/invoices" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
+              <Route path="/portal/payments" element={<ModuleGate moduleKey="accounts"><Accounts /></ModuleGate>} />
+
+              {/* Pricing */}
+              <Route path="/portal/price-list" element={<ModuleGate moduleKey="pricing"><PriceList /></ModuleGate>} />
+
+              {/* Delivery notes */}
+              <Route path="/portal/delivery-notes" element={<ModuleGate moduleKey="delivery_notes"><DeliveryNotes /></ModuleGate>} />
+
+              {/* Promotions */}
+              <Route path="/portal/promotions" element={<ModuleGate moduleKey="promotions"><Promotions /></ModuleGate>} />
+
+              {/* Stockouts */}
+              <Route path="/portal/stockouts" element={<ModuleGate moduleKey="stockouts"><Stockouts /></ModuleGate>} />
+
+              {/* Team */}
+              <Route path="/portal/team" element={<ModuleGate moduleKey="team"><Team /></ModuleGate>} />
+
+              {/* Always-on */}
               <Route path="/portal/profile" element={<Profile />} />
-              <Route path="/portal/team" element={<Team />} />
+
+              {/* Admin (system_admin only) */}
+              <Route path="/portal/admin/customers" element={
+                <ProtectedRoute requireSystemAdmin><Customers /></ProtectedRoute>
+              } />
+              <Route path="/portal/admin/registrations" element={
+                <ProtectedRoute requireSystemAdmin><Registrations /></ProtectedRoute>
+              } />
               <Route path="/portal/markets" element={<Markets />} />
               <Route path="/portal/partner-logos" element={<PartnerLogos />} />
             </Route>
@@ -66,6 +102,7 @@ export default function App() {
             <Route path="/portal/*" element={<Navigate to="/portal" replace />} />
           </Routes>
         </BrowserRouter>
+        </ViewAsProvider>
       </AuthProvider>
     </QueryClientProvider>
   )
