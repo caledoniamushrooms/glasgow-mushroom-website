@@ -60,10 +60,6 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     <h1>Gourmet Mushrooms Grown In Glasgow</h1>
   </section>
 
-  <section class="partners" id="partners-section" style="display: none;">
-    <div class="partners__track" id="partners-track"></div>
-  </section>
-
   <section class="callout-grid">
     <a href="/products" class="callout-card callout-card--products" data-reveal="scale" style="transition-delay: 0s">
       <div class="product-slides">
@@ -156,7 +152,10 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
   <!-- Stockists Map -->
   <section class="stockists-map" data-reveal>
     <h2>Find Our Mushrooms</h2>
-    <p class="stockists-map__subtitle">Available at these retailers across Glasgow</p>
+    <section class="partners" id="partners-section" style="display: none;">
+      <div class="partners__track" id="partners-track"></div>
+    </section>
+    <p class="stockists-map__subtitle">Also available to purchase at retailers in Glasgow</p>
     <div class="stockists-map__container">
       <div id="map" class="stockists-map__canvas">
         <div class="stockists-map__consent" id="map-consent">
