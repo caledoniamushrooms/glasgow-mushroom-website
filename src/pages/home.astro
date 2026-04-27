@@ -184,7 +184,7 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
         var html = logos.map(function(l) {
           var name = l.customers ? l.customers.name : '';
           var url = l.customers ? l.customers.website_url : '';
-          var img = '<img src="' + l.logo_url + '" alt="' + name + '" loading="lazy" />';
+          var img = '<img src="' + l.logo_url + '" alt="' + name + '" />';
           if (url) {
             return '<div class="partners__item"><a href="' + url + '" target="_blank" rel="noopener noreferrer">' + img + '</a></div>';
           }
@@ -199,65 +199,106 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
 
         section.style.display = '';
 
-        var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var isTouch = window.matchMedia('(hover: none)').matches;
-        var halfWidth = track.scrollWidth / 2;
+        // Wait for all images to load before measuring track width
+        var images = track.querySelectorAll('img');
+        var loaded = 0;
+        var total = images.length;
+
+        function onAllLoaded() {
+          var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          var isTouch = window.matchMedia('(hover: none)').matches;
+          var halfWidth = track.scrollWidth / 2;
 
         if (reducedMotion) {
           // No animation — CSS handles wrap layout
-        } else if (isTouch) {
-          // Touch: native scrollLeft with auto-scroll that pauses on touch
-          var userActive = false;
-          var resumeTimer = null;
-
-          section.addEventListener('touchstart', function() {
-            userActive = true;
-            if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
-          }, { passive: true });
-
-          section.addEventListener('touchend', function() {
-            if (resumeTimer) clearTimeout(resumeTimer);
-            // Wait for iOS native momentum to settle before resuming
-            resumeTimer = setTimeout(function() { userActive = false; }, 1500);
-          }, { passive: true });
-
-          (function animate() {
-            if (!userActive) {
-              section.scrollLeft += 0.5;
-              // Seamless loop — only wrap while idle so we don't fight momentum
-              if (section.scrollLeft >= halfWidth) section.scrollLeft -= halfWidth;
-              else if (section.scrollLeft < 0) section.scrollLeft += halfWidth;
-            }
-            requestAnimationFrame(animate);
-          })();
         } else {
-          // Desktop: transform-based scroll with edge acceleration
+          // Transform-based scroll on all devices
           var offset = 0;
           var baseSpeed = 0.5; // px per frame at 60fps
-          var fastSpeed = 3;   // px per frame when hovering edges
           var currentSpeed = baseSpeed;
-          var edgeZone = 0.15; // 15% on each side
+          var paused = false;
 
-          section.addEventListener('mouseenter', function(e) { updateSpeed(e); });
-          section.addEventListener('mousemove', function(e) { updateSpeed(e); });
-          section.addEventListener('mouseleave', function() { currentSpeed = baseSpeed; });
+          if (isTouch) {
+            // Touch: drag + momentum, then resume glide
+            var lastTouchX = 0;
+            var lastTouchTime = 0;
+            var velocity = 0;
+            var friction = 0.95;
 
-          function updateSpeed(e) {
-            var rect = section.getBoundingClientRect();
-            var x = (e.clientX - rect.left) / rect.width;
-            if (x < edgeZone) currentSpeed = -fastSpeed;
-            else if (x > 1 - edgeZone) currentSpeed = fastSpeed;
-            else currentSpeed = 0;
+            section.addEventListener('touchstart', function(e) {
+              paused = true;
+              velocity = 0;
+              lastTouchX = e.touches[0].clientX;
+              lastTouchTime = Date.now();
+            }, { passive: true });
+
+            section.addEventListener('touchmove', function(e) {
+              var now = Date.now();
+              var x = e.touches[0].clientX;
+              var dt = now - lastTouchTime;
+              var dx = lastTouchX - x;
+              if (dt > 0) velocity = dx / dt;
+              lastTouchX = x;
+              lastTouchTime = now;
+              offset += dx;
+              if (offset >= halfWidth) offset -= halfWidth;
+              if (offset < 0) offset += halfWidth;
+              track.style.transform = 'translateX(-' + offset + 'px)';
+            }, { passive: true });
+
+            section.addEventListener('touchend', function() {
+              velocity = velocity * 16; // px/ms → px/frame
+              (function decay() {
+                velocity *= friction;
+                if (Math.abs(velocity) < 0.3) {
+                  paused = false;
+                  return;
+                }
+                offset += velocity;
+                if (offset >= halfWidth) offset -= halfWidth;
+                if (offset < 0) offset += halfWidth;
+                track.style.transform = 'translateX(-' + offset + 'px)';
+                requestAnimationFrame(decay);
+              })();
+            }, { passive: true });
+          } else {
+            // Desktop: edge acceleration on hover
+            var fastSpeed = 3;
+            var edgeZone = 0.15;
+            section.addEventListener('mouseenter', function(e) { updateSpeed(e); });
+            section.addEventListener('mousemove', function(e) { updateSpeed(e); });
+            section.addEventListener('mouseleave', function() { currentSpeed = baseSpeed; });
+
+            function updateSpeed(e) {
+              var rect = section.getBoundingClientRect();
+              var x = (e.clientX - rect.left) / rect.width;
+              if (x < edgeZone) currentSpeed = -fastSpeed;
+              else if (x > 1 - edgeZone) currentSpeed = fastSpeed;
+              else currentSpeed = 0;
+            }
           }
 
           (function animate() {
-            offset += currentSpeed;
-            if (offset >= halfWidth) offset -= halfWidth;
-            if (offset < 0) offset += halfWidth;
-            track.style.transform = 'translateX(-' + offset + 'px)';
+            if (!paused) {
+              offset += currentSpeed;
+              if (offset >= halfWidth) offset -= halfWidth;
+              if (offset < 0) offset += halfWidth;
+              track.style.transform = 'translateX(-' + offset + 'px)';
+            }
             requestAnimationFrame(animate);
           })();
         }
+        }
+
+        images.forEach(function(img) {
+          if (img.complete) {
+            loaded++;
+          } else {
+            img.addEventListener('load', function() { loaded++; if (loaded >= total) onAllLoaded(); });
+            img.addEventListener('error', function() { loaded++; if (loaded >= total) onAllLoaded(); });
+          }
+        });
+        if (loaded >= total) onAllLoaded();
       } catch(e) { /* section stays hidden */ }
     })();
   }
@@ -817,17 +858,6 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     overflow: hidden;
   }
 
-  @media (hover: none) {
-    :global(.partners) {
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    :global(.partners::-webkit-scrollbar) {
-      display: none;
-    }
-  }
 
   :global(.partners__track) {
     display: flex;
