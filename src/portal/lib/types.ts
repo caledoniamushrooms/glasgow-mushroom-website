@@ -23,6 +23,7 @@ export interface Customer {
   transmission: string | null
   price_tier_id: string | null
   gocardless_mandate_status: string | null
+  website_url: string | null
 }
 
 /** Customer branch / delivery location */
@@ -180,6 +181,19 @@ export interface MarketEvent {
 /** Joined shape for display */
 export interface MarketEventWithLocation extends MarketEvent {
   market_locations: MarketLocation
+}
+
+/** Partner logo for homepage showcase */
+export interface PartnerLogo {
+  id: string
+  customer_id: string
+  logo_url: string
+  logo_url_dark: string | null
+  sort_order: number
+  active: boolean
+  created_at: string
+  updated_at: string
+  customers?: { name: string; website_url: string | null }
 }
 
 /** Customer delivery schedule entry */

@@ -20,11 +20,7 @@ import { RecurringOrders } from './pages/RecurringOrders'
 import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
 import { Markets } from './pages/Markets'
-import { Registrations } from './pages/admin/Registrations'
-import { Customers } from './pages/admin/Customers'
-import { DeliveryNotes } from './pages/DeliveryNotes'
-import { Promotions } from './pages/Promotions'
-import { Stockouts } from './pages/Stockouts'
+import { PartnerLogos } from './pages/PartnerLogos'
 import '../styles/portal-tailwind.css'
 
 const queryClient = new QueryClient({
@@ -99,6 +95,7 @@ export default function App() {
                 <ProtectedRoute requireSystemAdmin><Registrations /></ProtectedRoute>
               } />
               <Route path="/portal/markets" element={<Markets />} />
+              <Route path="/portal/partner-logos" element={<PartnerLogos />} />
             </Route>
 
             {/* Catch-all redirect */}
