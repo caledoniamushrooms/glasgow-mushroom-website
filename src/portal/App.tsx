@@ -6,7 +6,6 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { ModuleGate } from './components/ModuleGate'
 import { PortalLayout } from './components/PortalLayout'
 import { Login } from './pages/Login'
-import { Register } from './pages/Register'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
@@ -41,7 +40,8 @@ export default function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/portal/login" element={<Login />} />
-            <Route path="/portal/register" element={<Register />} />
+            {/* Legacy SPA register route — interest form now lives at /portal */}
+            <Route path="/portal/register" element={<Navigate to="/portal" replace />} />
             <Route path="/portal/forgot-password" element={<ForgotPassword />} />
             <Route path="/portal/onboarding" element={<Onboarding />} />
 

@@ -26,12 +26,41 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
+  const normEmail = email.toLowerCase();
+
+  // Already has a portal account
+  const { data: existingUser } = await supabase
+    .from('portal_users')
+    .select('id')
+    .ilike('email', normEmail)
+    .maybeSingle();
+  if (existingUser) {
+    return new Response(
+      JSON.stringify({ error: 'This email already has a trade account. Please sign in instead.' }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Already has an in-flight application
+  const { data: existingApp } = await supabase
+    .from('portal_registration_requests')
+    .select('id, status')
+    .ilike('email', normEmail)
+    .not('status', 'in', '(rejected,active)')
+    .maybeSingle();
+  if (existingApp) {
+    return new Response(
+      JSON.stringify({ error: 'We already have an application in progress for this email. Please check your inbox or contact accounts@glasgowmushroomcompany.co.uk.' }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
   const { error } = await supabase
     .from('portal_registration_requests')
     .insert({
       business_name: businessName,
       contact_name: contactName,
-      email,
+      email: normEmail,
       phone,
       message,
     });
