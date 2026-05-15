@@ -14,6 +14,7 @@ Implementation plans: `docs/plans/module-system.md`
 |---|-----------|--------|-------|
 | 1 | Module toggle persistence | built | `customer_modules` table + `useModules` hook + RLS + realtime |
 | 2 | Registration request review + account creation | built | Admin page + `useRegistrations` hook + edge function deployed |
+| 2b | Customer onboarding v2 (4-step flow) | in-progress | DDL applied via Odin. Edge fn + hooks + Onboarding.tsx + admin Registrations.tsx rewritten. Awaits: deploy edge fn, end-to-end test, Odin-side build, transactional email follow-up. See `docs/plans/customer-onboarding-v2.md` |
 
 ## Phase B — Module Infrastructure
 
