@@ -13,20 +13,28 @@ const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
 export const POST: APIRoute = async ({ request }) => {
   const data = await request.formData();
-  const name = data.get('name')?.toString().trim();
-  const companyName = data.get('company_name')?.toString().trim();
+  const businessName = data.get('business_name')?.toString().trim();
+  const contactName = data.get('contact_name')?.toString().trim();
   const email = data.get('email')?.toString().trim();
+  const phone = data.get('phone')?.toString().trim() || null;
+  const message = data.get('message')?.toString().trim() || null;
 
-  if (!name || !companyName || !email) {
-    return new Response(JSON.stringify({ error: 'All fields are required.' }), {
+  if (!businessName || !contactName || !email) {
+    return new Response(JSON.stringify({ error: 'Please complete all required fields.' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
   const { error } = await supabase
-    .from('portal_interest')
-    .insert({ name, company_name: companyName, email });
+    .from('portal_registration_requests')
+    .insert({
+      business_name: businessName,
+      contact_name: contactName,
+      email,
+      phone,
+      message,
+    });
 
   if (error) {
     return new Response(JSON.stringify({ error: 'Something went wrong. Please try again.' }), {
@@ -35,21 +43,20 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  // Send confirmation and notification emails (non-blocking — record is already saved)
   const from = 'Glasgow Mushroom Company <hello@glasgowmushroomcompany.co.uk>';
 
   await Promise.allSettled([
     resend.emails.send({
       from,
       to: email,
-      subject: 'Thanks for your interest in the GMC Trade Portal',
-      text: `Hi ${name},\n\nThanks for registering your interest in the Glasgow Mushroom Company Trade Portal.\n\nWe're building a new platform where our trade customers can manage orders, view pricing, and access account information — all in one place.\n\nWe'll be in touch when it's ready for you.\n\nBest,\nGlasgow Mushroom Company`,
+      subject: 'We\'ve received your trade account application',
+      text: `Hi ${contactName},\n\nThanks for applying for a Glasgow Mushroom Company trade account on behalf of ${businessName}.\n\nWe'll review your application and email you once your account has been approved. At that point you'll be able to complete the rest of your onboarding and start placing orders.\n\nIf you have any questions in the meantime, just reply to this email.\n\nBest,\nGlasgow Mushroom Company`,
     }),
     resend.emails.send({
       from,
-      to: 'hello@glasgowmushroomcompany.co.uk',
-      subject: `New Trade Portal interest: ${companyName}`,
-      text: `New registration of interest:\n\nName: ${name}\nCompany: ${companyName}\nEmail: ${email}`,
+      to: 'accounts@glasgowmushroomcompany.co.uk',
+      subject: `New trade account application: ${businessName}`,
+      text: `New application:\n\nBusiness: ${businessName}\nContact: ${contactName}\nEmail: ${email}\nPhone: ${phone ?? '—'}\n\nMessage:\n${message ?? '—'}\n\nReview at: https://www.glasgowmushroomcompany.co.uk/portal/admin/registrations`,
     }),
   ]);
 

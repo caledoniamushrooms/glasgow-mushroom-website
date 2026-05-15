@@ -22,7 +22,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const json = await res.json();
 
       if (res.ok) {
-        status.textContent = 'Thank you! We\'ll be in touch when the portal is ready.';
+        status.textContent = 'Thanks — we\'ve received your application. We\'ll review it and email you once your account is approved.';
         status.className = 'form__status form__status--success';
         form.reset();
       } else {
@@ -44,28 +44,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <div class="ryi__card" data-reveal>
       <div class="ryi__header">
         <h1>Trade Portal</h1>
-        <p class="ryi__subtitle">Coming Soon</p>
+        <p class="ryi__subtitle">Apply for a trade account</p>
       </div>
 
       <p class="ryi__message">
-        We're working on an exciting new portal where you can see all your trade information in one place. Register your interest to create an account when the portal goes live.
+        Submit your details below to apply for a Glasgow Mushroom Company trade account. We'll review your application and email you to complete the rest of your onboarding once you've been approved.
+      </p>
+
+      <p class="ryi__signin">
+        Already have an account? <a href="/portal/login">Sign in</a>.
       </p>
 
       <form id="ryi-form" method="POST" action="/api/register-interest">
         <div class="form__field">
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" placeholder="Your name" required />
+          <label for="business_name">Business name</label>
+          <input type="text" id="business_name" name="business_name" placeholder="Your business or restaurant" required />
         </div>
         <div class="form__field">
-          <label for="company_name">Company Name</label>
-          <input type="text" id="company_name" name="company_name" placeholder="Your company or restaurant" required />
+          <label for="contact_name">Your name</label>
+          <input type="text" id="contact_name" name="contact_name" placeholder="Full name" required />
         </div>
         <div class="form__field">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" name="email" placeholder="Your email address" required />
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" placeholder="you@business.com" required />
+        </div>
+        <div class="form__field">
+          <label for="phone">Phone <span class="form__optional">(optional)</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="Phone number" />
+        </div>
+        <div class="form__field">
+          <label for="message">Tell us about your business <span class="form__optional">(optional)</span></label>
+          <textarea id="message" name="message" rows="3" placeholder="What products are you interested in? Estimated weekly volumes?"></textarea>
         </div>
         <p id="form-status" class="form__status" aria-live="polite"></p>
-        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Register Interest" />
+        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit application" />
       </form>
     </div>
   </section>
@@ -146,13 +158,51 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     transition: border-color 0.2s ease;
   }
 
-  .form__field input::placeholder {
+  .form__field textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+  }
+
+  .form__field input::placeholder,
+  .form__field textarea::placeholder {
     color: rgba(255, 255, 255, 0.35);
   }
 
-  .form__field input:focus {
+  .form__field input:focus,
+  .form__field textarea:focus {
     outline: none;
     border-color: hsl(142 71% 35%);
+  }
+
+  .form__optional {
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .ryi__signin {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    margin: -1rem 0 1.5rem;
+  }
+
+  .ryi__signin a {
+    color: hsl(142 71% 55%);
+    text-decoration: none;
+  }
+
+  .ryi__signin a:hover {
+    text-decoration: underline;
   }
 
   .form__submit {
