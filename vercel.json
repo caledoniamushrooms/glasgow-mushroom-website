@@ -1,9 +1,1 @@
-{
-  "redirects": [
-    {
-      "source": "/portal/:path+",
-      "destination": "/portal",
-      "permanent": false
-    }
-  ]
-}
+{}
