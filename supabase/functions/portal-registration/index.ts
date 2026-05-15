@@ -93,8 +93,31 @@ async function approveRegistration(
     return errorResponse(400, "invalid reviewed_from")
   }
 
-  // Guarded transition: only fires for interest_submitted rows
-  const { data: request, error: transitionErr } = await supabase
+  // Fetch the request first (no state change yet) so all preconditions
+  // run before we flip status. Otherwise a failing precondition would
+  // strand the row in `approved` with no invite sent.
+  const { data: request, error: fetchErr } = await supabase
+    .from("portal_registration_requests")
+    .select("*")
+    .eq("id", request_id)
+    .eq("status", "interest_submitted")
+    .maybeSingle()
+
+  if (fetchErr || !request) {
+    return errorResponse(409, "Request not found or already processed")
+  }
+
+  // Pre-flight dedup against portal_users
+  const { data: existing } = await supabase
+    .from("portal_users")
+    .select("id")
+    .eq("email", request.email)
+    .maybeSingle()
+  if (existing) return errorResponse(409, "email_already_has_portal_account")
+
+  // Guarded transition. Status guard handles the portal/Odin race —
+  // second writer no-ops.
+  const { error: transitionErr } = await supabase
     .from("portal_registration_requests")
     .update({
       status: "approved",
@@ -106,20 +129,10 @@ async function approveRegistration(
     })
     .eq("id", request_id)
     .eq("status", "interest_submitted")
-    .select()
-    .single()
 
-  if (transitionErr || !request) {
-    return errorResponse(409, "Request not found or already processed")
+  if (transitionErr) {
+    return errorResponse(409, "Request was processed by another reviewer")
   }
-
-  // Dedup against portal_users (also protected by UNIQUE constraint)
-  const { data: existing } = await supabase
-    .from("portal_users")
-    .select("id")
-    .eq("email", request.email)
-    .maybeSingle()
-  if (existing) return errorResponse(409, "A portal user with this email already exists")
 
   // Invite the auth user — Supabase Auth sends the magic-link email
   const { data: authData, error: inviteErr } =
