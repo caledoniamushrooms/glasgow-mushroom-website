@@ -1,9 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-// Maps key is loaded server-side and injected into the client script.
-// Trim whitespace — Vercel env vars can ship with a trailing newline
-// which silently breaks the Maps script URL (encoded as %0A).
+// Maps key — trim trailing whitespace defensively (Vercel env vars can ship with \n)
 const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
 ---
 
@@ -15,10 +13,10 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
         <p class="portal-form__subtitle">Apply for a trade account</p>
       </div>
 
-      <!-- Step 1: name + business lookup -->
+      <!-- Step 1: name, business, email -->
       <div id="step-1">
         <p class="portal-form__message">
-          Tell us your name and find your business below. We'll check whether you're in our direct-delivery area before showing you the rest of the form.
+          Tell us your name, find your business and leave your email. We'll check whether you're in our direct-delivery area before showing your options.
         </p>
 
         <form id="step-1-form" autocomplete="on">
@@ -42,6 +40,11 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
             <input type="text" id="postcode_manual" placeholder="e.g. G12 8XY" autocomplete="postal-code" />
           </div>
 
+          <div class="form__field">
+            <label for="email_step1">Email address</label>
+            <input type="email" id="email_step1" placeholder="you@business.com" autocomplete="email" required />
+          </div>
+
           <div id="resolved-place" class="resolved" hidden>
             <p class="resolved__label">We found you at</p>
             <p class="resolved__line" id="resolved-line"></p>
@@ -52,15 +55,55 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
         </form>
       </div>
 
-      <!-- Out-of-area panel: distributor / collection / courier choice -->
-      <div id="out-of-area" hidden>
-        <p class="portal-form__message">
-          Unfortunately we don't deliver directly to <strong id="ooa-postcode"></strong>. You still have three ways to get our mushrooms:
+      <!-- In-area chooser: Delivery / Collection -->
+      <div id="in-area" hidden>
+        <p class="chooser-headline">We deliver to your area.</p>
+        <p class="chooser-sub">How would you like to receive your orders?</p>
+        <div class="chooser">
+          <button type="button" class="chooser__card chooser__card--primary fulfilment-choice" data-method="delivery">
+            <span class="chooser__title">Delivery</span>
+            <span class="chooser__desc">We deliver directly to your site on our regular Glasgow rounds.</span>
+          </button>
+          <button type="button" class="chooser__card fulfilment-choice" data-method="collection">
+            <span class="chooser__title">Collection</span>
+            <span class="chooser__desc">Pick up directly from our Glasgow farm. We'll share collection details after approval.</span>
+          </button>
+        </div>
+        <p class="chooser-back">
+          <button type="button" class="link-button back-to-step-1">← Back</button>
         </p>
+      </div>
 
-        <div class="ooa-option">
-          <h3>Order through a distributor partner</h3>
-          <p>For areas outside Glasgow, we partner with two distributors who carry our products alongside other Scottish produce.</p>
+      <!-- Out-of-area chooser: Collection / Courier / Distributor -->
+      <div id="out-of-area" hidden>
+        <p class="chooser-headline">We don't deliver directly to <strong id="ooa-postcode"></strong>.</p>
+        <p class="chooser-sub">You've got three options:</p>
+        <div class="chooser">
+          <button type="button" class="chooser__card fulfilment-choice" data-method="collection">
+            <span class="chooser__title">Collection</span>
+            <span class="chooser__desc">Pick up from our Glasgow farm. Details after approval.</span>
+          </button>
+          <button type="button" class="chooser__card fulfilment-choice" data-method="courier">
+            <span class="chooser__title">Courier</span>
+            <span class="chooser__desc">We arrange direct delivery to your door. Shipping charged per order at dispatch.</span>
+          </button>
+          <button type="button" class="chooser__card fulfilment-choice" data-method="distributor">
+            <span class="chooser__title">Distributor partner</span>
+            <span class="chooser__desc">Order through one of our trusted Scottish food distributors.</span>
+          </button>
+        </div>
+        <p class="chooser-back">
+          <button type="button" class="link-button back-to-step-1">← Back</button>
+        </p>
+      </div>
+
+      <!-- Final screen: approval pending OR distributor info -->
+      <div id="final" hidden>
+        <div class="final-headline" id="final-headline"></div>
+        <div class="final-body" id="final-body"></div>
+
+        <!-- Distributor cards (only shown if user picked distributor) -->
+        <div id="distributor-cards" hidden>
           <div class="ooa-distributor">
             <strong>Coeur Sauvage</strong>
             <p>Wild and seasonal Scottish produce. Glasgow, Edinburgh and beyond.</p>
@@ -80,70 +123,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
             </p>
           </div>
         </div>
-
-        <div class="ooa-option">
-          <h3>Collect from our Glasgow farm</h3>
-          <p>If you can travel to us, you can collect orders directly from our farm. We'll share collection details with you after your account is approved.</p>
-          <button type="button" class="cta-btn cta-btn--outline ooa-continue" data-method="collection">
-            Continue with collection
-          </button>
-        </div>
-
-        <div class="ooa-option">
-          <h3>Direct courier delivery</h3>
-          <p>We can arrange courier delivery to your door. Shipping costs are charged at the point of order and vary by parcel size.</p>
-          <button type="button" class="cta-btn cta-btn--outline ooa-continue" data-method="courier">
-            Continue with courier
-          </button>
-        </div>
-
-        <p class="ooa-back">
-          <button type="button" id="back-to-step-1" class="link-button">← Back</button>
-        </p>
-      </div>
-
-      <!-- Step 2: full interest form -->
-      <div id="step-2" hidden>
-        <div class="step-banner" id="step-banner"></div>
-
-        <form id="register-form" autocomplete="on">
-          <div class="form__field">
-            <label>Business name</label>
-            <input type="text" id="business_name" name="business_name" readonly />
-          </div>
-          <div class="form__field">
-            <label>Postcode</label>
-            <input type="text" id="postcode" name="postcode" readonly />
-          </div>
-          <div class="form__field">
-            <label>Your name</label>
-            <input type="text" id="contact_name_2" name="contact_name" readonly />
-          </div>
-
-          <div class="form__field">
-            <label for="email">Email address</label>
-            <input type="email" id="email" name="email" placeholder="you@business.com" autocomplete="email" required />
-          </div>
-
-          <div class="form__field">
-            <label for="phone">Phone <span class="form__optional">(optional)</span></label>
-            <input type="tel" id="phone" name="phone" placeholder="Phone number" autocomplete="tel" />
-          </div>
-
-          <div class="form__field">
-            <label for="message">Tell us about your business <span class="form__optional">(optional)</span></label>
-            <textarea id="message" name="message" rows="3" placeholder="What products are you interested in? Estimated weekly volumes?"></textarea>
-          </div>
-
-          <!-- Hidden fields carried from step 1 -->
-          <input type="hidden" id="website" name="website" />
-          <input type="hidden" id="address_line_1" name="address_line_1" />
-          <input type="hidden" id="city" name="city" />
-          <input type="hidden" id="fulfilment_method" name="fulfilment_method" />
-
-          <p id="form-status" class="form__status" aria-live="polite"></p>
-          <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit application" />
-        </form>
       </div>
 
       <p class="portal-form__links" id="signin-link">
@@ -162,8 +141,7 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   const mapsKey = (document.getElementById('maps-key-holder')?.dataset.mapsKey ?? '').trim();
 
   // ---------------------------------------------------------------------
-  // Service area check (mirror of src/portal/lib/serviceArea.ts) — kept
-  // inline so this Astro page doesn't need to import a TS module.
+  // Service area (mirror of src/portal/lib/serviceArea.ts)
   // ---------------------------------------------------------------------
   const SERVICE_AREA_OUTWARDS = new Set([
     'G1','G2','G3','G4','G5',
@@ -173,21 +151,21 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     'G40','G41','G42','G43','G44','G45','G46',
     'G51','G52','G53',
   ]);
-
   const extractOutward = (pc) => (pc ?? '').trim().toUpperCase().split(/\s+/)[0] ?? '';
   const isInServiceArea = (pc) => pc && SERVICE_AREA_OUTWARDS.has(extractOutward(pc));
   const isValidUkPostcode = (pc) => /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test((pc ?? '').trim().replace(/\s+/g, '').toUpperCase());
 
-  // Per-session state for the prospect
+  // Per-session state
   const state = {
+    id: null,
     contact_name: '',
     business_name: '',
+    email: '',
     postcode: '',
     website: '',
     address_line_1: '',
     city: '',
     phone: '',
-    fulfilment_method: null,
   };
 
   // ---------------------------------------------------------------------
@@ -202,7 +180,7 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   });
 
   // ---------------------------------------------------------------------
-  // Google Places Autocomplete
+  // Google Maps loader (bootstrap pattern + PlaceAutocompleteElement)
   // ---------------------------------------------------------------------
   const manualFallbackBtn = document.getElementById('manual-fallback-btn');
   const manualFallback = document.getElementById('manual-fallback');
@@ -211,16 +189,11 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   const resolvedPlace = document.getElementById('resolved-place');
   const resolvedLine = document.getElementById('resolved-line');
 
-  // Bootstrap loader — sets up google.maps.importLibrary before the
-  // actual Maps script loads. Required for the new PlaceAutocompleteElement
-  // web component. The legacy google.maps.places.Autocomplete is no longer
-  // available to new Maps customers (deprecated March 2025).
   function loadGoogleMaps() {
     return new Promise((resolve, reject) => {
       if (window.google?.maps?.importLibrary) return resolve();
       if (!mapsKey) return reject(new Error('Maps key not configured'));
 
-      // Inlined bootstrap loader from Google's docs
       ((g) => {
         let h, a, k;
         const p = 'The Google Maps JavaScript API';
@@ -246,7 +219,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
         d[l] ? null : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n));
       })({ key: mapsKey, v: 'weekly' });
 
-      // Resolve once the loader has installed itself
       const tick = () => {
         if (window.google?.maps?.importLibrary) resolve();
         else setTimeout(tick, 20);
@@ -270,7 +242,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
         { lat: 56.00, lng: -4.10 },
       ),
     });
-    autocompleteEl.id = 'business_search';
     autocompleteEl.setAttribute('placeholder', 'Start typing your business…');
     autocompleteMount.appendChild(autocompleteEl);
 
@@ -283,15 +254,10 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
 
       const components = place.addressComponents ?? [];
       const get = (type) => components.find((c) => c.types.includes(type))?.longText ?? '';
-      const postcode = get('postal_code');
-      const streetNumber = get('street_number');
-      const route = get('route');
-      const locality = get('postal_town') || get('locality');
-
       state.business_name = place.displayName ?? '';
-      state.postcode = postcode;
-      state.address_line_1 = [streetNumber, route].filter(Boolean).join(' ');
-      state.city = locality;
+      state.postcode = get('postal_code');
+      state.address_line_1 = [get('street_number'), get('route')].filter(Boolean).join(' ');
+      state.city = get('postal_town') || get('locality');
       state.phone = place.nationalPhoneNumber ?? '';
       state.website = place.websiteURI ?? '';
 
@@ -300,7 +266,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     });
   }).catch((err) => {
     console.warn('Google Maps failed to load:', err);
-    // Soft-fail to manual fallback
     manualFallback.hidden = false;
     manualFallbackBtn.textContent = '';
   });
@@ -311,140 +276,131 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   });
 
   // ---------------------------------------------------------------------
-  // Step 1 → branch on postcode
+  // Step 1 submit → INSERT row, gate check, reveal chooser
   // ---------------------------------------------------------------------
   const step1 = document.getElementById('step-1');
   const step1Form = document.getElementById('step-1-form');
   const step1Status = document.getElementById('step-1-status');
+  const step1Submit = document.getElementById('step-1-submit');
+  const inArea = document.getElementById('in-area');
   const outOfArea = document.getElementById('out-of-area');
   const ooaPostcode = document.getElementById('ooa-postcode');
-  const step2 = document.getElementById('step-2');
-  const stepBanner = document.getElementById('step-banner');
+  const finalScreen = document.getElementById('final');
+  const finalHeadline = document.getElementById('final-headline');
+  const finalBody = document.getElementById('final-body');
+  const distributorCards = document.getElementById('distributor-cards');
   const signinLink = document.getElementById('signin-link');
 
-  step1Form.addEventListener('submit', (e) => {
+  step1Form.addEventListener('submit', async (e) => {
     e.preventDefault();
     step1Status.textContent = '';
     step1Status.className = 'form__status';
 
     state.contact_name = document.getElementById('contact_name').value.trim();
+    state.email = document.getElementById('email_step1').value.trim();
+    if (!state.business_name && businessNameManual.value.trim()) state.business_name = businessNameManual.value.trim();
+    if (!state.postcode && postcodeManual.value.trim()) state.postcode = postcodeManual.value.trim().toUpperCase();
 
-    // If Places gave us values, use them; otherwise look at manual inputs
-    if (!state.business_name && businessNameManual.value.trim()) {
-      state.business_name = businessNameManual.value.trim();
-    }
-    if (!state.postcode && postcodeManual.value.trim()) {
-      state.postcode = postcodeManual.value.trim().toUpperCase();
+    if (!state.contact_name) return fail('Please tell us your name.');
+    if (!state.business_name) return fail('Please tell us your business name.');
+    if (!state.email) return fail('Please tell us your email.');
+    if (!state.postcode) return fail('Please tell us your postcode so we can check delivery.');
+    if (!isValidUkPostcode(state.postcode)) return fail("That doesn't look like a UK postcode. Please double-check.");
+
+    step1Submit.disabled = true;
+    step1Submit.value = 'Submitting…';
+
+    try {
+      const fd = new FormData();
+      fd.set('business_name', state.business_name);
+      fd.set('contact_name', state.contact_name);
+      fd.set('email', state.email);
+      fd.set('phone', state.phone);
+      fd.set('postcode', state.postcode);
+      fd.set('website', state.website);
+      fd.set('address_line_1', state.address_line_1);
+      fd.set('city', state.city);
+      const res = await fetch('/api/register-interest', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok) return fail(json.error ?? 'Something went wrong. Please try again.');
+      state.id = json.id;
+    } catch {
+      return fail('Network error. Please check your connection and try again.');
+    } finally {
+      step1Submit.disabled = false;
+      step1Submit.value = 'Continue';
     }
 
-    if (!state.business_name) {
-      step1Status.textContent = 'Please tell us your business name.';
-      step1Status.className = 'form__status form__status--error';
-      return;
-    }
-    if (!state.postcode) {
-      step1Status.textContent = 'Please tell us your postcode so we can check delivery.';
-      step1Status.className = 'form__status form__status--error';
-      return;
-    }
-    if (!isValidUkPostcode(state.postcode)) {
-      step1Status.textContent = "That doesn't look like a UK postcode. Please double-check.";
-      step1Status.className = 'form__status form__status--error';
-      return;
-    }
-
+    step1.hidden = true;
     if (isInServiceArea(state.postcode)) {
-      enterStep2('delivery-area');
+      inArea.hidden = false;
     } else {
       ooaPostcode.textContent = state.postcode.toUpperCase();
-      step1.hidden = true;
       outOfArea.hidden = false;
+    }
+
+    function fail(msg) {
+      step1Status.textContent = msg;
+      step1Status.className = 'form__status form__status--error';
+      return undefined;
     }
   });
 
   // ---------------------------------------------------------------------
-  // Out-of-area choices
+  // Fulfilment choice (Delivery / Collection / Courier / Distributor)
   // ---------------------------------------------------------------------
-  document.querySelectorAll('.ooa-continue').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll('.fulfilment-choice').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const method = btn.dataset.method;
-      state.fulfilment_method = method;
-      outOfArea.hidden = true;
-      enterStep2(method === 'collection' ? 'collection' : 'courier');
+
+      const fd = new FormData();
+      fd.set('id', state.id);
+      fd.set('email', state.email);
+      if (method === 'distributor') {
+        // Mark the lead as referred — fulfilment stays NULL since it's
+        // not one of the valid DB enum values.
+        fd.set('message', 'Out of area — applicant chose to use a distributor partner.');
+      } else {
+        fd.set('fulfilment_method', method);
+      }
+
+      try {
+        await fetch('/api/register-interest', { method: 'POST', body: fd });
+      } catch (err) {
+        console.warn('Failed to stamp fulfilment choice', err);
+      }
+
+      enterFinal(method);
     });
   });
 
-  document.getElementById('back-to-step-1').addEventListener('click', () => {
-    outOfArea.hidden = true;
-    step1.hidden = false;
+  document.querySelectorAll('.back-to-step-1').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      inArea.hidden = true;
+      outOfArea.hidden = true;
+      step1.hidden = false;
+    });
   });
 
-  // ---------------------------------------------------------------------
-  // Enter step 2
-  // ---------------------------------------------------------------------
-  function enterStep2(mode) {
-    step1.hidden = true;
+  function enterFinal(method) {
+    inArea.hidden = true;
+    outOfArea.hidden = true;
     signinLink.hidden = true;
 
-    const bannerCopy = {
-      'delivery-area': "You're in our direct delivery area. Just a few more details and we'll review your application.",
-      'collection': "You've chosen to collect from our Glasgow farm. We'll send you collection details once your account is approved.",
-      'courier': "You've chosen courier delivery. Shipping is charged per order at point of dispatch.",
-    };
-    stepBanner.textContent = bannerCopy[mode];
-    stepBanner.className = `step-banner step-banner--${mode}`;
-
-    document.getElementById('business_name').value = state.business_name;
-    document.getElementById('postcode').value = state.postcode;
-    document.getElementById('contact_name_2').value = state.contact_name;
-    document.getElementById('phone').value = state.phone;
-    document.getElementById('website').value = state.website;
-    document.getElementById('address_line_1').value = state.address_line_1;
-    document.getElementById('city').value = state.city;
-    document.getElementById('fulfilment_method').value = state.fulfilment_method ?? '';
-
-    step2.hidden = false;
-    setTimeout(() => document.getElementById('email').focus(), 50);
-  }
-
-  // ---------------------------------------------------------------------
-  // Step 2 submit
-  // ---------------------------------------------------------------------
-  const form = document.getElementById('register-form');
-  const status = document.getElementById('form-status');
-  const submit = document.getElementById('form-submit');
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    submit.disabled = true;
-    submit.value = 'Submitting…';
-    status.textContent = '';
-    status.className = 'form__status';
-
-    try {
-      const res = await fetch('/api/register-interest', {
-        method: 'POST',
-        body: new FormData(form),
-      });
-      const json = await res.json();
-
-      if (res.ok) {
-        status.textContent = "Thanks — we've received your application. We'll review it and email you once your account is approved.";
-        status.className = 'form__status form__status--success';
-        form.reset();
-        submit.style.display = 'none';
-      } else {
-        status.textContent = json.error ?? 'Something went wrong. Please try again.';
-        status.className = 'form__status form__status--error';
-      }
-    } catch {
-      status.textContent = 'Network error. Please check your connection and try again.';
-      status.className = 'form__status form__status--error';
-    } finally {
-      submit.disabled = false;
-      if (submit.style.display !== 'none') submit.value = 'Submit application';
+    if (method === 'distributor') {
+      finalHeadline.textContent = 'Thanks for getting in touch';
+      finalBody.textContent = "We're out of your direct delivery area, but our partners can help. Their details are below — they each carry our mushrooms alongside other Scottish produce.";
+      distributorCards.hidden = false;
+    } else {
+      finalHeadline.textContent = "Thanks — we've received your application";
+      const choice =
+        method === 'delivery' ? 'direct delivery'
+        : method === 'collection' ? 'collection from our farm'
+        : 'courier delivery';
+      finalBody.textContent = `We'll review your application and email you once your account has been approved. You've chosen ${choice}; you can change this later if you'd like.`;
     }
-  });
+    finalScreen.hidden = false;
+  }
 </script>
 
 <style>
@@ -493,10 +449,7 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     text-align: center;
     margin: 1.5rem 0 0;
   }
-  .portal-form__links a {
-    color: hsl(142 71% 55%);
-    text-decoration: none;
-  }
+  .portal-form__links a { color: hsl(142 71% 55%); text-decoration: none; }
   .portal-form__links a:hover { text-decoration: underline; }
 
   .form__field { margin-bottom: 1rem; text-align: left; }
@@ -521,48 +474,14 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     box-sizing: border-box;
     transition: border-color 0.2s ease;
   }
-  .form__field textarea { resize: vertical; }
   .form__field input::placeholder,
   .form__field textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
   .form__field input:focus,
   .form__field textarea:focus { outline: none; border-color: hsl(142 71% 35%); }
-  .form__field input[readonly] {
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.55);
-    cursor: default;
-  }
   .form__optional { font-weight: 400; color: rgba(255, 255, 255, 0.5); }
   .form__hint { margin: 0.4rem 0 0; font-size: 0.8rem; }
 
-  /* PlaceAutocompleteElement (web component) — match dark form theme.
-     The element uses a shadow DOM; Google exposes themeing via
-     --gmpx-* custom properties and ::part(input). Apply both. */
-  gmp-place-autocomplete {
-    width: 100%;
-    display: block;
-
-    /* Extended Component Library tokens */
-    --gmpx-color-surface: rgba(255, 255, 255, 0.08);
-    --gmpx-color-on-surface: #fff;
-    --gmpx-color-on-surface-variant: rgba(255, 255, 255, 0.7);
-    --gmpx-color-outline: rgba(255, 255, 255, 0.15);
-    --gmpx-color-primary: hsl(142 71% 45%);
-    --gmpx-font-family-base: var(--font-body);
-    --gmpx-font-size-base: 0.875rem;
-  }
-  gmp-place-autocomplete::part(input) {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    color: #fff;
-    font-family: var(--font-body);
-    font-size: 0.875rem;
-  }
-  gmp-place-autocomplete::part(input)::placeholder {
-    color: rgba(255, 255, 255, 0.35);
-  }
+  gmp-place-autocomplete { width: 100%; display: block; }
 
   .form__submit { width: 100%; margin-top: 0.5rem; }
   .form__status {
@@ -610,18 +529,9 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     transform: none;
     box-shadow: none;
   }
-  .cta-btn--outline {
-    background: transparent;
-    border: 1px solid hsl(142 71% 35%);
-    color: hsl(142 71% 55%);
-  }
-  .cta-btn--outline:hover {
-    background: rgba(34, 197, 94, 0.12);
-    color: #fff;
-  }
 
   .resolved {
-    margin: 1rem 0;
+    margin: 0.5rem 0 1rem;
     padding: 0.75rem 1rem;
     background: rgba(34, 197, 94, 0.08);
     border: 1px solid hsl(142 71% 35%);
@@ -643,24 +553,77 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     margin: 0;
   }
 
-  /* Out of area */
-  .ooa-option {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1.25rem 0;
-  }
-  .ooa-option:first-of-type { border-top: none; padding-top: 0.5rem; }
-  .ooa-option h3 {
+  /* Chooser cards (in-area + out-of-area) */
+  .chooser-headline {
     font-family: var(--font-heading);
     font-size: 1.05rem;
     color: #fff;
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.25rem;
   }
-  .ooa-option p {
+  .chooser-sub {
     font-family: var(--font-body);
     font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 1.25rem;
+  }
+  .chooser {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .chooser__card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 1rem 1.1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-body);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .chooser__card:hover {
+    border-color: hsl(142 71% 35%);
+    background: rgba(34, 197, 94, 0.06);
+    transform: translateY(-1px);
+  }
+  .chooser__card--primary {
+    background: hsl(142 71% 18%);
+    border-color: hsl(142 71% 35%);
+  }
+  .chooser__card--primary:hover {
+    background: hsl(142 71% 22%);
+  }
+  .chooser__title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .chooser__desc {
+    font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.75);
-    line-height: 1.5;
+    line-height: 1.4;
+  }
+  .chooser-back { text-align: center; margin-top: 1rem; }
+
+  /* Final / thank-you screen */
+  .final-headline {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: #fff;
     margin: 0 0 0.5rem;
+  }
+  .final-body {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
   }
   .ooa-distributor {
     margin: 0.75rem 0 0;
@@ -676,29 +639,17 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     display: block;
     margin-bottom: 0.25rem;
   }
+  .ooa-distributor p {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0.25rem 0;
+    line-height: 1.4;
+  }
   .ooa-distributor a {
     color: hsl(142 71% 55%);
     text-decoration: none;
   }
   .ooa-distributor a:hover { text-decoration: underline; }
-  .ooa-back { text-align: center; margin-top: 1rem; }
-
-  .step-banner {
-    padding: 0.7rem 0.9rem;
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.85);
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    line-height: 1.5;
-    margin-bottom: 1.25rem;
-  }
-  .step-banner--courier,
-  .step-banner--collection {
-    background: rgba(245, 158, 11, 0.08);
-    border-color: rgba(245, 158, 11, 0.3);
-  }
 
   @media (max-width: 479px) {
     .portal-form { padding: 2rem 1rem; }
