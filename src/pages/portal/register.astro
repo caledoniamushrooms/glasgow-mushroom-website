@@ -149,11 +149,18 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
       <p class="portal-form__links" id="signin-link">
         Already have an account? <a href="/portal">Sign in</a>.
       </p>
+
+      <!-- Maps key injected server-side; read by the module script below -->
+      <div id="maps-key-holder" data-maps-key={mapsKey} hidden></div>
     </div>
   </section>
 </BaseLayout>
 
-<script define:vars={{ mapsKey }}>
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const mapsKey = (document.getElementById('maps-key-holder')?.dataset.mapsKey ?? '').trim();
+
   // ---------------------------------------------------------------------
   // Service area check (mirror of src/portal/lib/serviceArea.ts) — kept
   // inline so this Astro page doesn't need to import a TS module.
@@ -186,15 +193,13 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   // ---------------------------------------------------------------------
   // Authenticated user? Bounce to dashboard.
   // ---------------------------------------------------------------------
-  (async () => {
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-    );
-    const { data: { session } } = await supabase.auth.getSession();
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  );
+  supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) window.location.replace('/portal/home');
-  })();
+  });
 
   // ---------------------------------------------------------------------
   // Google Places Autocomplete
