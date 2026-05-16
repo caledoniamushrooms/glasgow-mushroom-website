@@ -23,11 +23,11 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSystemAd
   }
 
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/portal" replace />
+    return <Navigate to="/portal/home" replace />
   }
 
   if (requireSystemAdmin && !isSystemAdmin) {
-    return <Navigate to="/portal" replace />
+    return <Navigate to="/portal/home" replace />
   }
 
   return <>{children}</>

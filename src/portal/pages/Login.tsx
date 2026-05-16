@@ -24,7 +24,7 @@ export function Login() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/portal" replace />
+    return <Navigate to="/portal/home" replace />
   }
 
   const handlePasswordLogin = async (e: FormEvent) => {
@@ -43,7 +43,7 @@ export function Login() {
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/portal`,
+        emailRedirectTo: `${window.location.origin}/portal/home`,
       },
     })
 

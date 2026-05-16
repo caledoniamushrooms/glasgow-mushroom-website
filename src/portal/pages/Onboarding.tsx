@@ -65,7 +65,7 @@ export function Onboarding() {
     }
 
     if (row.status === 'active') {
-      navigate('/portal')
+      navigate('/portal/home')
       return
     }
     if (row.status === 'submitted_for_review') {

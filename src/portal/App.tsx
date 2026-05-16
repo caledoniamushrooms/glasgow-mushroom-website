@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthProvider, useAuthContext } from './components/AuthProvider'
+import { AuthProvider } from './components/AuthProvider'
 import { ViewAsProvider } from './components/ViewAsProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ModuleGate } from './components/ModuleGate'
@@ -37,25 +37,6 @@ const queryClient = new QueryClient({
   },
 })
 
-// /portal: shows Login when unauthenticated, Dashboard (inside the
-// PortalLayout sidebar) when authenticated. Same URL in both states.
-function PortalRoot() {
-  const { isAuthenticated, loading } = useAuthContext()
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4"
-           style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="relative z-10 w-full max-w-[400px] bg-white rounded-xl shadow-lg p-8">
-          <p className="text-center text-muted-foreground py-8">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-  if (!isAuthenticated) return <Login />
-  return <PortalLayout><Dashboard /></PortalLayout>
-}
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -63,12 +44,11 @@ export default function App() {
         <ViewAsProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public routes */}
-            {/* /portal renders the login form when unauthenticated, the
-                dashboard when authenticated — URL stays /portal in both
-                states. /portal/login kept as a back-compat alias. */}
-            <Route path="/portal" element={<PortalRoot />} />
-            <Route path="/portal/login" element={<Navigate to="/portal" replace />} />
+            {/* Public SPA fallbacks. Primary public surface (/portal,
+                /portal/register, /portal/forgot-password) lives in Astro
+                pages with the public dark theme — these SPA routes are
+                deep-link safety nets. */}
+            <Route path="/portal/login" element={<Login />} />
             <Route path="/portal/register" element={<Register />} />
             <Route path="/portal/forgot-password" element={<ForgotPassword />} />
             <Route path="/portal/onboarding" element={<Onboarding />} />
@@ -81,6 +61,11 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
+
+              {/* Dashboard — handles its own module check + redirect */}
+              <Route path="/portal/home" element={<Dashboard />} />
+              {/* Legacy /portal → /portal/home for already-signed-in users */}
+              <Route path="/portal" element={<Navigate to="/portal/home" replace />} />
 
               {/* Ordering */}
               <Route path="/portal/orders" element={<ModuleGate moduleKey="ordering"><Orders /></ModuleGate>} />
@@ -125,7 +110,7 @@ export default function App() {
             </Route>
 
             {/* Catch-all redirect */}
-            <Route path="/portal/*" element={<Navigate to="/portal" replace />} />
+            <Route path="/portal/*" element={<Navigate to="/portal/home" replace />} />
           </Routes>
         </BrowserRouter>
         </ViewAsProvider>

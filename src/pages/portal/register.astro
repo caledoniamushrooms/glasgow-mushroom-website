@@ -2,36 +2,46 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Sign in — Glasgow Mushroom Company Trade Portal" description="Sign in to the Glasgow Mushroom Company trade portal.">
+<BaseLayout title="Apply for a trade account — Glasgow Mushroom Company" description="Apply for a Glasgow Mushroom Company trade account.">
   <section class="portal-form">
     <div class="portal-form__card" data-reveal>
       <div class="portal-form__header">
         <h1>Trade Portal</h1>
-        <p class="portal-form__subtitle">Sign in</p>
+        <p class="portal-form__subtitle">Apply for a trade account</p>
       </div>
 
-      <form id="login-form" autocomplete="on">
-        <div class="form__field">
-          <label for="email">Email address</label>
-          <input type="email" id="email" name="email" placeholder="you@business.com" autocomplete="email" required />
-        </div>
-        <div class="form__field" id="password-field">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" />
-          <p class="form__hint">
-            <button type="button" id="toggle-magic" class="link-button">Use magic link instead</button>
-          </p>
-        </div>
-        <p id="form-status" class="form__status" aria-live="polite"></p>
-        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Sign in" />
-      </form>
+      <p class="portal-form__message">
+        Submit your details below to apply for a Glasgow Mushroom Company trade account. We'll review your application and email you to complete the rest of your onboarding once you've been approved.
+      </p>
 
       <p class="portal-form__links">
-        <a href="/portal/forgot-password">Forgot password?</a>
+        Already have an account? <a href="/portal">Sign in</a>.
       </p>
-      <p class="portal-form__links">
-        <a href="/portal/register">Register as a new customer</a>
-      </p>
+
+      <form id="register-form" method="POST" action="/api/register-interest">
+        <div class="form__field">
+          <label for="business_name">Business name</label>
+          <input type="text" id="business_name" name="business_name" placeholder="Your business or restaurant" required />
+        </div>
+        <div class="form__field">
+          <label for="contact_name">Your name</label>
+          <input type="text" id="contact_name" name="contact_name" placeholder="Full name" required />
+        </div>
+        <div class="form__field">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" placeholder="you@business.com" required />
+        </div>
+        <div class="form__field">
+          <label for="phone">Phone <span class="form__optional">(optional)</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="Phone number" />
+        </div>
+        <div class="form__field">
+          <label for="message">Tell us about your business <span class="form__optional">(optional)</span></label>
+          <textarea id="message" name="message" rows="3" placeholder="What products are you interested in? Estimated weekly volumes?"></textarea>
+        </div>
+        <p id="form-status" class="form__status" aria-live="polite"></p>
+        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit application" />
+      </form>
     </div>
   </section>
 </BaseLayout>
@@ -44,68 +54,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
   );
 
-  // If already authenticated, jump straight to the dashboard
+  // Authenticated users shouldn't be applying — bounce to dashboard
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) window.location.replace('/portal/home');
   });
 
-  const form = document.getElementById('login-form') as HTMLFormElement;
+  const form = document.getElementById('register-form') as HTMLFormElement;
   const status = document.getElementById('form-status') as HTMLParagraphElement;
   const submit = document.getElementById('form-submit') as HTMLInputElement;
-  const passwordField = document.getElementById('password-field') as HTMLDivElement;
-  const passwordInput = document.getElementById('password') as HTMLInputElement;
-  const toggleMagic = document.getElementById('toggle-magic') as HTMLButtonElement;
-
-  let useMagic = false;
-
-  toggleMagic.addEventListener('click', () => {
-    useMagic = !useMagic;
-    if (useMagic) {
-      passwordField.style.display = 'none';
-      passwordInput.required = false;
-      submit.value = 'Send sign-in link';
-      toggleMagic.textContent = 'Use password instead';
-    } else {
-      passwordField.style.display = '';
-      passwordInput.required = true;
-      submit.value = 'Sign in';
-      toggleMagic.textContent = 'Use magic link instead';
-    }
-  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submit.disabled = true;
+    submit.value = 'Submitting…';
     status.textContent = '';
     status.className = 'form__status';
-    const originalValue = submit.value;
-    submit.value = useMagic ? 'Sending…' : 'Signing in…';
-
-    const email = (document.getElementById('email') as HTMLInputElement).value.trim();
 
     try {
-      if (useMagic) {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: `${window.location.origin}/portal/home` },
-        });
-        if (error) throw error;
-        status.textContent = `Check ${email} for your sign-in link.`;
+      const res = await fetch('/api/register-interest', {
+        method: 'POST',
+        body: new FormData(form),
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        status.textContent = "Thanks — we've received your application. We'll review it and email you once your account is approved.";
         status.className = 'form__status form__status--success';
         form.reset();
       } else {
-        const password = passwordInput.value;
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        window.location.replace('/portal/home');
-        return; // skip re-enable, we're navigating away
+        status.textContent = json.error ?? 'Something went wrong. Please try again.';
+        status.className = 'form__status form__status--error';
       }
-    } catch (err) {
-      status.textContent = (err as Error).message ?? 'Sign in failed. Please try again.';
+    } catch {
+      status.textContent = 'Network error. Please check your connection and try again.';
       status.className = 'form__status form__status--error';
     } finally {
       submit.disabled = false;
-      submit.value = originalValue;
+      submit.value = 'Submit application';
     }
   });
 </script>
@@ -124,15 +109,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 3rem;
-    max-width: 480px;
+    max-width: 520px;
     width: 100%;
     text-align: center;
   }
 
-  .portal-form__header {
-    margin-bottom: 2rem;
-  }
-
+  .portal-form__header { margin-bottom: 1.5rem; }
   .portal-form__card h1 {
     font-family: var(--font-heading);
     font-size: 2.5rem;
@@ -140,34 +122,37 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     color: #fff;
     line-height: 1.1;
   }
-
   .portal-form__subtitle {
     font-family: var(--font-heading);
     font-size: 1.1rem;
     color: hsl(142 71% 45%);
     margin-top: 0.25rem;
   }
-
+  .portal-form__message {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    text-align: left;
+  }
   .portal-form__links {
     font-family: var(--font-body);
-    font-size: 0.875rem;
-    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    margin: 0 0 1.5rem;
   }
-
   .portal-form__links a {
     color: hsl(142 71% 55%);
     text-decoration: none;
   }
-
-  .portal-form__links a:hover {
-    text-decoration: underline;
-  }
+  .portal-form__links a:hover { text-decoration: underline; }
 
   .form__field {
     margin-bottom: 1rem;
     text-align: left;
   }
-
   .form__field label {
     display: block;
     font-family: var(--font-heading);
@@ -176,8 +161,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     color: rgba(255, 255, 255, 0.85);
     margin-bottom: 0.4rem;
   }
-
-  .form__field input {
+  .form__field input,
+  .form__field textarea {
     width: 100%;
     padding: 0.6rem 0.75rem;
     background: rgba(255, 255, 255, 0.08);
@@ -189,56 +174,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     box-sizing: border-box;
     transition: border-color 0.2s ease;
   }
-
-  .form__field input::placeholder {
+  .form__field textarea { resize: vertical; }
+  .form__field input::placeholder,
+  .form__field textarea::placeholder {
     color: rgba(255, 255, 255, 0.35);
   }
-
-  .form__field input:focus {
+  .form__field input:focus,
+  .form__field textarea:focus {
     outline: none;
     border-color: hsl(142 71% 35%);
   }
-
-  .form__hint {
-    margin: 0.4rem 0 0;
-    text-align: right;
-    font-size: 0.8rem;
+  .form__optional {
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.5);
   }
-
-  .link-button {
-    background: none;
-    border: none;
-    color: hsl(142 71% 55%);
-    cursor: pointer;
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    padding: 0;
-  }
-
-  .link-button:hover {
-    text-decoration: underline;
-  }
-
-  .form__submit {
-    width: 100%;
-    margin-top: 0.5rem;
-  }
-
+  .form__submit { width: 100%; margin-top: 0.5rem; }
   .form__status {
     font-family: var(--font-body);
     font-size: 0.875rem;
     margin-bottom: 0.75rem;
     min-height: 1.25em;
-    text-align: left;
   }
-
-  .form__status--success {
-    color: hsl(142 71% 45%);
-  }
-
-  .form__status--error {
-    color: #ef4444;
-  }
+  .form__status--success { color: hsl(142 71% 45%); }
+  .form__status--error { color: #ef4444; }
 
   .cta-btn {
     display: inline-block;
@@ -254,13 +212,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     text-decoration: none;
     transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
   }
-
   .cta-btn:hover {
     background-color: hsl(142 71% 30%);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
-
   .cta-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
