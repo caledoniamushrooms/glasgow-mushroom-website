@@ -534,14 +534,21 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   .form__optional { font-weight: 400; color: rgba(255, 255, 255, 0.5); }
   .form__hint { margin: 0.4rem 0 0; font-size: 0.8rem; }
 
-  /* PlaceAutocompleteElement (web component) — match dark form theme */
+  /* PlaceAutocompleteElement (web component) — match dark form theme.
+     The element uses a shadow DOM; Google exposes themeing via
+     --gmpx-* custom properties and ::part(input). Apply both. */
   gmp-place-autocomplete {
     width: 100%;
     display: block;
-    --gmp-place-autocomplete-input-background-color: rgba(255, 255, 255, 0.08);
-    --gmp-place-autocomplete-input-border-color: rgba(255, 255, 255, 0.15);
-    --gmp-place-autocomplete-input-text-color: #fff;
-    --gmp-place-autocomplete-input-placeholder-color: rgba(255, 255, 255, 0.35);
+
+    /* Extended Component Library tokens */
+    --gmpx-color-surface: rgba(255, 255, 255, 0.08);
+    --gmpx-color-on-surface: #fff;
+    --gmpx-color-on-surface-variant: rgba(255, 255, 255, 0.7);
+    --gmpx-color-outline: rgba(255, 255, 255, 0.15);
+    --gmpx-color-primary: hsl(142 71% 45%);
+    --gmpx-font-family-base: var(--font-body);
+    --gmpx-font-size-base: 0.875rem;
   }
   gmp-place-autocomplete::part(input) {
     width: 100%;
@@ -552,6 +559,9 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
     color: #fff;
     font-family: var(--font-body);
     font-size: 0.875rem;
+  }
+  gmp-place-autocomplete::part(input)::placeholder {
+    color: rgba(255, 255, 255, 0.35);
   }
 
   .form__submit { width: 100%; margin-top: 0.5rem; }
