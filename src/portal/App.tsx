@@ -20,6 +20,11 @@ import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
 import { Markets } from './pages/Markets'
 import { PartnerLogos } from './pages/PartnerLogos'
+import { DeliveryNotes } from './pages/DeliveryNotes'
+import { Promotions } from './pages/Promotions'
+import { Stockouts } from './pages/Stockouts'
+import { Customers } from './pages/admin/Customers'
+import { Registrations } from './pages/admin/Registrations'
 import '../styles/portal-tailwind.css'
 
 const queryClient = new QueryClient({
