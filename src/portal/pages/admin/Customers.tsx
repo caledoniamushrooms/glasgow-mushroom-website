@@ -57,7 +57,7 @@ export function Customers() {
 
   const handleViewAs = (c: CustomerWithDetails) => {
     startViewAs(c.id, c.name)
-    navigate('/portal')
+    navigate('/portal/home')
   }
 
   const handleInvite = async (e: FormEvent) => {

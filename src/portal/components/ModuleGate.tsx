@@ -19,7 +19,7 @@ export function ModuleGate({ moduleKey, children }: ModuleGateProps) {
   }
 
   if (!isModuleEnabled(moduleKey)) {
-    return <Navigate to="/portal" replace />
+    return <Navigate to="/portal/home" replace />
   }
 
   return <>{children}</>

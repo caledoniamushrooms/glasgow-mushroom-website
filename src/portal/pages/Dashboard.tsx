@@ -7,7 +7,7 @@ import { AdminDashboard } from './admin/AdminDashboard'
 import type { ModuleKey } from '../lib/modules'
 
 const MODULE_ROUTES: Record<ModuleKey, string> = {
-  dashboard: '/portal',
+  dashboard: '/portal/home',
   ordering: '/portal/orders',
   recurring_orders: '/portal/orders/recurring',
   accounts: '/portal/accounts',

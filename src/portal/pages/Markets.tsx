@@ -26,7 +26,7 @@ export function Markets() {
   const [editingLocation, setEditingLocation] = useState<MarketLocation | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (!isSystemAdmin) return <Navigate to="/portal" replace />
+  if (!isSystemAdmin) return <Navigate to="/portal/home" replace />
 
   const locations = locationsQuery.data || []
   const events = eventsQuery.data || []

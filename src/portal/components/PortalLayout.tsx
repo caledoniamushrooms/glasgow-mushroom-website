@@ -15,7 +15,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: '/portal', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', moduleKey: 'dashboard' },
+  { to: '/portal/home', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', moduleKey: 'dashboard' },
   { to: '/portal/orders', label: 'Orders', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', moduleKey: 'ordering' },
   { to: '/portal/orders/recurring', label: 'Recurring', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', moduleKey: 'recurring_orders' },
   { to: '/portal/accounts', label: 'Accounts', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z', moduleKey: 'accounts' },
@@ -98,7 +98,7 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/portal'}
+              end={item.to === '/portal/home'}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors border-l-[3px] ${
                   isActive
