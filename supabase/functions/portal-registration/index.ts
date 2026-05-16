@@ -1,7 +1,51 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { Resend } from "npm:resend@4"
 import { corsHeaders } from "../_shared/cors.ts"
 
 const PORTAL_URL = Deno.env.get("PORTAL_URL") || "https://www.glasgowmushroomcompany.co.uk"
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
+const APPLICANT_FROM = "Glasgow Mushroom Company <hello@glasgowmushroomcompany.co.uk>"
+
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
+
+async function sendApprovalEmail(opts: { to: string; contactName: string; businessName: string; actionLink: string }) {
+  if (!resend) {
+    console.warn("RESEND_API_KEY not set — approval email skipped. Action link:", opts.actionLink)
+    return { sent: false, reason: "resend_not_configured" }
+  }
+  try {
+    const { error } = await resend.emails.send({
+      from: APPLICANT_FROM,
+      to: opts.to,
+      subject: "Your Glasgow Mushroom trade account has been approved",
+      text:
+        `Hi ${opts.contactName},\n\n` +
+        `Good news — your trade account application for ${opts.businessName} has been approved.\n\n` +
+        `To finish setting up your account, please complete the rest of your onboarding here:\n\n` +
+        `${opts.actionLink}\n\n` +
+        `This link is single-use and will sign you in automatically. Once you're in, you'll be asked to fill in a short application form covering delivery details, trading preferences, and a site address. We'll review the completed form and confirm your account from there.\n\n` +
+        `If you have any questions, just reply to this email.\n\n` +
+        `Best,\nGlasgow Mushroom Company`,
+      html:
+        `<p>Hi ${opts.contactName},</p>` +
+        `<p>Good news — your trade account application for <strong>${opts.businessName}</strong> has been approved.</p>` +
+        `<p>To finish setting up your account, please complete the rest of your onboarding:</p>` +
+        `<p><a href="${opts.actionLink}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:6px;font-weight:600">Complete your onboarding</a></p>` +
+        `<p style="color:#666;font-size:13px">Or copy this link: <br><a href="${opts.actionLink}">${opts.actionLink}</a></p>` +
+        `<p>This link is single-use and will sign you in automatically. Once you're in, you'll be asked to fill in a short application form covering delivery details, trading preferences, and a site address. We'll review the completed form and confirm your account from there.</p>` +
+        `<p>If you have any questions, just reply to this email.</p>` +
+        `<p>Best,<br>Glasgow Mushroom Company</p>`,
+    })
+    if (error) {
+      console.error("Resend send failed:", error)
+      return { sent: false, reason: "resend_error" }
+    }
+    return { sent: true }
+  } catch (err) {
+    console.error("Resend exception:", err)
+    return { sent: false, reason: "resend_exception" }
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -134,22 +178,33 @@ async function approveRegistration(
     return errorResponse(409, "Request was processed by another reviewer")
   }
 
-  // Invite the auth user — Supabase Auth sends the magic-link email
-  const { data: authData, error: inviteErr } =
-    await supabase.auth.admin.inviteUserByEmail(request.email, {
-      data: { display_name: request.contact_name },
-      redirectTo: `${PORTAL_URL}/portal/onboarding`,
+  // Create the auth user + get a magic link without sending Supabase
+  // Auth's default email. We send our own GMC-branded email via Resend.
+  const { data: linkData, error: linkErr } =
+    await supabase.auth.admin.generateLink({
+      type: "invite",
+      email: request.email,
+      options: {
+        data: { display_name: request.contact_name },
+        redirectTo: `${PORTAL_URL}/portal/onboarding`,
+      },
     })
-  if (inviteErr) {
-    console.error("inviteUserByEmail failed:", inviteErr)
-    return errorResponse(500, "Failed to send invitation email")
+  if (linkErr || !linkData?.user) {
+    console.error("generateLink failed:", linkErr)
+    return errorResponse(500, "Failed to create invitation link")
+  }
+
+  const actionLink = linkData.properties?.action_link
+  if (!actionLink) {
+    console.error("generateLink returned no action_link", linkData)
+    return errorResponse(500, "Invitation link missing from auth response")
   }
 
   // portal_users row with NULL customer_id — backfilled at acceptance
   const { error: userErr } = await supabase
     .from("portal_users")
     .insert({
-      auth_user_id: authData.user.id,
+      auth_user_id: linkData.user.id,
       customer_id: null,
       role: "admin",
       display_name: request.contact_name,
@@ -163,7 +218,21 @@ async function approveRegistration(
     return errorResponse(500, "Failed to create portal user record")
   }
 
-  return jsonResponse({ success: true, request_id })
+  // Send our own approval email via Resend. Non-fatal: if it fails we
+  // still report success and surface a flag so the admin can retry.
+  const emailResult = await sendApprovalEmail({
+    to: request.email,
+    contactName: request.contact_name,
+    businessName: request.business_name,
+    actionLink,
+  })
+
+  return jsonResponse({
+    success: true,
+    request_id,
+    email_sent: emailResult.sent,
+    ...(emailResult.sent ? {} : { email_warning: emailResult.reason }),
+  })
 }
 
 // ---------------------------------------------------------------------
