@@ -2,8 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 // Maps key is loaded server-side and injected into the client script.
-// Same env var that powers home.astro's map.
-const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY ?? '';
+// Trim whitespace — Vercel env vars can ship with a trailing newline
+// which silently breaks the Maps script URL (encoded as %0A).
+const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
 ---
 
 <BaseLayout title="Apply for a trade account — Glasgow Mushroom Company" description="Apply for a Glasgow Mushroom Company trade account.">
@@ -208,19 +209,29 @@ const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY ?? '';
 
   function loadGoogleMaps() {
     return new Promise((resolve, reject) => {
-      if (window.google?.maps?.places) return resolve();
+      const importPlaces = async () => {
+        try {
+          await google.maps.importLibrary('places');
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      };
+
+      if (window.google?.maps?.importLibrary) return importPlaces();
       if (!mapsKey) return reject(new Error('Maps key not configured'));
+
       const existing = document.querySelector('script[data-gmaps]');
       if (existing) {
-        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('load', importPlaces, { once: true });
         return;
       }
       const s = document.createElement('script');
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places&loading=async&v=weekly`;
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsKey)}&libraries=places&loading=async&v=weekly`;
       s.async = true;
       s.defer = true;
       s.dataset.gmaps = '1';
-      s.onload = () => resolve();
+      s.onload = importPlaces;
       s.onerror = () => reject(new Error('Failed to load Google Maps'));
       document.head.appendChild(s);
     });
