@@ -49,7 +49,6 @@ export function Onboarding() {
       return
     }
 
-    // Find the applicant's request by email
     const { data: rows } = await supabase
       .from('portal_registration_requests')
       .select('*')
@@ -81,9 +80,7 @@ export function Onboarding() {
       return
     }
 
-    // approved or onboarding_in_progress → show the form
     if (row.status === 'approved') {
-      // Move to onboarding_in_progress so admins see them as actively filling in
       await supabase
         .from('portal_registration_requests')
         .update({ status: 'onboarding_in_progress' satisfies RegistrationStatus })
@@ -107,7 +104,6 @@ export function Onboarding() {
     setError(null)
 
     try {
-      // Update display_name on portal_users (best-effort)
       if (form.display_name) {
         await supabase
           .from('portal_users')
@@ -146,16 +142,18 @@ export function Onboarding() {
     }
   }
 
-  if (loading) return <Shell><p className="text-center text-muted-foreground py-8">Loading...</p></Shell>
+  if (loading) {
+    return <Shell><p className="onboarding-status">Loading…</p></Shell>
+  }
 
   if (terminalView === 'not_found') {
     return (
       <Shell>
         <Heading subtitle="Application not found" />
-        <p className="text-sm text-foreground">
+        <p className="onboarding-prose">
           We couldn't find an approved application for this account. If you've registered
           interest, we'll be in touch once it's reviewed. Otherwise please{' '}
-          <a className="text-primary hover:underline" href="/portal/register">register your interest</a>.
+          <a className="onboarding-link" href="/portal/register">register your interest</a>.
         </p>
       </Shell>
     )
@@ -165,7 +163,7 @@ export function Onboarding() {
     return (
       <Shell>
         <Heading subtitle="Application under review" />
-        <p className="text-sm text-foreground">
+        <p className="onboarding-prose">
           Thanks — we've received your application and will be in touch shortly.
           You can close this page.
         </p>
@@ -177,10 +175,10 @@ export function Onboarding() {
     return (
       <Shell>
         <Heading subtitle="Application not approved" />
-        <p className="text-sm text-foreground">
+        <p className="onboarding-prose">
           Unfortunately we weren't able to approve your application at this time.
           If you'd like to discuss this, please contact us at{' '}
-          <a className="text-primary hover:underline" href="mailto:accounts@glasgowmushroomcompany.co.uk">
+          <a className="onboarding-link" href="mailto:accounts@glasgowmushroomcompany.co.uk">
             accounts@glasgowmushroomcompany.co.uk
           </a>.
         </p>
@@ -191,11 +189,11 @@ export function Onboarding() {
   return (
     <Shell wide>
       <Heading subtitle="Complete your application" />
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="onboarding-prose onboarding-prose--centred">
         Please complete the details below to open a trade account with Glasgow Mushroom Company.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      <form onSubmit={handleSubmit} className="onboarding-form">
         {error && <Alert>{error}</Alert>}
 
         <Section title="Business">
@@ -242,7 +240,7 @@ export function Onboarding() {
           <Field label="Address line 1" value={form.address_line_1} onChange={v => handleChange('address_line_1', v)} required />
           <Field label="Address line 2" value={form.address_line_2} onChange={v => handleChange('address_line_2', v)} optional />
           <Field label="Address line 3" value={form.address_line_3} onChange={v => handleChange('address_line_3', v)} optional />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="onboarding-grid">
             <Field label="City" value={form.city} onChange={v => handleChange('city', v)} required />
             <Field label="Postcode" value={form.postcode} onChange={v => handleChange('postcode', v)} required />
           </div>
@@ -256,18 +254,14 @@ export function Onboarding() {
 
         <Section title="Authorisation">
           <Field label="Print name" value={form.display_name} onChange={v => handleChange('display_name', v)} required />
-          <p className="text-xs text-muted-foreground">
+          <p className="onboarding-hint">
             By submitting, you confirm the details provided are accurate and that you are
             authorised to open a trade account on behalf of the business named above.
           </p>
         </Section>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="py-3 bg-primary text-primary-foreground rounded-md text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? 'Submitting...' : 'Submit application'}
+        <button type="submit" disabled={submitting} className="onboarding-submit cta-btn">
+          {submitting ? 'Submitting…' : 'Submit application'}
         </button>
       </form>
     </Shell>
@@ -275,15 +269,17 @@ export function Onboarding() {
 }
 
 // ---------------------------------------------------------------------
-// Local presentational components
+// Presentational components — dark portal-login theme
+// Uses CSS variables exposed by src/styles/global.css (--color-bg-footer,
+// --font-heading, --font-body). Styles are colocated below to keep the
+// dark theme self-contained inside the SPA bundle.
 // ---------------------------------------------------------------------
 
 function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-cover bg-center bg-fixed p-4"
-         style={{ backgroundImage: "url('/images/splash-hero.jpg')" }}>
-      <div className="absolute inset-0 bg-black/55" />
-      <div className={`relative z-10 w-full bg-white rounded-xl shadow-lg p-8 my-8 ${wide ? 'max-w-[640px]' : 'max-w-[480px]'}`}>
+    <div className="onboarding-shell">
+      <OnboardingStyles />
+      <div className={`onboarding-card ${wide ? 'onboarding-card--wide' : ''}`}>
         {children}
       </div>
     </div>
@@ -292,17 +288,17 @@ function Shell({ children, wide }: { children: React.ReactNode; wide?: boolean }
 
 function Heading({ subtitle }: { subtitle: string }) {
   return (
-    <div className="text-center mb-8">
-      <h1 className="text-xl font-semibold text-foreground">Glasgow Mushroom Co.</h1>
-      <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+    <div className="onboarding-header">
+      <h1>Trade Portal</h1>
+      <p className="onboarding-subtitle">{subtitle}</p>
     </div>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-      <legend className="text-sm font-semibold text-foreground -mt-7 px-2 bg-white">{title}</legend>
+    <fieldset className="onboarding-section">
+      <legend className="onboarding-legend">{title}</legend>
       {children}
     </fieldset>
   )
@@ -319,11 +315,11 @@ function Field(props: {
 }) {
   const { label, value, onChange, type = 'text', required, optional, readOnly } = props
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-sm font-medium text-foreground">
+    <div className="onboarding-field">
+      <label>
         {label}
         {required && ' *'}
-        {optional && <span className="text-muted-foreground font-normal"> (optional)</span>}
+        {optional && <span className="onboarding-optional"> (optional)</span>}
       </label>
       <input
         type={type}
@@ -331,7 +327,7 @@ function Field(props: {
         onChange={onChange ? e => onChange(e.target.value) : undefined}
         readOnly={readOnly}
         required={required}
-        className={`px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 odin-focus ${readOnly ? 'bg-gray-50 text-muted-foreground' : ''}`}
+        className={readOnly ? 'is-readonly' : ''}
       />
     </div>
   )
@@ -339,12 +335,13 @@ function Field(props: {
 
 function Textarea({ value, onChange, rows = 3 }: { value: string; onChange: (v: string) => void; rows?: number }) {
   return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      rows={rows}
-      className="px-3 py-2.5 border border-input rounded-md text-base bg-white text-foreground placeholder:text-muted-foreground/60 resize-y odin-focus"
-    />
+    <div className="onboarding-field">
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        rows={rows}
+      />
+    </div>
   )
 }
 
@@ -357,11 +354,11 @@ function RadioGroup(props: {
 }) {
   const { label, value, onChange, options, required } = props
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-foreground">{label}{required && ' *'}</span>
-      <div className="flex flex-wrap gap-3">
+    <div className="onboarding-radio-group">
+      <span className="onboarding-radio-label">{label}{required && ' *'}</span>
+      <div className="onboarding-radio-options">
         {options.map(opt => (
-          <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+          <label key={opt.value} className={`onboarding-radio ${value === opt.value ? 'is-selected' : ''}`}>
             <input
               type="radio"
               name={label}
@@ -370,7 +367,7 @@ function RadioGroup(props: {
               onChange={() => onChange(opt.value)}
               required={required}
             />
-            <span className="text-sm text-foreground">{opt.label}</span>
+            <span>{opt.label}</span>
           </label>
         ))}
       </div>
@@ -380,9 +377,180 @@ function RadioGroup(props: {
 
 function Alert({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm" role="alert">
-      {children}
-    </div>
+    <div className="onboarding-alert" role="alert">{children}</div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Scoped stylesheet (injected once per Shell mount)
+// ---------------------------------------------------------------------
+
+function OnboardingStyles() {
+  return (
+    <style>{`
+      .onboarding-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 3rem 1.5rem;
+        background: #0a0a0a;
+        color: rgba(255,255,255,0.9);
+        font-family: var(--font-body, Arial, sans-serif);
+      }
+      .onboarding-card {
+        background: var(--color-bg-footer, #161616);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 2.5rem;
+        max-width: 480px;
+        width: 100%;
+      }
+      .onboarding-card--wide { max-width: 640px; }
+
+      .onboarding-header { text-align: center; margin-bottom: 2rem; }
+      .onboarding-header h1 {
+        font-family: var(--font-heading, 'Abhaya Libre', serif);
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.1;
+        margin: 0;
+      }
+      .onboarding-subtitle {
+        font-family: var(--font-heading, 'Abhaya Libre', serif);
+        font-size: 1.1rem;
+        color: hsl(142 71% 45%);
+        margin: 0.25rem 0 0;
+      }
+
+      .onboarding-prose {
+        color: rgba(255,255,255,0.85);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      .onboarding-prose--centred { text-align: center; margin: 0 0 2rem; }
+      .onboarding-link { color: hsl(142 71% 55%); text-decoration: none; }
+      .onboarding-link:hover { text-decoration: underline; }
+      .onboarding-status { color: rgba(255,255,255,0.7); text-align: center; padding: 2rem 0; }
+
+      .onboarding-form { display: flex; flex-direction: column; gap: 1.75rem; }
+
+      .onboarding-section {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding: 1.25rem 0 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .onboarding-section:first-of-type { border-top: none; padding-top: 0; }
+
+      .onboarding-legend {
+        font-family: var(--font-heading, 'Abhaya Libre', serif);
+        font-size: 1rem;
+        font-weight: 700;
+        color: #fff;
+        padding: 0;
+        margin-bottom: 0.25rem;
+      }
+
+      .onboarding-field { display: flex; flex-direction: column; gap: 0.4rem; }
+      .onboarding-field label {
+        font-family: var(--font-heading, 'Abhaya Libre', serif);
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.85);
+      }
+      .onboarding-optional { color: rgba(255,255,255,0.45); font-weight: 400; }
+
+      .onboarding-field input,
+      .onboarding-field textarea {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 6px;
+        color: #fff;
+        font-family: var(--font-body, Arial, sans-serif);
+        font-size: 0.875rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease;
+        resize: vertical;
+      }
+      .onboarding-field input::placeholder,
+      .onboarding-field textarea::placeholder { color: rgba(255,255,255,0.35); }
+      .onboarding-field input:focus,
+      .onboarding-field textarea:focus {
+        outline: none;
+        border-color: hsl(142 71% 35%);
+      }
+      .onboarding-field input.is-readonly {
+        background: rgba(255,255,255,0.04);
+        color: rgba(255,255,255,0.55);
+        cursor: default;
+      }
+
+      .onboarding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+      .onboarding-radio-group { display: flex; flex-direction: column; gap: 0.6rem; }
+      .onboarding-radio-label {
+        font-family: var(--font-heading, 'Abhaya Libre', serif);
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.85);
+      }
+      .onboarding-radio-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .onboarding-radio {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.85rem;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 999px;
+        color: rgba(255,255,255,0.85);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .onboarding-radio input { accent-color: hsl(142 71% 35%); }
+      .onboarding-radio:hover { border-color: rgba(255,255,255,0.3); }
+      .onboarding-radio.is-selected {
+        background: rgba(34, 197, 94, 0.12);
+        border-color: hsl(142 71% 35%);
+        color: #fff;
+      }
+
+      .onboarding-hint {
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.55);
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      .onboarding-alert {
+        padding: 0.6rem 0.85rem;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 6px;
+        color: #fecaca;
+        font-size: 0.875rem;
+      }
+
+      .onboarding-submit {
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+
+      @media (max-width: 479px) {
+        .onboarding-shell { padding: 2rem 1rem; }
+        .onboarding-card { padding: 2rem 1.5rem; }
+        .onboarding-card h1, .onboarding-header h1 { font-size: 2rem; }
+        .onboarding-grid { grid-template-columns: 1fr; }
+      }
+    `}</style>
   )
 }
 
