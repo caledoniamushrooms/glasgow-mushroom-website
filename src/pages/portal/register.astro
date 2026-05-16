@@ -29,7 +29,7 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
 
           <div class="form__field">
             <label for="business_search">Business name</label>
-            <input type="text" id="business_search" placeholder="Start typing your business…" autocomplete="organization" required />
+            <div id="autocomplete-mount"></div>
             <p class="form__hint">
               <button type="button" id="manual-fallback-btn" class="link-button">Can't find your business? Enter postcode manually</button>
             </p>
@@ -204,7 +204,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   // ---------------------------------------------------------------------
   // Google Places Autocomplete
   // ---------------------------------------------------------------------
-  const businessInput = document.getElementById('business_search');
   const manualFallbackBtn = document.getElementById('manual-fallback-btn');
   const manualFallback = document.getElementById('manual-fallback');
   const businessNameManual = document.getElementById('business_name_manual');
@@ -212,62 +211,91 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   const resolvedPlace = document.getElementById('resolved-place');
   const resolvedLine = document.getElementById('resolved-line');
 
+  // Bootstrap loader — sets up google.maps.importLibrary before the
+  // actual Maps script loads. Required for the new PlaceAutocompleteElement
+  // web component. The legacy google.maps.places.Autocomplete is no longer
+  // available to new Maps customers (deprecated March 2025).
   function loadGoogleMaps() {
     return new Promise((resolve, reject) => {
-      if (window.google?.maps?.places?.Autocomplete) return resolve();
+      if (window.google?.maps?.importLibrary) return resolve();
       if (!mapsKey) return reject(new Error('Maps key not configured'));
 
-      const existing = document.querySelector('script[data-gmaps]');
-      if (existing) {
-        existing.addEventListener('load', () => resolve(), { once: true });
-        return;
-      }
-      const s = document.createElement('script');
-      // No loading=async — that requires the bootstrap-loader pattern.
-      // Classic libraries= load makes google.maps.places available on script onload.
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsKey)}&libraries=places&v=weekly`;
-      s.async = true;
-      s.defer = true;
-      s.dataset.gmaps = '1';
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error('Failed to load Google Maps'));
-      document.head.appendChild(s);
+      // Inlined bootstrap loader from Google's docs
+      ((g) => {
+        let h, a, k;
+        const p = 'The Google Maps JavaScript API';
+        const c = 'google';
+        const l = 'importLibrary';
+        const q = '__ib__';
+        const m = document;
+        let b = window;
+        b = b[c] || (b[c] = {});
+        const d = b.maps || (b.maps = {});
+        const r = new Set();
+        const e = new URLSearchParams();
+        const u = () => h || (h = new Promise(async (f, n) => {
+          await (a = m.createElement('script'));
+          e.set('libraries', [...r] + '');
+          for (k in g) e.set(k.replace(/[A-Z]/g, t => '_' + t[0].toLowerCase()), g[k]);
+          e.set('callback', c + '.maps.' + q);
+          a.src = `https://maps.${c}apis.com/maps/api/js?` + e;
+          d[q] = f;
+          a.onerror = () => h = n(Error(p + ' could not load.'));
+          m.head.append(a);
+        }));
+        d[l] ? null : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n));
+      })({ key: mapsKey, v: 'weekly' });
+
+      // Resolve once the loader has installed itself
+      const tick = () => {
+        if (window.google?.maps?.importLibrary) resolve();
+        else setTimeout(tick, 20);
+      };
+      tick();
+      setTimeout(() => reject(new Error('Maps loader timed out')), 10000);
     });
   }
 
-  let autocomplete = null;
+  let autocompleteEl = null;
+  const autocompleteMount = document.getElementById('autocomplete-mount');
 
-  loadGoogleMaps().then(() => {
-    autocomplete = new google.maps.places.Autocomplete(businessInput, {
-      types: ['establishment'],
-      componentRestrictions: { country: 'gb' },
-      fields: ['name', 'formatted_address', 'address_components', 'formatted_phone_number', 'website'],
-      // Bias to Glasgow area
-      bounds: new google.maps.LatLngBounds(
+  loadGoogleMaps().then(async () => {
+    const { PlaceAutocompleteElement } = await google.maps.importLibrary('places');
+    const { LatLngBounds } = await google.maps.importLibrary('core');
+
+    autocompleteEl = new PlaceAutocompleteElement({
+      includedRegionCodes: ['gb'],
+      locationBias: new LatLngBounds(
         { lat: 55.75, lng: -4.50 },
         { lat: 56.00, lng: -4.10 },
       ),
     });
+    autocompleteEl.id = 'business_search';
+    autocompleteEl.setAttribute('placeholder', 'Start typing your business…');
+    autocompleteMount.appendChild(autocompleteEl);
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (!place || !place.address_components) return;
+    autocompleteEl.addEventListener('gmp-select', async (event) => {
+      const placePrediction = event.placePrediction;
+      const place = placePrediction.toPlace();
+      await place.fetchFields({
+        fields: ['displayName', 'formattedAddress', 'addressComponents', 'nationalPhoneNumber', 'websiteURI'],
+      });
 
-      const components = place.address_components ?? [];
-      const get = (type) => components.find((c) => c.types.includes(type))?.long_name ?? '';
+      const components = place.addressComponents ?? [];
+      const get = (type) => components.find((c) => c.types.includes(type))?.longText ?? '';
       const postcode = get('postal_code');
       const streetNumber = get('street_number');
       const route = get('route');
       const locality = get('postal_town') || get('locality');
 
-      state.business_name = place.name ?? '';
+      state.business_name = place.displayName ?? '';
       state.postcode = postcode;
       state.address_line_1 = [streetNumber, route].filter(Boolean).join(' ');
       state.city = locality;
-      state.phone = place.formatted_phone_number ?? '';
-      state.website = place.website ?? '';
+      state.phone = place.nationalPhoneNumber ?? '';
+      state.website = place.websiteURI ?? '';
 
-      resolvedLine.textContent = place.formatted_address ?? '';
+      resolvedLine.textContent = place.formattedAddress ?? '';
       resolvedPlace.hidden = false;
     });
   }).catch((err) => {
@@ -505,6 +533,26 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   }
   .form__optional { font-weight: 400; color: rgba(255, 255, 255, 0.5); }
   .form__hint { margin: 0.4rem 0 0; font-size: 0.8rem; }
+
+  /* PlaceAutocompleteElement (web component) — match dark form theme */
+  gmp-place-autocomplete {
+    width: 100%;
+    display: block;
+    --gmp-place-autocomplete-input-background-color: rgba(255, 255, 255, 0.08);
+    --gmp-place-autocomplete-input-border-color: rgba(255, 255, 255, 0.15);
+    --gmp-place-autocomplete-input-text-color: #fff;
+    --gmp-place-autocomplete-input-placeholder-color: rgba(255, 255, 255, 0.35);
+  }
+  gmp-place-autocomplete::part(input) {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+  }
 
   .form__submit { width: 100%; margin-top: 0.5rem; }
   .form__status {
