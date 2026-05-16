@@ -1,5 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Maps key is loaded server-side and injected into the client script.
+// Same env var that powers home.astro's map.
+const mapsKey = import.meta.env.GOOGLE_MAPS_API_KEY ?? '';
 ---
 
 <BaseLayout title="Apply for a trade account — Glasgow Mushroom Company" description="Apply for a Glasgow Mushroom Company trade account.">
@@ -10,58 +14,368 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <p class="portal-form__subtitle">Apply for a trade account</p>
       </div>
 
-      <p class="portal-form__message">
-        Submit your details below to apply for a Glasgow Mushroom Company trade account. We'll review your application and email you to complete the rest of your onboarding once you've been approved.
-      </p>
+      <!-- Step 1: name + business lookup -->
+      <div id="step-1">
+        <p class="portal-form__message">
+          Tell us your name and find your business below. We'll check whether you're in our direct-delivery area before showing you the rest of the form.
+        </p>
 
-      <p class="portal-form__links">
+        <form id="step-1-form" autocomplete="on">
+          <div class="form__field">
+            <label for="contact_name">Your name</label>
+            <input type="text" id="contact_name" name="contact_name" placeholder="Full name" autocomplete="name" required />
+          </div>
+
+          <div class="form__field">
+            <label for="business_search">Business name</label>
+            <input type="text" id="business_search" placeholder="Start typing your business…" autocomplete="organization" required />
+            <p class="form__hint">
+              <button type="button" id="manual-fallback-btn" class="link-button">Can't find your business? Enter postcode manually</button>
+            </p>
+          </div>
+
+          <div id="manual-fallback" class="form__field" hidden>
+            <label for="business_name_manual">Business name (manual)</label>
+            <input type="text" id="business_name_manual" placeholder="Your business or restaurant" />
+            <label for="postcode_manual" style="margin-top: 0.75rem;">Postcode</label>
+            <input type="text" id="postcode_manual" placeholder="e.g. G12 8XY" autocomplete="postal-code" />
+          </div>
+
+          <div id="resolved-place" class="resolved" hidden>
+            <p class="resolved__label">We found you at</p>
+            <p class="resolved__line" id="resolved-line"></p>
+          </div>
+
+          <p id="step-1-status" class="form__status" aria-live="polite"></p>
+          <input type="submit" id="step-1-submit" class="cta-btn form__submit" value="Continue" />
+        </form>
+      </div>
+
+      <!-- Out-of-area panel: distributor / collection / courier choice -->
+      <div id="out-of-area" hidden>
+        <p class="portal-form__message">
+          Unfortunately we don't deliver directly to <strong id="ooa-postcode"></strong>. You still have three ways to get our mushrooms:
+        </p>
+
+        <div class="ooa-option">
+          <h3>Order through a distributor partner</h3>
+          <p>For areas outside Glasgow, we partner with two distributors who carry our products alongside other Scottish produce.</p>
+          <div class="ooa-distributor">
+            <strong>Coeur Sauvage</strong>
+            <p>Wild and seasonal Scottish produce. Glasgow, Edinburgh and beyond.</p>
+            <p>
+              <a href="tel:+447930581224">07930 581224</a> ·
+              <a href="mailto:info@coeursauvage.scot">info@coeursauvage.scot</a> ·
+              <a href="https://coeursauvage.scot" target="_blank" rel="noopener">coeursauvage.scot</a>
+            </p>
+          </div>
+          <div class="ooa-distributor">
+            <strong>Ochil Foods</strong>
+            <p>Heritage Scottish ingredients to chefs across the country.</p>
+            <p>
+              <a href="tel:+441764662502">01764 662 502</a> ·
+              <a href="mailto:orders@ochilfoods.co.uk">orders@ochilfoods.co.uk</a> ·
+              <a href="https://ochilfoods.co.uk" target="_blank" rel="noopener">ochilfoods.co.uk</a>
+            </p>
+          </div>
+        </div>
+
+        <div class="ooa-option">
+          <h3>Collect from our Glasgow farm</h3>
+          <p>If you can travel to us, you can collect orders directly from our farm. We'll share collection details with you after your account is approved.</p>
+          <button type="button" class="cta-btn cta-btn--outline ooa-continue" data-method="collection">
+            Continue with collection
+          </button>
+        </div>
+
+        <div class="ooa-option">
+          <h3>Direct courier delivery</h3>
+          <p>We can arrange courier delivery to your door. Shipping costs are charged at the point of order and vary by parcel size.</p>
+          <button type="button" class="cta-btn cta-btn--outline ooa-continue" data-method="courier">
+            Continue with courier
+          </button>
+        </div>
+
+        <p class="ooa-back">
+          <button type="button" id="back-to-step-1" class="link-button">← Back</button>
+        </p>
+      </div>
+
+      <!-- Step 2: full interest form -->
+      <div id="step-2" hidden>
+        <div class="step-banner" id="step-banner"></div>
+
+        <form id="register-form" autocomplete="on">
+          <div class="form__field">
+            <label>Business name</label>
+            <input type="text" id="business_name" name="business_name" readonly />
+          </div>
+          <div class="form__field">
+            <label>Postcode</label>
+            <input type="text" id="postcode" name="postcode" readonly />
+          </div>
+          <div class="form__field">
+            <label>Your name</label>
+            <input type="text" id="contact_name_2" name="contact_name" readonly />
+          </div>
+
+          <div class="form__field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" placeholder="you@business.com" autocomplete="email" required />
+          </div>
+
+          <div class="form__field">
+            <label for="phone">Phone <span class="form__optional">(optional)</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="Phone number" autocomplete="tel" />
+          </div>
+
+          <div class="form__field">
+            <label for="message">Tell us about your business <span class="form__optional">(optional)</span></label>
+            <textarea id="message" name="message" rows="3" placeholder="What products are you interested in? Estimated weekly volumes?"></textarea>
+          </div>
+
+          <!-- Hidden fields carried from step 1 -->
+          <input type="hidden" id="website" name="website" />
+          <input type="hidden" id="address_line_1" name="address_line_1" />
+          <input type="hidden" id="city" name="city" />
+          <input type="hidden" id="fulfilment_method" name="fulfilment_method" />
+
+          <p id="form-status" class="form__status" aria-live="polite"></p>
+          <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit application" />
+        </form>
+      </div>
+
+      <p class="portal-form__links" id="signin-link">
         Already have an account? <a href="/portal">Sign in</a>.
       </p>
-
-      <form id="register-form" method="POST" action="/api/register-interest">
-        <div class="form__field">
-          <label for="business_name">Business name</label>
-          <input type="text" id="business_name" name="business_name" placeholder="Your business or restaurant" required />
-        </div>
-        <div class="form__field">
-          <label for="contact_name">Your name</label>
-          <input type="text" id="contact_name" name="contact_name" placeholder="Full name" required />
-        </div>
-        <div class="form__field">
-          <label for="email">Email address</label>
-          <input type="email" id="email" name="email" placeholder="you@business.com" required />
-        </div>
-        <div class="form__field">
-          <label for="phone">Phone <span class="form__optional">(optional)</span></label>
-          <input type="tel" id="phone" name="phone" placeholder="Phone number" />
-        </div>
-        <div class="form__field">
-          <label for="message">Tell us about your business <span class="form__optional">(optional)</span></label>
-          <textarea id="message" name="message" rows="3" placeholder="What products are you interested in? Estimated weekly volumes?"></textarea>
-        </div>
-        <p id="form-status" class="form__status" aria-live="polite"></p>
-        <input type="submit" id="form-submit" class="cta-btn form__submit" value="Submit application" />
-      </form>
     </div>
   </section>
 </BaseLayout>
 
-<script>
-  import { createClient } from '@supabase/supabase-js';
+<script define:vars={{ mapsKey }}>
+  // ---------------------------------------------------------------------
+  // Service area check (mirror of src/portal/lib/serviceArea.ts) — kept
+  // inline so this Astro page doesn't need to import a TS module.
+  // ---------------------------------------------------------------------
+  const SERVICE_AREA_OUTWARDS = new Set([
+    'G1','G2','G3','G4','G5',
+    'G11','G12','G13','G14','G15',
+    'G20','G21','G22','G23',
+    'G31','G32','G33','G34',
+    'G40','G41','G42','G43','G44','G45','G46',
+    'G51','G52','G53',
+  ]);
 
-  const supabase = createClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-  );
+  const extractOutward = (pc) => (pc ?? '').trim().toUpperCase().split(/\s+/)[0] ?? '';
+  const isInServiceArea = (pc) => pc && SERVICE_AREA_OUTWARDS.has(extractOutward(pc));
+  const isValidUkPostcode = (pc) => /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test((pc ?? '').trim().replace(/\s+/g, '').toUpperCase());
 
-  // Authenticated users shouldn't be applying — bounce to dashboard
-  supabase.auth.getSession().then(({ data: { session } }) => {
+  // Per-session state for the prospect
+  const state = {
+    contact_name: '',
+    business_name: '',
+    postcode: '',
+    website: '',
+    address_line_1: '',
+    city: '',
+    phone: '',
+    fulfilment_method: null,
+  };
+
+  // ---------------------------------------------------------------------
+  // Authenticated user? Bounce to dashboard.
+  // ---------------------------------------------------------------------
+  (async () => {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      import.meta.env.PUBLIC_SUPABASE_URL,
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+    );
+    const { data: { session } } = await supabase.auth.getSession();
     if (session) window.location.replace('/portal/home');
+  })();
+
+  // ---------------------------------------------------------------------
+  // Google Places Autocomplete
+  // ---------------------------------------------------------------------
+  const businessInput = document.getElementById('business_search');
+  const manualFallbackBtn = document.getElementById('manual-fallback-btn');
+  const manualFallback = document.getElementById('manual-fallback');
+  const businessNameManual = document.getElementById('business_name_manual');
+  const postcodeManual = document.getElementById('postcode_manual');
+  const resolvedPlace = document.getElementById('resolved-place');
+  const resolvedLine = document.getElementById('resolved-line');
+
+  function loadGoogleMaps() {
+    return new Promise((resolve, reject) => {
+      if (window.google?.maps?.places) return resolve();
+      if (!mapsKey) return reject(new Error('Maps key not configured'));
+      const existing = document.querySelector('script[data-gmaps]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places&loading=async&v=weekly`;
+      s.async = true;
+      s.defer = true;
+      s.dataset.gmaps = '1';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load Google Maps'));
+      document.head.appendChild(s);
+    });
+  }
+
+  let autocomplete = null;
+
+  loadGoogleMaps().then(() => {
+    autocomplete = new google.maps.places.Autocomplete(businessInput, {
+      types: ['establishment'],
+      componentRestrictions: { country: 'gb' },
+      fields: ['name', 'formatted_address', 'address_components', 'formatted_phone_number', 'website'],
+      // Bias to Glasgow area
+      bounds: new google.maps.LatLngBounds(
+        { lat: 55.75, lng: -4.50 },
+        { lat: 56.00, lng: -4.10 },
+      ),
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place || !place.address_components) return;
+
+      const components = place.address_components ?? [];
+      const get = (type) => components.find((c) => c.types.includes(type))?.long_name ?? '';
+      const postcode = get('postal_code');
+      const streetNumber = get('street_number');
+      const route = get('route');
+      const locality = get('postal_town') || get('locality');
+
+      state.business_name = place.name ?? '';
+      state.postcode = postcode;
+      state.address_line_1 = [streetNumber, route].filter(Boolean).join(' ');
+      state.city = locality;
+      state.phone = place.formatted_phone_number ?? '';
+      state.website = place.website ?? '';
+
+      resolvedLine.textContent = place.formatted_address ?? '';
+      resolvedPlace.hidden = false;
+    });
+  }).catch((err) => {
+    console.warn('Google Maps failed to load:', err);
+    // Soft-fail to manual fallback
+    manualFallback.hidden = false;
+    manualFallbackBtn.textContent = '';
   });
 
-  const form = document.getElementById('register-form') as HTMLFormElement;
-  const status = document.getElementById('form-status') as HTMLParagraphElement;
-  const submit = document.getElementById('form-submit') as HTMLInputElement;
+  manualFallbackBtn.addEventListener('click', () => {
+    manualFallback.hidden = false;
+    manualFallbackBtn.style.display = 'none';
+  });
+
+  // ---------------------------------------------------------------------
+  // Step 1 → branch on postcode
+  // ---------------------------------------------------------------------
+  const step1 = document.getElementById('step-1');
+  const step1Form = document.getElementById('step-1-form');
+  const step1Status = document.getElementById('step-1-status');
+  const outOfArea = document.getElementById('out-of-area');
+  const ooaPostcode = document.getElementById('ooa-postcode');
+  const step2 = document.getElementById('step-2');
+  const stepBanner = document.getElementById('step-banner');
+  const signinLink = document.getElementById('signin-link');
+
+  step1Form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    step1Status.textContent = '';
+    step1Status.className = 'form__status';
+
+    state.contact_name = document.getElementById('contact_name').value.trim();
+
+    // If Places gave us values, use them; otherwise look at manual inputs
+    if (!state.business_name && businessNameManual.value.trim()) {
+      state.business_name = businessNameManual.value.trim();
+    }
+    if (!state.postcode && postcodeManual.value.trim()) {
+      state.postcode = postcodeManual.value.trim().toUpperCase();
+    }
+
+    if (!state.business_name) {
+      step1Status.textContent = 'Please tell us your business name.';
+      step1Status.className = 'form__status form__status--error';
+      return;
+    }
+    if (!state.postcode) {
+      step1Status.textContent = 'Please tell us your postcode so we can check delivery.';
+      step1Status.className = 'form__status form__status--error';
+      return;
+    }
+    if (!isValidUkPostcode(state.postcode)) {
+      step1Status.textContent = "That doesn't look like a UK postcode. Please double-check.";
+      step1Status.className = 'form__status form__status--error';
+      return;
+    }
+
+    if (isInServiceArea(state.postcode)) {
+      enterStep2('delivery-area');
+    } else {
+      ooaPostcode.textContent = state.postcode.toUpperCase();
+      step1.hidden = true;
+      outOfArea.hidden = false;
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Out-of-area choices
+  // ---------------------------------------------------------------------
+  document.querySelectorAll('.ooa-continue').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const method = btn.dataset.method;
+      state.fulfilment_method = method;
+      outOfArea.hidden = true;
+      enterStep2(method === 'collection' ? 'collection' : 'courier');
+    });
+  });
+
+  document.getElementById('back-to-step-1').addEventListener('click', () => {
+    outOfArea.hidden = true;
+    step1.hidden = false;
+  });
+
+  // ---------------------------------------------------------------------
+  // Enter step 2
+  // ---------------------------------------------------------------------
+  function enterStep2(mode) {
+    step1.hidden = true;
+    signinLink.hidden = true;
+
+    const bannerCopy = {
+      'delivery-area': "You're in our direct delivery area. Just a few more details and we'll review your application.",
+      'collection': "You've chosen to collect from our Glasgow farm. We'll send you collection details once your account is approved.",
+      'courier': "You've chosen courier delivery. Shipping is charged per order at point of dispatch.",
+    };
+    stepBanner.textContent = bannerCopy[mode];
+    stepBanner.className = `step-banner step-banner--${mode}`;
+
+    document.getElementById('business_name').value = state.business_name;
+    document.getElementById('postcode').value = state.postcode;
+    document.getElementById('contact_name_2').value = state.contact_name;
+    document.getElementById('phone').value = state.phone;
+    document.getElementById('website').value = state.website;
+    document.getElementById('address_line_1').value = state.address_line_1;
+    document.getElementById('city').value = state.city;
+    document.getElementById('fulfilment_method').value = state.fulfilment_method ?? '';
+
+    step2.hidden = false;
+    setTimeout(() => document.getElementById('email').focus(), 50);
+  }
+
+  // ---------------------------------------------------------------------
+  // Step 2 submit
+  // ---------------------------------------------------------------------
+  const form = document.getElementById('register-form');
+  const status = document.getElementById('form-status');
+  const submit = document.getElementById('form-submit');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -81,6 +395,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         status.textContent = "Thanks — we've received your application. We'll review it and email you once your account is approved.";
         status.className = 'form__status form__status--success';
         form.reset();
+        submit.style.display = 'none';
       } else {
         status.textContent = json.error ?? 'Something went wrong. Please try again.';
         status.className = 'form__status form__status--error';
@@ -90,7 +405,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       status.className = 'form__status form__status--error';
     } finally {
       submit.disabled = false;
-      submit.value = 'Submit application';
+      if (submit.style.display !== 'none') submit.value = 'Submit application';
     }
   });
 </script>
@@ -98,7 +413,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 <style>
   .portal-form {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     min-height: calc(100vh - 120px);
     padding: 3rem 1.5rem;
@@ -109,12 +424,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 3rem;
-    max-width: 520px;
+    max-width: 560px;
     width: 100%;
-    text-align: center;
   }
 
-  .portal-form__header { margin-bottom: 1.5rem; }
+  .portal-form__header { margin-bottom: 1.5rem; text-align: center; }
   .portal-form__card h1 {
     font-family: var(--font-heading);
     font-size: 2.5rem;
@@ -134,14 +448,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     color: rgba(255, 255, 255, 0.7);
     line-height: 1.6;
     margin-bottom: 1.25rem;
-    text-align: left;
   }
   .portal-form__links {
     font-family: var(--font-body);
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.6);
     text-align: center;
-    margin: 0 0 1.5rem;
+    margin: 1.5rem 0 0;
   }
   .portal-form__links a {
     color: hsl(142 71% 55%);
@@ -149,10 +462,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
   .portal-form__links a:hover { text-decoration: underline; }
 
-  .form__field {
-    margin-bottom: 1rem;
-    text-align: left;
-  }
+  .form__field { margin-bottom: 1rem; text-align: left; }
   .form__field label {
     display: block;
     font-family: var(--font-heading);
@@ -176,27 +486,37 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
   .form__field textarea { resize: vertical; }
   .form__field input::placeholder,
-  .form__field textarea::placeholder {
-    color: rgba(255, 255, 255, 0.35);
-  }
+  .form__field textarea::placeholder { color: rgba(255, 255, 255, 0.35); }
   .form__field input:focus,
-  .form__field textarea:focus {
-    outline: none;
-    border-color: hsl(142 71% 35%);
+  .form__field textarea:focus { outline: none; border-color: hsl(142 71% 35%); }
+  .form__field input[readonly] {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: default;
   }
-  .form__optional {
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.5);
-  }
+  .form__optional { font-weight: 400; color: rgba(255, 255, 255, 0.5); }
+  .form__hint { margin: 0.4rem 0 0; font-size: 0.8rem; }
+
   .form__submit { width: 100%; margin-top: 0.5rem; }
   .form__status {
     font-family: var(--font-body);
     font-size: 0.875rem;
-    margin-bottom: 0.75rem;
+    margin: 0.75rem 0;
     min-height: 1.25em;
   }
   .form__status--success { color: hsl(142 71% 45%); }
   .form__status--error { color: #ef4444; }
+
+  .link-button {
+    background: none;
+    border: none;
+    color: hsl(142 71% 55%);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    padding: 0;
+  }
+  .link-button:hover { text-decoration: underline; }
 
   .cta-btn {
     display: inline-block;
@@ -222,6 +542,95 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+  }
+  .cta-btn--outline {
+    background: transparent;
+    border: 1px solid hsl(142 71% 35%);
+    color: hsl(142 71% 55%);
+  }
+  .cta-btn--outline:hover {
+    background: rgba(34, 197, 94, 0.12);
+    color: #fff;
+  }
+
+  .resolved {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid hsl(142 71% 35%);
+    border-radius: 6px;
+  }
+  .resolved__label {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(142 71% 55%);
+    margin: 0 0 0.25rem;
+  }
+  .resolved__line {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: #fff;
+    margin: 0;
+  }
+
+  /* Out of area */
+  .ooa-option {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.25rem 0;
+  }
+  .ooa-option:first-of-type { border-top: none; padding-top: 0.5rem; }
+  .ooa-option h3 {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    color: #fff;
+    margin: 0 0 0.5rem;
+  }
+  .ooa-option p {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+    margin: 0 0 0.5rem;
+  }
+  .ooa-distributor {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem 0.9rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 2px solid hsl(142 71% 35%);
+    border-radius: 4px;
+  }
+  .ooa-distributor strong {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    color: #fff;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .ooa-distributor a {
+    color: hsl(142 71% 55%);
+    text-decoration: none;
+  }
+  .ooa-distributor a:hover { text-decoration: underline; }
+  .ooa-back { text-align: center; margin-top: 1rem; }
+
+  .step-banner {
+    padding: 0.7rem 0.9rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+  }
+  .step-banner--courier,
+  .step-banner--collection {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.3);
   }
 
   @media (max-width: 479px) {

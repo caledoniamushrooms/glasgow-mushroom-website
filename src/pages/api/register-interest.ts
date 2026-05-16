@@ -18,6 +18,14 @@ export const POST: APIRoute = async ({ request }) => {
   const email = data.get('email')?.toString().trim();
   const phone = data.get('phone')?.toString().trim() || null;
   const message = data.get('message')?.toString().trim() || null;
+  const postcode = data.get('postcode')?.toString().trim().toUpperCase() || null;
+  const website = data.get('website')?.toString().trim() || null;
+  const addressLine1 = data.get('address_line_1')?.toString().trim() || null;
+  const city = data.get('city')?.toString().trim() || null;
+  const fulfilmentRaw = data.get('fulfilment_method')?.toString().trim() || null;
+  const fulfilment_method = (fulfilmentRaw === 'collection' || fulfilmentRaw === 'courier' || fulfilmentRaw === 'delivery')
+    ? fulfilmentRaw
+    : null;
 
   if (!businessName || !contactName || !email) {
     return new Response(JSON.stringify({ error: 'Please complete all required fields.' }), {
@@ -63,6 +71,11 @@ export const POST: APIRoute = async ({ request }) => {
       email: normEmail,
       phone,
       message,
+      postcode,
+      website,
+      address_line_1: addressLine1,
+      city,
+      fulfilment_method,
     });
 
   if (error) {
@@ -85,7 +98,7 @@ export const POST: APIRoute = async ({ request }) => {
       from,
       to: 'accounts@glasgowmushroomcompany.co.uk',
       subject: `New trade account application: ${businessName}`,
-      text: `New application:\n\nBusiness: ${businessName}\nContact: ${contactName}\nEmail: ${email}\nPhone: ${phone ?? '—'}\n\nMessage:\n${message ?? '—'}\n\nReview at: https://www.glasgowmushroomcompany.co.uk/portal/admin/registrations`,
+      text: `New application:\n\nBusiness: ${businessName}\nContact: ${contactName}\nEmail: ${email}\nPhone: ${phone ?? '—'}\nPostcode: ${postcode ?? '—'}\nFulfilment preference: ${fulfilment_method ?? 'not set (in delivery area)'}\nAddress (from Places): ${addressLine1 ?? '—'}${city ? ', ' + city : ''}\nWebsite: ${website ?? '—'}\n\nMessage:\n${message ?? '—'}\n\nReview at: https://www.glasgowmushroomcompany.co.uk/portal/admin/registrations`,
     }),
   ]);
 
