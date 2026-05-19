@@ -19,7 +19,11 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSystemAd
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/portal/login" replace />
+    // Send to the Astro dark-theme login at /portal. window.location.replace
+    // is used because /portal is an Astro page, not an SPA route — Navigate
+    // would only update the SPA router state.
+    window.location.replace('/portal')
+    return null
   }
 
   if (requireAdmin && !isAdmin) {

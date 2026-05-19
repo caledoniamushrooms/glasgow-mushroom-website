@@ -10,6 +10,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <p class="portal-form__subtitle">Sign in</p>
       </div>
 
+      <p id="password-updated-banner" class="portal-form__success" hidden>
+        Your password has been updated. Sign in with your new password.
+      </p>
+
       <form id="login-form" autocomplete="on">
         <div class="form__field">
           <label for="email">Email address</label>
@@ -48,6 +52,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) window.location.replace('/portal/home');
   });
+
+  // Surface a banner if we just came back from a successful password reset
+  if (new URLSearchParams(window.location.search).has('password_updated')) {
+    const banner = document.getElementById('password-updated-banner');
+    if (banner) banner.hidden = false;
+    // Strip the query param so refreshes don't re-show the banner
+    history.replaceState(null, '', window.location.pathname);
+  }
 
   const form = document.getElementById('login-form') as HTMLFormElement;
   const status = document.getElementById('form-status') as HTMLParagraphElement;
@@ -234,6 +246,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   .form__status--success {
     color: hsl(142 71% 45%);
+  }
+
+  .portal-form__success {
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid hsl(142 71% 35%);
+    color: rgba(255, 255, 255, 0.9);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    margin: 0 0 1rem;
+    text-align: left;
   }
 
   .form__status--error {
