@@ -48,10 +48,31 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
   );
 
-  // If already authenticated, jump straight to the dashboard
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session) window.location.replace('/portal/home');
-  });
+  // If the visitor has a session AND a real active portal_users row,
+  // jump straight to the dashboard. If their session is stale or their
+  // portal_users row is missing/pending, sign them out and stay on the
+  // login form — otherwise the loop with ProtectedRoute fires
+  // (/portal sees session → /portal/home → ProtectedRoute kicks them
+  // back → ad infinitum).
+  (async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data: portalUser } = await supabase
+      .from('portal_users')
+      .select('id, status')
+      .eq('auth_user_id', session.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (portalUser) {
+      window.location.replace('/portal/home');
+    } else {
+      // Stale or inactive — clear the session locally so the page
+      // shows the login form cleanly.
+      await supabase.auth.signOut();
+    }
+  })();
 
   // Surface a banner if we just came back from a successful password reset
   if (new URLSearchParams(window.location.search).has('password_updated')) {
