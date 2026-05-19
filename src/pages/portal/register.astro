@@ -136,7 +136,8 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
 </BaseLayout>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
+  // Shared client uses storageKey='sb-portal-auth' (must match the SPA)
+  import { supabase } from '../../portal/lib/supabase';
 
   const mapsKey = (document.getElementById('maps-key-holder')?.dataset.mapsKey ?? '').trim();
 
@@ -171,10 +172,6 @@ const mapsKey = (import.meta.env.GOOGLE_MAPS_API_KEY ?? '').trim();
   // ---------------------------------------------------------------------
   // Authenticated user? Bounce to dashboard.
   // ---------------------------------------------------------------------
-  const supabase = createClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-  );
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) window.location.replace('/portal/home');
   });

@@ -47,12 +47,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
-
-  const supabase = createClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-  );
+  // Shared client uses storageKey='sb-portal-auth' — must match the SPA so
+  // the session set by signInWithPassword here is visible to the SPA mounted
+  // at /portal/home. A separate createClient with default storageKey would
+  // store the session under a key the SPA can't read, causing a loop.
+  import { supabase } from '../../portal/lib/supabase';
 
   // If the visitor has a session AND a real active portal_users row,
   // jump straight to the dashboard. If their session is stale or their
