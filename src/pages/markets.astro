@@ -52,7 +52,7 @@ const marketsHero = await getImage({ src: directSalesBannerSrc, format: 'webp', 
         <h2>{month}</h2>
         <div class="markets-grid">
           {events.map((event) => {
-            const tooltips: Record<string, string> = {
+            const tooltips = {
               market: "We're here in person with our own stall — come say hello.",
               stockist: "Our mushrooms are sold at this market by a partner stockist — we won't be there in person.",
               event: "A one-off event we'll be attending in person.",
