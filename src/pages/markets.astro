@@ -51,15 +51,24 @@ const marketsHero = await getImage({ src: directSalesBannerSrc, format: 'webp', 
       <div class="markets-month">
         <h2>{month}</h2>
         <div class="markets-grid">
-          {events.map((event) => (
-            <div class={`markets-card markets-card--${event.type}`}>
-              <span class="markets-card__badge">{event.type}</span>
-              {event.logoUrl && <img src={event.logoUrl} alt={event.name} class="markets-card__logo" width={140} loading="lazy" />}
-              <p class="markets-card__date">{event.dayLabel}</p>
-              <p class="markets-card__time">{event.time}</p>
-              <p class="markets-card__location"><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.location}</a></p>
-            </div>
-          ))}
+          {events.map((event) => {
+            const tooltips: Record<string, string> = {
+              market: "We're here in person with our own stall — come say hello.",
+              stockist: "Our mushrooms are sold at this market by a partner stockist — we won't be there in person.",
+              event: "A one-off event we'll be attending in person.",
+              'pop-up': "A short-run pop-up where we'll be selling in person.",
+            };
+            const tooltip = tooltips[event.type] || '';
+            return (
+              <div class={`markets-card markets-card--${event.type}`}>
+                <span class="markets-card__badge" title={tooltip} aria-label={tooltip}>{event.type}</span>
+                {event.logoUrl && <img src={event.logoUrl} alt={event.name} class="markets-card__logo" width={140} loading="lazy" />}
+                <p class="markets-card__date">{event.dayLabel}</p>
+                <p class="markets-card__time">{event.time}</p>
+                <p class="markets-card__location"><a href={event.locationUrl} target="_blank" rel="noopener noreferrer">{event.location}</a></p>
+              </div>
+            );
+          })}
         </div>
       </div>
     ))}
@@ -175,6 +184,12 @@ const marketsHero = await getImage({ src: directSalesBannerSrc, format: 'webp', 
     margin-bottom: 0.75rem;
     background-color: hsl(142 71% 25%);
     color: #fff;
+    cursor: help;
+  }
+
+  /* Stockist = our mushrooms are sold via a partner, we're not there in person */
+  .markets-card--stockist .markets-card__badge {
+    background-color: hsl(32 80% 40%);
   }
 
   .markets-card__logo {

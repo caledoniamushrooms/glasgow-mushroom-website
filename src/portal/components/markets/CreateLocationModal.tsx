@@ -187,7 +187,8 @@ export function CreateLocationModal({ location, onSave, onClose, isPending }: Cr
               onChange={e => setType(e.target.value)}
               className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white odin-focus"
             >
-              <option value="market">Market</option>
+              <option value="market">Market (our stall)</option>
+              <option value="stockist">Stockist (sold via partner)</option>
               <option value="event">Event</option>
               <option value="pop-up">Pop-up</option>
             </select>
