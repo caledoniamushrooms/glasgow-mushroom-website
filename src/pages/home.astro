@@ -378,7 +378,7 @@ const markets4 = await getImage({ src: markets4Src, format: 'webp', quality: 80,
     function loadMaps() {
       if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
       var s = document.createElement('script');
-      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=initMap';
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&loading=async&callback=initMap';
       s.async = true;
       s.defer = true;
       document.head.appendChild(s);
