@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://www.glasgowmushroom.co',
   integrations: [react({
     include: ['src/portal/**'],
   })],
