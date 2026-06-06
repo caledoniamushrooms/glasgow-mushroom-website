@@ -16,8 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Status = 'available' | 'reserved' | 'sold'
@@ -682,10 +681,19 @@ function CategoryPicker({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
-  const exactMatch = options.some(
-    (o) => o.toLowerCase() === query.trim().toLowerCase(),
-  )
   const trimmedQuery = query.trim()
+  const filtered = trimmedQuery
+    ? options.filter((o) => o.toLowerCase().includes(trimmedQuery.toLowerCase()))
+    : options
+  const exactMatch = options.some(
+    (o) => o.toLowerCase() === trimmedQuery.toLowerCase(),
+  )
+
+  const select = (val: string) => {
+    onChange(val)
+    setQuery('')
+    setOpen(false)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -704,53 +712,64 @@ function CategoryPicker({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
-          <CommandInput
-            placeholder="Search or add new…"
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
-            <CommandEmpty>No matches. Type to add a new category.</CommandEmpty>
-            {options.length > 0 && (
-              <CommandGroup>
-                {options.map((opt) => (
-                  <CommandItem
-                    key={opt}
-                    value={opt}
-                    onSelect={() => {
-                      onChange(opt === value ? '' : opt)
-                      setQuery('')
-                      setOpen(false)
-                    }}
-                  >
-                    <Check className={cn('mr-2 h-4 w-4', value === opt ? 'opacity-100' : 'opacity-0')} />
-                    {opt}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        align="start"
+      >
+        <div className="flex flex-col">
+          <div className="flex items-center border-b px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search or add new…"
+              className="flex h-10 w-full bg-transparent py-2 text-sm placeholder:text-muted-foreground outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (trimmedQuery && !exactMatch) select(trimmedQuery)
+                  else if (filtered.length === 1) select(filtered[0])
+                }
+                if (e.key === 'Escape') setOpen(false)
+              }}
+            />
+          </div>
+          <ul className="max-h-[260px] overflow-y-auto p-1">
+            {filtered.length === 0 && !trimmedQuery && (
+              <li className="px-2 py-6 text-center text-sm text-muted-foreground">
+                No categories yet — type to add one.
+              </li>
             )}
+            {filtered.map((opt) => (
+              <li key={opt}>
+                <button
+                  type="button"
+                  onClick={() => select(opt)}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-gray-100"
+                >
+                  <Check className={cn('h-4 w-4', value === opt ? 'opacity-100' : 'opacity-0')} />
+                  {opt}
+                </button>
+              </li>
+            ))}
             {trimmedQuery && !exactMatch && (
               <>
-                {options.length > 0 && <CommandSeparator />}
-                <CommandGroup>
-                  <CommandItem
-                    value={`__new__${trimmedQuery}`}
-                    onSelect={() => {
-                      onChange(trimmedQuery)
-                      setQuery('')
-                      setOpen(false)
-                    }}
+                {filtered.length > 0 && <li className="my-1 h-px bg-border" />}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => select(trimmedQuery)}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary hover:bg-gray-100"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     Add "{trimmedQuery}"
-                  </CommandItem>
-                </CommandGroup>
+                  </button>
+                </li>
               </>
             )}
-          </CommandList>
-        </Command>
+          </ul>
+        </div>
       </PopoverContent>
     </Popover>
   )
