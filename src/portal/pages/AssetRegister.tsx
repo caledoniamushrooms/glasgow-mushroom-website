@@ -15,6 +15,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command'
+import { Check, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type Status = 'available' | 'reserved' | 'sold'
 
@@ -97,6 +101,12 @@ export function AssetRegister() {
 
   const openNew = () => { setEditing(null); setDialogOpen(true) }
   const openEdit = (l: AssetListing) => { setEditing(l); setDialogOpen(true) }
+
+  // Categories already used across all listings — feeds the dropdown for fast
+  // reuse and consistency.
+  const existingCategories = Array.from(
+    new Set(listings.map((l) => l.category).filter((c): c is string => !!c)),
+  ).sort()
 
   return (
     <>
@@ -245,6 +255,7 @@ export function AssetRegister() {
       <ListingDialog
         open={dialogOpen}
         initial={editing}
+        existingCategories={existingCategories}
         onOpenChange={setDialogOpen}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })}
       />
@@ -258,11 +269,13 @@ export function AssetRegister() {
 function ListingDialog({
   open,
   initial,
+  existingCategories,
   onOpenChange,
   onSaved,
 }: {
   open: boolean
   initial: AssetListing | null
+  existingCategories: string[]
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
@@ -510,12 +523,11 @@ function ListingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="asset-category">Category</Label>
-            <Input
-              id="asset-category"
+            <Label>Category</Label>
+            <CategoryPicker
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Sterilisation, Cold chain, Office"
+              onChange={setCategory}
+              options={existingCategories}
             />
           </div>
 
@@ -651,5 +663,95 @@ function ListingDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ---------------------------------------------------------------
+// Category picker — searchable dropdown that also lets you type a
+// brand new value. Mirrors the Odin CustomerType combobox style.
+// ---------------------------------------------------------------
+function CategoryPicker({
+  value,
+  onChange,
+  options,
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const exactMatch = options.some(
+    (o) => o.toLowerCase() === query.trim().toLowerCase(),
+  )
+  const trimmedQuery = query.trim()
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            'w-full justify-between font-normal',
+            !value && 'text-muted-foreground',
+          )}
+        >
+          {value || 'Select or type a category'}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
+          <CommandInput
+            placeholder="Search or add new…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            <CommandEmpty>No matches. Type to add a new category.</CommandEmpty>
+            {options.length > 0 && (
+              <CommandGroup>
+                {options.map((opt) => (
+                  <CommandItem
+                    key={opt}
+                    value={opt}
+                    onSelect={() => {
+                      onChange(opt === value ? '' : opt)
+                      setQuery('')
+                      setOpen(false)
+                    }}
+                  >
+                    <Check className={cn('mr-2 h-4 w-4', value === opt ? 'opacity-100' : 'opacity-0')} />
+                    {opt}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {trimmedQuery && !exactMatch && (
+              <>
+                {options.length > 0 && <CommandSeparator />}
+                <CommandGroup>
+                  <CommandItem
+                    value={`__new__${trimmedQuery}`}
+                    onSelect={() => {
+                      onChange(trimmedQuery)
+                      setQuery('')
+                      setOpen(false)
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add "{trimmedQuery}"
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
