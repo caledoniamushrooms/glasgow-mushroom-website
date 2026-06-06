@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent, type DragEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -680,6 +680,7 @@ function CategoryPicker({
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const trimmedQuery = query.trim()
   const filtered = trimmedQuery
@@ -695,28 +696,41 @@ function CategoryPicker({
     setOpen(false)
   }
 
+  // Click-outside to close
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [open])
+
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            'w-full justify-between font-normal',
-            !value && 'text-muted-foreground',
-          )}
-        >
-          {value || 'Select or type a category'}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0"
-        align="start"
+    <div ref={wrapperRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          'w-full justify-between font-normal',
+          !value && 'text-muted-foreground',
+        )}
       >
-        <div className="flex flex-col">
+        {value || 'Select or type a category'}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <input
@@ -770,7 +784,7 @@ function CategoryPicker({
             )}
           </ul>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   )
 }
