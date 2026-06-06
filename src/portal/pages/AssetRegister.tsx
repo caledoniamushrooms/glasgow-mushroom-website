@@ -739,7 +739,7 @@ function CategoryPicker({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search or type new…"
-              className="flex h-10 w-full bg-transparent py-2 text-sm placeholder:text-muted-foreground outline-none"
+              className="flex h-10 w-full bg-transparent py-2 text-base md:text-sm placeholder:text-muted-foreground outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
