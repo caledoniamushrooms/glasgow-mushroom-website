@@ -112,75 +112,83 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
         </label>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-stone-200 rounded-lg bg-white">
-          <p className="text-stone-500">No items match your filters.</p>
+      {/* Odin-style report card */}
+      <div className="bg-white border border-zinc-200 rounded-xl p-5 md:p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <h2 className="text-base font-semibold text-zinc-900">Asset Register</h2>
         </div>
-      ) : (
-        <div className="border border-stone-200 rounded-lg overflow-hidden bg-white shadow-sm">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-stone-200 bg-stone-50/60">
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 w-20"></th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Item</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 hidden md:table-cell">Category</th>
-                <th className="px-5 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Price</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 w-28">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((l, idx) => {
-                const cover = l.asset_listing_images[0]
-                const isSold = l.status === 'sold'
-                return (
-                  <tr
-                    key={l.id}
-                    onClick={() => setOpenListing(l)}
-                    className={`cursor-pointer transition-colors group ${
-                      idx > 0 ? 'border-t border-stone-100' : ''
-                    } ${isSold ? 'bg-stone-50/40' : 'hover:bg-stone-50/60'}`}
-                  >
-                    <td className="px-5 py-3">
-                      <div className={`w-14 h-14 bg-stone-100 rounded-md overflow-hidden flex items-center justify-center ${isSold ? 'opacity-60' : ''}`}>
-                        {cover ? (
-                          <img
-                            src={`${imageBase}/${cover.storage_path}`}
-                            alt={l.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-[10px] text-stone-400">No photo</span>
+        <p className="text-sm text-zinc-500 mb-5">
+          Equipment, fixtures and fittings available for sale as the farm winds down.
+        </p>
+
+        {filtered.length === 0 ? (
+          <div className="border border-zinc-200 rounded-lg bg-white py-12 text-center">
+            <p className="text-zinc-500 text-sm">No items match your filters.</p>
+          </div>
+        ) : (
+          <div className="border border-zinc-200 rounded-lg overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-zinc-700">
+                  <th className="px-5 py-3 text-left text-sm font-normal w-20"></th>
+                  <th className="px-5 py-3 text-left text-sm font-normal">Item</th>
+                  <th className="px-5 py-3 text-left text-sm font-normal hidden md:table-cell">Category</th>
+                  <th className="px-5 py-3 text-right text-sm font-normal">Price</th>
+                  <th className="px-5 py-3 text-left text-sm font-normal w-28">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((l, idx) => {
+                  const cover = l.asset_listing_images[0]
+                  const isSold = l.status === 'sold'
+                  return (
+                    <tr
+                      key={l.id}
+                      onClick={() => setOpenListing(l)}
+                      className={`cursor-pointer transition-colors ${
+                        idx > 0 ? 'border-t border-zinc-100' : ''
+                      } ${isSold ? 'bg-zinc-50/40' : 'hover:bg-slate-50/60'}`}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className={`w-14 h-14 bg-zinc-100 rounded-md overflow-hidden flex items-center justify-center ${isSold ? 'opacity-60' : ''}`}>
+                          {cover ? (
+                            <img
+                              src={`${imageBase}/${cover.storage_path}`}
+                              alt={l.name}
+                              loading="lazy"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-[10px] text-zinc-400">No photo</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className={`px-5 py-3.5 text-sm ${isSold ? 'text-zinc-500' : 'text-zinc-900'}`}>
+                        <div className="font-medium">{l.name}</div>
+                        {l.category && (
+                          <div className="text-xs text-zinc-500 mt-0.5 md:hidden">{l.category}</div>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div
-                        style={{ fontFamily: "'Abhaya Libre', serif" }}
-                        className={`text-lg leading-tight text-stone-900 group-hover:underline ${isSold ? 'text-stone-500' : ''}`}
-                      >
-                        {l.name}
-                      </div>
-                      {l.category && (
-                        <div className="text-xs text-stone-500 mt-0.5 md:hidden">{l.category}</div>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-stone-600 hidden md:table-cell">{l.category ?? '—'}</td>
-                    <td className={`px-5 py-3 text-right font-medium whitespace-nowrap ${isSold ? 'text-stone-400' : 'text-stone-900'}`}>
-                      {formatPrice(l.asking_price)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`inline-block text-[10px] font-medium uppercase tracking-[0.1em] px-2 py-1 rounded ${STATUS_PILL[l.status]}`}>
-                        {l.status}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-zinc-600 hidden md:table-cell">{l.category ?? '—'}</td>
+                      <td className={`px-5 py-3.5 text-sm text-right font-semibold whitespace-nowrap ${isSold ? 'text-zinc-400' : 'text-zinc-900'}`}>
+                        {formatPrice(l.asking_price)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-block text-[10px] font-medium uppercase tracking-[0.1em] px-2 py-1 rounded ${STATUS_PILL[l.status]}`}>
+                          {l.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {categories.length > 0 && (
         <p className="sr-only">Categories available: {categories.join(', ')}</p>
