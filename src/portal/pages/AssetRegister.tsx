@@ -280,10 +280,14 @@ function ListingForm({
           pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
           setPendingFiles([])
           setPendingPreviews([])
-          await refreshImages(id)
+        } else {
+          // Upload failed — keep modal open so user can retry
+          onSaved()
+          return
         }
       }
       onSaved()
+      onClose()
     } catch {
       setError('Save failed.')
     } finally {
