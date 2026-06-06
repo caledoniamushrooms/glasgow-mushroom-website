@@ -31,18 +31,6 @@ const imageBase = `${supabaseUrl}/storage/v1/object/public/asset-images`;
   title="Equipment for sale — Glasgow Mushroom Company"
   description="As Glasgow Mushroom Company winds down, our growing, sterilisation, cold-chain and office equipment is available for sale. Browse listings and register your interest."
 >
-  <section class="eq-hero">
-    <div class="eq-hero__inner">
-      <p class="eq-hero__eyebrow">Closing down sale</p>
-      <h1>Everything must go</h1>
-      <p class="eq-hero__tagline">
-        We're winding down Glasgow Mushroom Company. Browse the growing,
-        sterilisation, cold-chain and office equipment we're selling — and
-        register your interest on anything you'd like to discuss.
-      </p>
-    </div>
-  </section>
-
   <section class="eq-table-section">
     <div class="eq-table-container">
       <AssetBrowser client:load listings={listings} imageBase={imageBase} />
@@ -52,43 +40,6 @@ const imageBase = `${supabaseUrl}/storage/v1/object/public/asset-images`;
 
 <style is:global>
   body { background-color: #fafaf7 !important; color: #1c1917 !important; }
-
-  .eq-hero {
-    background-color: #0a0a0a;
-    color: #ffffff;
-    padding: 4rem 1.5rem 3rem;
-    text-align: center;
-  }
-  .eq-hero__inner {
-    max-width: 760px;
-    margin: 0 auto;
-  }
-  .eq-hero__eyebrow {
-    font-family: Arial, sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-size: 0.75rem;
-    color: #b0b0b0;
-    margin: 0 0 1.25rem;
-  }
-  .eq-hero h1 {
-    font-family: 'Abhaya Libre', serif;
-    font-weight: 700;
-    font-size: 3rem;
-    line-height: 1;
-    margin: 0 0 1.25rem;
-    color: #ffffff;
-  }
-  .eq-hero__tagline {
-    color: #d4d4d4;
-    line-height: 1.6;
-    max-width: 56ch;
-    margin: 0 auto;
-  }
-  @media (min-width: 768px) {
-    .eq-hero { padding: 6rem 2rem 4.5rem; }
-    .eq-hero h1 { font-size: 4.5rem; }
-  }
 
   .eq-table-section {
     padding: 3rem 1rem 5rem;
