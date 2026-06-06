@@ -758,7 +758,7 @@ function CategoryPicker({
               <li key={opt}>
                 <button
                   type="button"
-                  onClick={() => select(opt)}
+                  onPointerDown={(e) => { e.preventDefault(); select(opt) }}
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-gray-100"
                 >
                   <Check className={cn('h-4 w-4', value === opt ? 'opacity-100' : 'opacity-0')} />
@@ -772,7 +772,7 @@ function CategoryPicker({
                 <li>
                   <button
                     type="button"
-                    onClick={() => select(trimmedQuery)}
+                    onPointerDown={(e) => { e.preventDefault(); select(trimmedQuery) }}
                     className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary hover:bg-gray-100"
                   >
                     <Plus className="h-4 w-4" />
