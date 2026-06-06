@@ -74,21 +74,26 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
   return (
     <div>
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="flex gap-2">
-          {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="inline-flex rounded-md border border-zinc-200 bg-white overflow-hidden">
+          {(['all', 'available', 'reserved', 'sold'] as const).map((f, idx) => {
             const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
             return (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors capitalize cursor-pointer ${
+                className={`px-3 py-1.5 text-sm font-medium capitalize cursor-pointer transition-colors ${
+                  idx > 0 ? 'border-l border-zinc-200' : ''
+                } ${
                   filter === f
-                    ? 'bg-zinc-900 text-white border-zinc-900'
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-700 hover:bg-zinc-50'
                 }`}
               >
-                {f} <span className="opacity-70">({count})</span>
+                {f}
+                <span className={`ml-1.5 text-xs ${filter === f ? 'text-white/70' : 'text-zinc-400'}`}>
+                  {count}
+                </span>
               </button>
             )
           })}
@@ -97,52 +102,65 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search…"
-          className="px-3 py-1.5 rounded-md border border-zinc-200 text-sm bg-white flex-1 min-w-[160px] max-w-xs"
+          className="px-3 py-1.5 rounded-md border border-zinc-200 text-sm bg-white w-full sm:w-64"
         />
       </div>
 
       {filtered.length === 0 ? (
         <p className="text-zinc-500 text-sm">No items match your filters.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((l) => {
-            const cover = l.asset_listing_images[0]
-            const isSold = l.status === 'sold'
-            return (
-              <button
-                key={l.id}
-                onClick={() => setOpenListing(l)}
-                className={`text-left bg-white rounded-lg border border-zinc-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
-                  isSold ? 'opacity-60' : ''
-                }`}
-              >
-                <div className="aspect-[4/3] bg-zinc-100 flex items-center justify-center overflow-hidden">
-                  {cover ? (
-                    <img
-                      src={`${imageBase}/${cover.storage_path}`}
-                      alt={l.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs text-zinc-400">No photo</span>
-                  )}
-                </div>
-                <div className="p-3">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-zinc-900 leading-tight">{l.name}</h3>
-                    <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${STATUS_PILL[l.status]}`}>
-                      {l.status}
-                    </span>
-                  </div>
-                  <p className="text-zinc-900 font-medium">{formatPrice(l.asking_price)}</p>
-                  {l.category && (
-                    <p className="text-xs text-zinc-500 mt-1">{l.category}</p>
-                  )}
-                </div>
-              </button>
-            )
-          })}
+        <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-zinc-50">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 w-20">Photo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Item</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 hidden md:table-cell">Category</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">Price</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 w-28">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((l) => {
+                const cover = l.asset_listing_images[0]
+                const isSold = l.status === 'sold'
+                return (
+                  <tr
+                    key={l.id}
+                    onClick={() => setOpenListing(l)}
+                    className={`border-t border-zinc-100 hover:bg-zinc-50 cursor-pointer transition-colors ${
+                      isSold ? 'opacity-60' : ''
+                    }`}
+                  >
+                    <td className="px-4 py-2">
+                      <div className="w-12 h-12 bg-zinc-100 rounded overflow-hidden flex items-center justify-center">
+                        {cover ? (
+                          <img
+                            src={`${imageBase}/${cover.storage_path}`}
+                            alt={l.name}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-zinc-400">No photo</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 font-medium text-zinc-900">{l.name}</td>
+                    <td className="px-4 py-2 text-zinc-600 hidden md:table-cell">{l.category ?? '—'}</td>
+                    <td className="px-4 py-2 text-right font-medium text-zinc-900 whitespace-nowrap">
+                      {formatPrice(l.asking_price)}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_PILL[l.status]}`}>
+                        {l.status}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
