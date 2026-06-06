@@ -90,24 +90,24 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
         </div>
 
         <div className="odin-card-content">
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div role="tablist" className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
             {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
               const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
               const isActive = filter === f
               return (
                 <button
                   key={f}
+                  role="tab"
+                  aria-selected={isActive}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors capitalize cursor-pointer ${
+                  className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium capitalize transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-foreground text-background border-foreground'
-                      : 'bg-white text-muted-foreground border-border hover:bg-accent'
+                      ? 'bg-white text-foreground shadow-sm'
+                      : 'hover:text-foreground'
                   }`}
                 >
                   {f}
-                  <span className={`ml-1.5 ${isActive ? 'opacity-70' : 'text-muted-foreground'}`}>
-                    {count}
-                  </span>
+                  <span className="text-xs opacity-60">{count}</span>
                 </button>
               )
             })}
