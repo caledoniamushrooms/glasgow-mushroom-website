@@ -696,20 +696,19 @@ function CategoryPicker({
     setOpen(false)
   }
 
-  // Click-outside to close
+  // Click-outside to close. Use pointerdown (covers mouse + touch in one
+  // event, fires once per interaction, on iOS as well). Listening to both
+  // touchstart and mousedown caused double-fires that closed the dropdown
+  // before the click on inner buttons could register.
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent | TouchEvent) => {
+    const handler = (e: PointerEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
-    document.addEventListener('mousedown', handler)
-    document.addEventListener('touchstart', handler)
-    return () => {
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('touchstart', handler)
-    }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [open])
 
   return (
