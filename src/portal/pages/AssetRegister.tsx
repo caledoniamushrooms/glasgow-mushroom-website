@@ -1,4 +1,4 @@
-import { useState, useRef, type FormEvent } from 'react'
+import { useState, useRef, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
@@ -215,6 +215,9 @@ function ListingForm({
   const [images, setImages] = useState<AssetImage[]>(initial?.asset_listing_images ?? [])
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
+  const [isDragging, setIsDragging] = useState(false)
 
   const refreshImages = async (id: string) => {
     const { data } = await supabase
@@ -223,6 +226,22 @@ function ListingForm({
       .eq('listing_id', id)
       .order('position')
     setImages((data as AssetImage[]) ?? [])
+  }
+
+  const uploadFilesTo = async (id: string, files: File[]): Promise<boolean> => {
+    if (files.length === 0) return true
+    const formData = new FormData()
+    files.forEach((f) => formData.append('files', f))
+    const res = await authedFetch(`/api/asset-listings/${id}/images`, {
+      method: 'POST',
+      body: formData,
+    })
+    if (!res.ok) {
+      const r = await res.json().catch(() => ({}))
+      setError(r.error || 'Upload failed.')
+      return false
+    }
+    return true
   }
 
   const handleSave = async (e: FormEvent) => {
@@ -249,7 +268,21 @@ function ListingForm({
         setError(result.error || 'Save failed.')
         return
       }
-      if (!listingId) setListingId(result.id)
+      const id = listingId ?? result.id
+      if (!listingId) setListingId(id)
+
+      // Flush any staged photos
+      if (pendingFiles.length > 0) {
+        setUploading(true)
+        const ok = await uploadFilesTo(id, pendingFiles)
+        setUploading(false)
+        if (ok) {
+          pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
+          setPendingFiles([])
+          setPendingPreviews([])
+          await refreshImages(id)
+        }
+      }
       onSaved()
     } catch {
       setError('Save failed.')
@@ -258,28 +291,44 @@ function ListingForm({
     }
   }
 
-  const handleUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !listingId) return
+  const addFiles = async (files: File[]) => {
+    if (files.length === 0) return
+    const images = files.filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) {
+      setError('Please drop image files only.')
+      return
+    }
+    if (!listingId) {
+      // Stage until listing is created
+      setPendingFiles((prev) => [...prev, ...images])
+      setPendingPreviews((prev) => [...prev, ...images.map((f) => URL.createObjectURL(f))])
+      return
+    }
     setUploading(true)
     setError(null)
     try {
-      const formData = new FormData()
-      Array.from(files).forEach((f) => formData.append('files', f))
-      const res = await authedFetch(`/api/asset-listings/${listingId}/images`, {
-        method: 'POST',
-        body: formData,
-      })
-      if (!res.ok) {
-        const r = await res.json()
-        setError(r.error || 'Upload failed.')
-        return
+      const ok = await uploadFilesTo(listingId, images)
+      if (ok) {
+        await refreshImages(listingId)
+        onSaved()
       }
-      await refreshImages(listingId)
-      onSaved()
-      if (fileRef.current) fileRef.current.value = ''
     } finally {
       setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  const removePending = (idx: number) => {
+    URL.revokeObjectURL(pendingPreviews[idx])
+    setPendingFiles((p) => p.filter((_, i) => i !== idx))
+    setPendingPreviews((p) => p.filter((_, i) => i !== idx))
+  }
+
+  const handleDrop = (e: DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files)
+    addFiles(files)
   }
 
   const handleDeleteImage = async (imageId: string) => {
@@ -402,73 +451,110 @@ function ListingForm({
           </div>
         </form>
 
-        {listingId && (
-          <div className="p-4 border-t border-border">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-sm">Photos</h3>
-              <div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onChange={(e) => handleUpload(e.target.files)}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="text-sm px-3 py-1.5 border border-border rounded cursor-pointer hover:bg-accent disabled:opacity-50"
-                >
-                  {uploading ? 'Uploading…' : '+ Add photos'}
-                </button>
-              </div>
-            </div>
-            {images.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No photos yet.</p>
-            ) : (
-              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {images.map((img, idx) => (
-                  <li key={img.id} className="relative group">
-                    <img
-                      src={assetImageUrl(img.storage_path)}
-                      alt=""
-                      className="w-full aspect-square object-cover rounded border border-border"
-                    />
-                    {idx === 0 && (
-                      <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-foreground text-background rounded">
-                        Cover
-                      </span>
-                    )}
-                    <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleMove(img.id, -1)}
-                          disabled={idx === 0}
-                          className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
-                        >↑</button>
-                        <button
-                          type="button"
-                          onClick={() => handleMove(img.id, 1)}
-                          disabled={idx === images.length - 1}
-                          className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
-                        >↓</button>
-                      </div>
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-sm">Photos</h3>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,image/heic,image/heif"
+              multiple
+              onChange={(e) => addFiles(Array.from(e.target.files ?? []))}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="text-sm px-3 py-1.5 border border-border rounded cursor-pointer hover:bg-accent disabled:opacity-50"
+            >
+              {uploading ? 'Uploading…' : '+ Add photos'}
+            </button>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-md p-4 text-center text-sm cursor-pointer transition-colors mb-3 ${
+              isDragging
+                ? 'border-primary bg-accent'
+                : 'border-border text-muted-foreground hover:bg-accent/50'
+            }`}
+          >
+            {isDragging
+              ? 'Drop photos here'
+              : 'Drag photos here, or tap to choose from camera or library'}
+          </div>
+
+          {!listingId && pendingFiles.length > 0 && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {pendingFiles.length} photo{pendingFiles.length === 1 ? '' : 's'} ready —
+              they'll upload when you create the listing.
+            </p>
+          )}
+
+          {(images.length === 0 && pendingFiles.length === 0) ? (
+            <p className="text-xs text-muted-foreground">No photos yet.</p>
+          ) : (
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {images.map((img, idx) => (
+                <li key={img.id} className="relative group">
+                  <img
+                    src={assetImageUrl(img.storage_path)}
+                    alt=""
+                    className="w-full aspect-square object-cover rounded border border-border"
+                  />
+                  {idx === 0 && (
+                    <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-foreground text-background rounded">
+                      Cover
+                    </span>
+                  )}
+                  <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
+                    <div className="flex gap-1">
                       <button
                         type="button"
-                        onClick={() => handleDeleteImage(img.id)}
-                        className="bg-white/90 border border-border rounded text-xs px-1.5 text-red-600 cursor-pointer"
-                      >Delete</button>
+                        onClick={() => handleMove(img.id, -1)}
+                        disabled={idx === 0}
+                        className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
+                      >↑</button>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(img.id, 1)}
+                        disabled={idx === images.length - 1}
+                        className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
+                      >↓</button>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img.id)}
+                      className="bg-white/90 border border-border rounded text-xs px-1.5 text-red-600 cursor-pointer"
+                    >Delete</button>
+                  </div>
+                </li>
+              ))}
+              {pendingPreviews.map((url, idx) => (
+                <li key={`pending-${idx}`} className="relative">
+                  <img
+                    src={url}
+                    alt=""
+                    className="w-full aspect-square object-cover rounded border border-dashed border-amber-400 opacity-90"
+                  />
+                  <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
+                    Pending
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removePending(idx)}
+                    className="absolute bottom-1 right-1 bg-white/90 border border-border rounded text-xs px-1.5 text-red-600 cursor-pointer"
+                  >Remove</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )
