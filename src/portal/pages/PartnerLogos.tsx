@@ -191,23 +191,23 @@ export function PartnerLogos() {
               No logos uploaded yet
             </div>
           ) : (
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="text-left w-40">Preview</TableHead>
+                    <TableHead className="text-left w-24 sm:w-40">Preview</TableHead>
                     <TableHead className="text-left">Customer</TableHead>
-                    <TableHead className="text-left w-24">Status</TableHead>
-                    <TableHead className="text-left w-24">Order</TableHead>
-                    <TableHead className="text-right w-32"></TableHead>
+                    <TableHead className="text-left hidden sm:table-cell w-24">Status</TableHead>
+                    <TableHead className="text-left hidden md:table-cell w-24">Order</TableHead>
+                    <TableHead className="text-right w-20 sm:w-32"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {logos.map((logo, idx) => (
                     <TableRow key={logo.id} className="hover:bg-gray-50">
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <div className="w-16 h-12 bg-zinc-900 rounded flex items-center justify-center p-1" title="Light (website)">
+                      <TableCell className="p-2 sm:p-4">
+                        <div className="flex gap-1.5">
+                          <div className="w-10 h-8 sm:w-16 sm:h-12 bg-zinc-900 rounded flex items-center justify-center p-1" title="Light (website)">
                             <img
                               src={logo.logo_url}
                               alt={logo.customers?.name || ''}
@@ -215,7 +215,7 @@ export function PartnerLogos() {
                             />
                           </div>
                           {logo.logo_url_dark && (
-                            <div className="w-16 h-12 bg-zinc-100 rounded flex items-center justify-center p-1" title="Dark (Odin)">
+                            <div className="w-10 h-8 sm:w-16 sm:h-12 bg-zinc-100 rounded flex items-center justify-center p-1 hidden sm:flex" title="Dark (Odin)">
                               <img
                                 src={logo.logo_url_dark}
                                 alt={logo.customers?.name || ''}
@@ -225,20 +225,38 @@ export function PartnerLogos() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="p-2 sm:p-4">
                         <div className="font-medium">{logo.customers?.name || 'Unknown'}</div>
                         {logo.customers?.website_url && (
                           <a
                             href={logo.customers.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-muted-foreground hover:text-foreground"
+                            className="text-xs text-muted-foreground hover:text-foreground hidden sm:inline"
                           >
                             {logo.customers.website_url}
                           </a>
                         )}
+                        {/* Mobile-only inline status */}
+                        <div className="mt-1 sm:hidden">
+                          <button
+                            type="button"
+                            onClick={() => toggleActive.mutate({ id: logo.id, active: !logo.active })}
+                          >
+                            <Badge
+                              variant="outline"
+                              className={
+                                logo.active
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent'
+                                  : 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent'
+                              }
+                            >
+                              {logo.active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </button>
+                        </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <button
                           type="button"
                           onClick={() => toggleActive.mutate({ id: logo.id, active: !logo.active })}
@@ -256,7 +274,7 @@ export function PartnerLogos() {
                           </Badge>
                         </button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex gap-1">
                           <Button
                             variant="outline"
@@ -278,19 +296,19 @@ export function PartnerLogos() {
                           </Button>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right p-2 sm:p-4">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => {
                             if (confirm(`Delete "${logo.customers?.name}" logo?`)) {
                               deleteLogo.mutate(logo)
                             }
                           }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          aria-label="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>

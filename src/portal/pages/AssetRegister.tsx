@@ -142,17 +142,17 @@ export function AssetRegister() {
               No listings yet
             </div>
           ) : (
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="text-left w-20"></TableHead>
+                    <TableHead className="w-14 sm:w-20"></TableHead>
                     <TableHead className="text-left">Item</TableHead>
-                    <TableHead className="text-left hidden md:table-cell">Category</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-left w-28">Status</TableHead>
-                    <TableHead className="text-right w-32">Photos</TableHead>
-                    <TableHead className="text-right w-32"></TableHead>
+                    <TableHead className="text-left hidden lg:table-cell">Category</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
+                    <TableHead className="text-left hidden sm:table-cell w-28">Status</TableHead>
+                    <TableHead className="text-right hidden md:table-cell w-20">Photos</TableHead>
+                    <TableHead className="text-right w-20 sm:w-32"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -160,8 +160,8 @@ export function AssetRegister() {
                     const cover = l.asset_listing_images[0]
                     return (
                       <TableRow key={l.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                        <TableCell className="p-2 sm:p-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                             {cover ? (
                               <img
                                 src={assetImageUrl(cover.storage_path)}
@@ -169,36 +169,64 @@ export function AssetRegister() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-[10px] text-gray-400">No photo</span>
+                              <span className="text-[9px] text-gray-400">No photo</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{l.name}</TableCell>
-                        <TableCell className="hidden md:table-cell text-gray-600">{l.category ?? '—'}</TableCell>
-                        <TableCell className="text-right font-semibold whitespace-nowrap">
+                        <TableCell className="p-2 sm:p-4">
+                          <div className="font-medium">{l.name}</div>
+                          {/* Mobile-only: stack price + status + photos below name */}
+                          <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
+                            <span className="font-semibold">{formatPrice(l.asking_price)}</span>
+                            <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
+                              {l.status}
+                            </Badge>
+                            <span className="text-gray-500">{l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}</span>
+                          </div>
+                          {l.category && (
+                            <div className="text-xs text-gray-500 mt-0.5 lg:hidden">{l.category}</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-gray-600">{l.category ?? '—'}</TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
                           {formatPrice(l.asking_price)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
                             {l.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right text-sm text-gray-500">
+                        <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
                           {l.asset_listing_images.length}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right p-2 sm:p-4">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(l)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEdit(l)}
+                              className="h-8 w-8 sm:hidden"
+                              aria-label="Edit"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEdit(l)}
+                              className="hidden sm:inline-flex"
+                            >
                               <Pencil className="h-3.5 w-3.5" />
                               Edit
                             </Button>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => {
                                 if (confirm(`Delete "${l.name}" and its photos?`)) deleteListing.mutate(l.id)
                               }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              aria-label="Delete"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
