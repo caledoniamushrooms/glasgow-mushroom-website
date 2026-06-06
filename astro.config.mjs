@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://www.glasgowmushroom.co',
   integrations: [react({
-    include: ['src/portal/**'],
+    include: ['src/portal/**', 'src/components/assets/**'],
   })],
   adapter: vercel(),
   vite: {

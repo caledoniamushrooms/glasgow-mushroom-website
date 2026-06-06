@@ -21,6 +21,7 @@ import { PriceList } from './pages/PriceList'
 import { Team } from './pages/Team'
 import { Markets } from './pages/Markets'
 import { PartnerLogos } from './pages/PartnerLogos'
+import { AssetRegister } from './pages/AssetRegister'
 import { DeliveryNotes } from './pages/DeliveryNotes'
 import { Promotions } from './pages/Promotions'
 import { Stockouts } from './pages/Stockouts'
@@ -107,6 +108,9 @@ export default function App() {
               } />
               <Route path="/portal/markets" element={<Markets />} />
               <Route path="/portal/partner-logos" element={<PartnerLogos />} />
+              <Route path="/portal/admin/assets" element={
+                <ProtectedRoute requireSystemAdmin><AssetRegister /></ProtectedRoute>
+              } />
             </Route>
 
             {/* Catch-all redirect */}
