@@ -24,3 +24,4 @@ pnpm-debug.log*
 .idea/
 .vercel
 .env*.local
+docs/session-2026-05-16-onboarding-v2.md
