@@ -4,6 +4,7 @@ import { Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-rea
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
+import { resizeImage } from '../lib/resizeImage'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -282,8 +283,11 @@ function ListingDialog({
 
   const uploadFilesTo = async (id: string, files: File[]): Promise<boolean> => {
     if (files.length === 0) return true
+    // Resize client-side so we stay well under Vercel's 4.5 MB serverless
+    // body limit and the upload itself is faster on mobile data.
+    const resized = await Promise.all(files.map((f) => resizeImage(f)))
     const formData = new FormData()
-    files.forEach((f) => formData.append('files', f))
+    resized.forEach((f) => formData.append('files', f))
     const res = await authedFetch(`/api/asset-listings/${id}/images`, {
       method: 'POST',
       body: formData,
