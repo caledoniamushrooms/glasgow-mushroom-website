@@ -1,8 +1,19 @@
 import { useState, useRef, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type Status = 'available' | 'reserved' | 'sold'
 
@@ -26,12 +37,10 @@ interface AssetListing {
   asset_listing_images: AssetImage[]
 }
 
-const STATUS_OPTIONS: Status[] = ['available', 'reserved', 'sold']
-
-const STATUS_PILL: Record<Status, string> = {
-  available: 'bg-emerald-100 text-emerald-800',
-  reserved: 'bg-amber-100 text-amber-800',
-  sold: 'bg-zinc-200 text-zinc-700',
+const STATUS_BADGE_CLASS: Record<Status, string> = {
+  available: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent',
+  reserved: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
 async function authedFetch(input: string, init: RequestInit = {}) {
@@ -41,11 +50,15 @@ async function authedFetch(input: string, init: RequestInit = {}) {
   return fetch(input, { ...init, headers })
 }
 
+function formatPrice(p: number): string {
+  return `£${Number(p).toLocaleString('en-GB')}`
+}
+
 export function AssetRegister() {
   const { isSystemAdmin } = useAuthContext()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<AssetListing | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Status>('all')
 
   const listingsQuery = useQuery({
@@ -81,129 +94,150 @@ export function AssetRegister() {
   const listings = listingsQuery.data ?? []
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter)
 
+  const openNew = () => { setEditing(null); setDialogOpen(true) }
+  const openEdit = (l: AssetListing) => { setEditing(l); setDialogOpen(true) }
+
   return (
-    <div>
-      <header className="flex justify-between items-start mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Asset Register</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage equipment listings for the public for-sale page.
-          </p>
-        </div>
-        <button
-          onClick={() => { setEditing(null); setShowForm(true) }}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold text-sm cursor-pointer hover:opacity-90"
-        >
-          + New listing
-        </button>
-      </header>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-[#009689]" />
+            Asset Register
+          </CardTitle>
+          <CardDescription>
+            Manage equipment listings for the public for-sale page
+          </CardDescription>
+          <CardAction>
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" />
+              New listing
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <TabsList>
+              {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
+                const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+                return (
+                  <TabsTrigger key={f} value={f} className="capitalize">
+                    {f}
+                    <span className="ml-1 text-xs opacity-60">{count}</span>
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </Tabs>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {(['all', 'available', 'reserved', 'sold'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors capitalize cursor-pointer ${
-              filter === f
-                ? 'bg-foreground text-background border-foreground'
-                : 'bg-white text-muted-foreground border-border hover:bg-accent'
-            }`}
-          >
-            {f}
-            <span className="ml-1.5 opacity-70">
-              ({f === 'all' ? listings.length : listings.filter((l) => l.status === f).length})
-            </span>
-          </button>
-        ))}
-      </div>
+          {listingsQuery.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-16 bg-gray-100 animate-pulse rounded" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No listings yet
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="text-left w-20"></TableHead>
+                    <TableHead className="text-left">Item</TableHead>
+                    <TableHead className="text-left hidden md:table-cell">Category</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-left w-28">Status</TableHead>
+                    <TableHead className="text-right w-32">Photos</TableHead>
+                    <TableHead className="text-right w-32"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((l) => {
+                    const cover = l.asset_listing_images[0]
+                    return (
+                      <TableRow key={l.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                            {cover ? (
+                              <img
+                                src={assetImageUrl(cover.storage_path)}
+                                alt={l.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[10px] text-gray-400">No photo</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{l.name}</TableCell>
+                        <TableCell className="hidden md:table-cell text-gray-600">{l.category ?? '—'}</TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap">
+                          {formatPrice(l.asking_price)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
+                            {l.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-gray-500">
+                          {l.asset_listing_images.length}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(l)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Delete "${l.name}" and its photos?`)) deleteListing.mutate(l.id)
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {showForm && (
-        <ListingForm
-          initial={editing}
-          onClose={() => { setShowForm(false); setEditing(null) }}
-          onSaved={() => {
-            queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })
-          }}
-        />
-      )}
-
-      {listingsQuery.isLoading ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No listings yet.</p>
-      ) : (
-        <div className="grid gap-3">
-          {filtered.map((l) => (
-            <article
-              key={l.id}
-              className="bg-white border border-border rounded-lg p-3 flex gap-4 items-start"
-            >
-              <div className="w-24 h-24 bg-zinc-100 rounded shrink-0 overflow-hidden flex items-center justify-center">
-                {l.asset_listing_images[0] ? (
-                  <img
-                    src={assetImageUrl(l.asset_listing_images[0].storage_path)}
-                    alt={l.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs text-muted-foreground">No photo</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap gap-2 items-center mb-1">
-                  <h3 className="font-semibold text-foreground">{l.name}</h3>
-                  <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_PILL[l.status]}`}>
-                    {l.status}
-                  </span>
-                  {l.category && (
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-zinc-100 text-zinc-700">
-                      {l.category}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-foreground font-medium">
-                  £{Number(l.asking_price).toLocaleString('en-GB')}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}
-                </p>
-              </div>
-              <div className="flex flex-col gap-1.5 shrink-0">
-                <button
-                  onClick={() => { setEditing(l); setShowForm(true) }}
-                  className="text-xs font-medium px-3 py-1 border border-border rounded hover:bg-accent cursor-pointer"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`Delete "${l.name}" and its photos?`)) deleteListing.mutate(l.id)
-                  }}
-                  className="text-xs font-medium px-3 py-1 text-red-600 hover:bg-red-50 rounded cursor-pointer"
-                >
-                  Delete
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
+      <ListingDialog
+        open={dialogOpen}
+        initial={editing}
+        onOpenChange={setDialogOpen}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })}
+      />
+    </>
   )
 }
 
 // ---------------------------------------------------------------
-// Form
+// Form Dialog
 // ---------------------------------------------------------------
-function ListingForm({
+function ListingDialog({
+  open,
   initial,
-  onClose,
+  onOpenChange,
   onSaved,
 }: {
+  open: boolean
   initial: AssetListing | null
-  onClose: () => void
+  onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
+  // Reset state whenever the dialog is opened with a new (or null) initial
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [askingPrice, setAskingPrice] = useState(initial?.asking_price?.toString() ?? '')
@@ -218,6 +252,24 @@ function ListingForm({
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
+
+  // Sync form when initial prop changes
+  const initialId = initial?.id ?? null
+  const [lastInitialId, setLastInitialId] = useState<string | null | undefined>(undefined)
+  if (lastInitialId !== initialId) {
+    setLastInitialId(initialId)
+    setName(initial?.name ?? '')
+    setDescription(initial?.description ?? '')
+    setAskingPrice(initial?.asking_price?.toString() ?? '')
+    setCategory(initial?.category ?? '')
+    setStatus(initial?.status ?? 'available')
+    setListingId(initialId)
+    setImages(initial?.asset_listing_images ?? [])
+    setError(null)
+    pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
+    setPendingFiles([])
+    setPendingPreviews([])
+  }
 
   const refreshImages = async (id: string) => {
     const { data } = await supabase
@@ -271,7 +323,6 @@ function ListingForm({
       const id = listingId ?? result.id
       if (!listingId) setListingId(id)
 
-      // Flush any staged photos
       if (pendingFiles.length > 0) {
         setUploading(true)
         const ok = await uploadFilesTo(id, pendingFiles)
@@ -281,13 +332,12 @@ function ListingForm({
           setPendingFiles([])
           setPendingPreviews([])
         } else {
-          // Upload failed — keep modal open so user can retry
           onSaved()
           return
         }
       }
       onSaved()
-      onClose()
+      onOpenChange(false)
     } catch {
       setError('Save failed.')
     } finally {
@@ -297,21 +347,20 @@ function ListingForm({
 
   const addFiles = async (files: File[]) => {
     if (files.length === 0) return
-    const images = files.filter((f) => f.type.startsWith('image/'))
-    if (images.length === 0) {
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+    if (imageFiles.length === 0) {
       setError('Please drop image files only.')
       return
     }
     if (!listingId) {
-      // Stage until listing is created
-      setPendingFiles((prev) => [...prev, ...images])
-      setPendingPreviews((prev) => [...prev, ...images.map((f) => URL.createObjectURL(f))])
+      setPendingFiles((prev) => [...prev, ...imageFiles])
+      setPendingPreviews((prev) => [...prev, ...imageFiles.map((f) => URL.createObjectURL(f))])
       return
     }
     setUploading(true)
     setError(null)
     try {
-      const ok = await uploadFilesTo(listingId, images)
+      const ok = await uploadFilesTo(listingId, imageFiles)
       if (ok) {
         await refreshImages(listingId)
         onSaved()
@@ -331,8 +380,7 @@ function ListingForm({
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    addFiles(files)
+    addFiles(Array.from(e.dataTransfer.files))
   }
 
   const handleDeleteImage = async (imageId: string) => {
@@ -365,201 +413,211 @@ function ListingForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-stretch md:items-center justify-center p-0 md:p-4 overflow-y-auto">
-      <div className="bg-white w-full md:max-w-2xl md:rounded-lg shadow-xl flex flex-col max-h-screen">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="font-semibold">{listingId ? 'Edit listing' : 'New listing'}</h2>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground text-2xl leading-none cursor-pointer"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{listingId ? 'Edit listing' : 'New listing'}</DialogTitle>
+          <DialogDescription>
+            {listingId ? 'Update the listing details and photos.' : 'Create a new equipment listing for the for-sale page.'}
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSave} className="p-4 grid gap-3 overflow-y-auto">
+        <form onSubmit={handleSave} className="space-y-4">
           {error && (
             <div className="px-3 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
               {error}
             </div>
           )}
-          <div>
-            <label className="block text-sm font-medium mb-1">Name *</label>
-            <input
+
+          <div className="space-y-2">
+            <Label htmlFor="asset-name">Name *</Label>
+            <Input
+              id="asset-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
+
+          <div className="space-y-2">
+            <Label htmlFor="asset-description">Description</Label>
+            <Textarea
+              id="asset-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
-              className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Asking price (£) *</label>
-              <input
-                value={askingPrice}
-                onChange={(e) => setAskingPrice(e.target.value)}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="asset-price">Asking price (£) *</Label>
+              <Input
+                id="asset-price"
                 type="number"
                 step="0.01"
                 min="0"
+                value={askingPrice}
+                onChange={(e) => setAskingPrice(e.target.value)}
                 required
-                className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Status)}
-                className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white capitalize"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+            <div className="space-y-2">
+              <Label htmlFor="asset-status">Status</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+                <SelectTrigger id="asset-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="reserved">Reserved</SelectItem>
+                  <SelectItem value="sold">Sold</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
-            <input
+
+          <div className="space-y-2">
+            <Label htmlFor="asset-category">Category</Label>
+            <Input
+              id="asset-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g. Sterilisation, Cold chain, Office"
-              className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium cursor-pointer disabled:opacity-50"
-            >
-              {saving ? 'Saving…' : listingId ? 'Save changes' : 'Create listing'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-md text-sm border border-border bg-transparent cursor-pointer hover:bg-accent"
-            >
-              Close
-            </button>
-          </div>
-        </form>
 
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-sm">Photos</h3>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,image/heic,image/heif"
-              multiple
-              onChange={(e) => addFiles(Array.from(e.target.files ?? []))}
-              className="hidden"
-            />
-            <button
-              type="button"
+          {/* Photos */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Photos</Label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,image/heic,image/heif"
+                multiple
+                onChange={(e) => addFiles(Array.from(e.target.files ?? []))}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {uploading ? 'Uploading…' : 'Add photos'}
+              </Button>
+            </div>
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="text-sm px-3 py-1.5 border border-border rounded cursor-pointer hover:bg-accent disabled:opacity-50"
+              className={`border-2 border-dashed rounded-md p-4 text-center text-sm cursor-pointer transition-colors ${
+                isDragging
+                  ? 'border-primary bg-accent'
+                  : 'border-input text-muted-foreground hover:bg-accent/50'
+              }`}
             >
-              {uploading ? 'Uploading…' : '+ Add photos'}
-            </button>
-          </div>
+              {isDragging
+                ? 'Drop photos here'
+                : 'Drag photos here, or tap to choose from camera or library'}
+            </div>
 
-          {/* Drop zone */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileRef.current?.click()}
-            className={`border-2 border-dashed rounded-md p-4 text-center text-sm cursor-pointer transition-colors mb-3 ${
-              isDragging
-                ? 'border-primary bg-accent'
-                : 'border-border text-muted-foreground hover:bg-accent/50'
-            }`}
-          >
-            {isDragging
-              ? 'Drop photos here'
-              : 'Drag photos here, or tap to choose from camera or library'}
-          </div>
+            {!listingId && pendingFiles.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {pendingFiles.length} photo{pendingFiles.length === 1 ? '' : 's'} ready —
+                they'll upload when you create the listing.
+              </p>
+            )}
 
-          {!listingId && pendingFiles.length > 0 && (
-            <p className="text-xs text-muted-foreground mb-2">
-              {pendingFiles.length} photo{pendingFiles.length === 1 ? '' : 's'} ready —
-              they'll upload when you create the listing.
-            </p>
-          )}
-
-          {(images.length === 0 && pendingFiles.length === 0) ? (
-            <p className="text-xs text-muted-foreground">No photos yet.</p>
-          ) : (
-            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {images.map((img, idx) => (
-                <li key={img.id} className="relative group">
-                  <img
-                    src={assetImageUrl(img.storage_path)}
-                    alt=""
-                    className="w-full aspect-square object-cover rounded border border-border"
-                  />
-                  {idx === 0 && (
-                    <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-foreground text-background rounded">
-                      Cover
-                    </span>
-                  )}
-                  <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
-                    <div className="flex gap-1">
-                      <button
+            {(images.length > 0 || pendingFiles.length > 0) && (
+              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {images.map((img, idx) => (
+                  <li key={img.id} className="relative group">
+                    <img
+                      src={assetImageUrl(img.storage_path)}
+                      alt=""
+                      className="w-full aspect-square object-cover rounded border"
+                    />
+                    {idx === 0 && (
+                      <Badge variant="outline" className="absolute top-1 left-1 bg-foreground text-background border-transparent">
+                        Cover
+                      </Badge>
+                    )}
+                    <div className="absolute bottom-1 left-1 right-1 flex justify-between gap-1">
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleMove(img.id, -1)}
+                          disabled={idx === 0}
+                          className="h-6 w-6 bg-white/90"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleMove(img.id, 1)}
+                          disabled={idx === images.length - 1}
+                          className="h-6 w-6 bg-white/90"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Button
                         type="button"
-                        onClick={() => handleMove(img.id, -1)}
-                        disabled={idx === 0}
-                        className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
-                      >↑</button>
-                      <button
-                        type="button"
-                        onClick={() => handleMove(img.id, 1)}
-                        disabled={idx === images.length - 1}
-                        className="bg-white/90 border border-border rounded text-xs px-1.5 cursor-pointer disabled:opacity-30"
-                      >↓</button>
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDeleteImage(img.id)}
+                        className="h-6 w-6 bg-white/90 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <button
+                  </li>
+                ))}
+                {pendingPreviews.map((url, idx) => (
+                  <li key={`pending-${idx}`} className="relative">
+                    <img
+                      src={url}
+                      alt=""
+                      className="w-full aspect-square object-cover rounded border border-dashed border-amber-400 opacity-90"
+                    />
+                    <Badge variant="outline" className="absolute top-1 left-1 bg-amber-100 text-amber-800 border-transparent">
+                      Pending
+                    </Badge>
+                    <Button
                       type="button"
-                      onClick={() => handleDeleteImage(img.id)}
-                      className="bg-white/90 border border-border rounded text-xs px-1.5 text-red-600 cursor-pointer"
-                    >Delete</button>
-                  </div>
-                </li>
-              ))}
-              {pendingPreviews.map((url, idx) => (
-                <li key={`pending-${idx}`} className="relative">
-                  <img
-                    src={url}
-                    alt=""
-                    className="w-full aspect-square object-cover rounded border border-dashed border-amber-400 opacity-90"
-                  />
-                  <span className="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded">
-                    Pending
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removePending(idx)}
-                    className="absolute bottom-1 right-1 bg-white/90 border border-border rounded text-xs px-1.5 text-red-600 cursor-pointer"
-                  >Remove</button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removePending(idx)}
+                      className="absolute bottom-1 right-1 h-6 w-6 bg-white/90 text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving…' : listingId ? 'Save changes' : 'Create listing'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

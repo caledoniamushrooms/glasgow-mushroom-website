@@ -1,14 +1,22 @@
 import { useState, useRef, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Image as ImageIcon, Upload, ArrowUp, ArrowDown, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import type { PartnerLogo, Customer } from '../lib/types'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 
 export function PartnerLogos() {
   const { isSystemAdmin } = useAuthContext()
   const queryClient = useQueryClient()
 
-  const [showUpload, setShowUpload] = useState(false)
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [customerSearch, setCustomerSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +32,6 @@ export function PartnerLogos() {
         .select('*, customers(name, website_url)')
         .order('sort_order')
         .order('created_at')
-
       if (error) throw error
       return data || []
     },
@@ -38,11 +45,10 @@ export function PartnerLogos() {
         .select('id, name, website_url')
         .eq('active', true)
         .order('name')
-
       if (error) throw error
       return data || []
     },
-    enabled: showUpload,
+    enabled: uploadOpen,
   })
 
   const toggleActive = useMutation({
@@ -63,10 +69,7 @@ export function PartnerLogos() {
       if (filename) {
         await supabase.storage.from('partner-logos').remove([filename])
       }
-      const { error } = await supabase
-        .from('partner_logos')
-        .delete()
-        .eq('id', logo.id)
+      const { error } = await supabase.from('partner_logos').delete().eq('id', logo.id)
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['partner-logos'] }),
@@ -77,13 +80,10 @@ export function PartnerLogos() {
       const logos = logosQuery.data || []
       const idx = logos.findIndex(l => l.id === id)
       if (idx < 0) return
-
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1
       if (swapIdx < 0 || swapIdx >= logos.length) return
-
       const current = logos[idx]
       const swap = logos[swapIdx]
-
       await Promise.all([
         supabase.from('partner_logos').update({ sort_order: swap.sort_order, updated_at: new Date().toISOString() }).eq('id', current.id),
         supabase.from('partner_logos').update({ sort_order: current.sort_order, updated_at: new Date().toISOString() }).eq('id', swap.id),
@@ -91,6 +91,13 @@ export function PartnerLogos() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['partner-logos'] }),
   })
+
+  const resetUpload = () => {
+    setSelectedCustomerId('')
+    setCustomerSearch('')
+    setError(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
 
   const handleUpload = async (e: FormEvent) => {
     e.preventDefault()
@@ -111,19 +118,17 @@ export function PartnerLogos() {
         return
       }
 
-      setUploadStep('Preparing image…')
+      setUploadStep('Processing and uploading…')
       const formData = new FormData()
       formData.append('file', file)
       formData.append('customer_id', selectedCustomerId)
 
-      setUploadStep('Processing and uploading…')
       const res = await fetch('/api/partner-logos', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData,
       })
 
-      setUploadStep('Saving…')
       const result = await res.json()
       if (!res.ok) {
         setError(result.error || 'Upload failed.')
@@ -131,10 +136,8 @@ export function PartnerLogos() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['partner-logos'] })
-      setShowUpload(false)
-      setSelectedCustomerId('')
-      setCustomerSearch('')
-      if (fileRef.current) fileRef.current.value = ''
+      setUploadOpen(false)
+      resetUpload()
     } catch {
       setError('Upload failed.')
     } finally {
@@ -146,7 +149,6 @@ export function PartnerLogos() {
   const logos = logosQuery.data || []
   const customers = customersQuery.data || []
 
-  // Filter customers already linked to a logo
   const usedCustomerIds = new Set(logos.map(l => l.customer_id))
   const availableCustomers = customers.filter(c => !usedCustomerIds.has(c.id))
   const filteredCustomers = customerSearch
@@ -159,194 +161,239 @@ export function PartnerLogos() {
     return <p className="text-muted-foreground">You do not have access to this page.</p>
   }
 
-  if (logosQuery.isLoading) return <div className="text-muted-foreground">Loading logos...</div>
-
   return (
-    <div>
-      <header className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Partner Logos</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage logos shown on the homepage business showcase</p>
-        </div>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold text-sm cursor-pointer hover:opacity-90 transition-opacity"
-        >
-          Upload Logo
-        </button>
-      </header>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5 text-[#009689]" />
+            Partner Logos
+          </CardTitle>
+          <CardDescription>
+            Manage logos shown on the homepage business showcase
+          </CardDescription>
+          <CardAction>
+            <Button onClick={() => setUploadOpen(true)}>
+              <Upload className="h-4 w-4" />
+              Upload logo
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {logosQuery.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-16 bg-gray-100 animate-pulse rounded" />
+              ))}
+            </div>
+          ) : logos.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No logos uploaded yet
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="text-left w-40">Preview</TableHead>
+                    <TableHead className="text-left">Customer</TableHead>
+                    <TableHead className="text-left w-24">Status</TableHead>
+                    <TableHead className="text-left w-24">Order</TableHead>
+                    <TableHead className="text-right w-32"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logos.map((logo, idx) => (
+                    <TableRow key={logo.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <div className="w-16 h-12 bg-zinc-900 rounded flex items-center justify-center p-1" title="Light (website)">
+                            <img
+                              src={logo.logo_url}
+                              alt={logo.customers?.name || ''}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                          {logo.logo_url_dark && (
+                            <div className="w-16 h-12 bg-zinc-100 rounded flex items-center justify-center p-1" title="Dark (Odin)">
+                              <img
+                                src={logo.logo_url_dark}
+                                alt={logo.customers?.name || ''}
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{logo.customers?.name || 'Unknown'}</div>
+                        {logo.customers?.website_url && (
+                          <a
+                            href={logo.customers.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            {logo.customers.website_url}
+                          </a>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          type="button"
+                          onClick={() => toggleActive.mutate({ id: logo.id, active: !logo.active })}
+                          className="cursor-pointer"
+                        >
+                          <Badge
+                            variant="outline"
+                            className={
+                              logo.active
+                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent'
+                                : 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent'
+                            }
+                          >
+                            {logo.active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => moveLogo.mutate({ id: logo.id, direction: 'up' })}
+                            disabled={idx === 0}
+                            className="h-7 w-7"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => moveLogo.mutate({ id: logo.id, direction: 'down' })}
+                            disabled={idx === logos.length - 1}
+                            className="h-7 w-7"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(`Delete "${logo.customers?.name}" logo?`)) {
+                              deleteLogo.mutate(logo)
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {error && (
-        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm mb-4">{error}</div>
-      )}
+      <Dialog
+        open={uploadOpen}
+        onOpenChange={(o) => {
+          setUploadOpen(o)
+          if (!o) resetUpload()
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload logo</DialogTitle>
+            <DialogDescription>
+              Pick a customer and an image. We'll convert it to white-on-transparent for the homepage showcase.
+            </DialogDescription>
+          </DialogHeader>
 
-      {showUpload && (
-        <form onSubmit={handleUpload} className="odin-card p-4 mb-6 grid gap-3 max-w-[400px]">
-          <div>
-            <label className="block text-sm font-medium mb-1">Customer</label>
-            {selectedCustomer ? (
-              <div className="flex items-center gap-2 px-2.5 py-2 border border-input rounded-md bg-white">
-                <span className="text-sm font-medium flex-1">{selectedCustomer.name}</span>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedCustomerId(''); setCustomerSearch('') }}
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  Change
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  value={customerSearch}
-                  onChange={e => setCustomerSearch(e.target.value)}
-                  placeholder="Search customers…"
-                  className="w-full px-2.5 py-2 border border-input rounded-md text-sm bg-white odin-focus"
-                  autoFocus
-                />
-                {customerSearch && filteredCustomers.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {filteredCustomers.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => { setSelectedCustomerId(c.id); setCustomerSearch('') }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent cursor-pointer transition-colors"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {customerSearch && filteredCustomers.length === 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-border rounded-md shadow-lg px-3 py-2 text-sm text-muted-foreground">
-                    No matching customers
-                  </div>
-                )}
+          <form onSubmit={handleUpload} className="space-y-4">
+            {error && (
+              <div className="px-3 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                {error}
               </div>
             )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Logo</label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/avif"
-              required
-              className="w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-input file:text-sm file:font-medium file:bg-white file:text-foreground file:cursor-pointer hover:file:bg-accent"
-            />
-            <p className="text-xs text-muted-foreground mt-1">PNG, JPEG, WebP, or AVIF. Will be converted to white on transparent.</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={uploading || !selectedCustomerId}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm cursor-pointer font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {uploading ? uploadStep : 'Upload'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowUpload(false); setError(null); setSelectedCustomerId(''); setCustomerSearch('') }}
-              className="bg-transparent border border-border px-4 py-2 rounded-md text-sm cursor-pointer text-muted-foreground hover:bg-accent transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
 
-      {logos.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No logos uploaded yet.</p>
-      ) : (
-        <div className="odin-table-container overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="odin-table-header">
-                <th className="odin-table-cell text-left text-xs uppercase tracking-wide w-40">Preview</th>
-                <th className="odin-table-cell text-left text-xs uppercase tracking-wide">Customer</th>
-                <th className="odin-table-cell text-left text-xs uppercase tracking-wide w-24">Status</th>
-                <th className="odin-table-cell text-left text-xs uppercase tracking-wide w-24">Order</th>
-                <th className="odin-table-cell text-left text-xs uppercase tracking-wide w-24">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logos.map((logo, idx) => (
-                <tr key={logo.id} className="odin-table-row">
-                  <td className="odin-table-cell">
-                    <div className="flex gap-2">
-                      <div className="w-16 h-12 bg-zinc-900 rounded flex items-center justify-center p-1" title="Light (website)">
-                        <img
-                          src={logo.logo_url}
-                          alt={logo.customers?.name || ''}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      </div>
-                      {logo.logo_url_dark && (
-                        <div className="w-16 h-12 bg-zinc-100 rounded flex items-center justify-center p-1" title="Dark (Odin)">
-                          <img
-                            src={logo.logo_url_dark}
-                            alt={logo.customers?.name || ''}
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        </div>
-                      )}
+            <div className="space-y-2">
+              <Label>Customer</Label>
+              {selectedCustomer ? (
+                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-white">
+                  <span className="text-sm font-medium flex-1">{selectedCustomer.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setSelectedCustomerId(''); setCustomerSearch('') }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Input
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    placeholder="Search customers…"
+                    autoFocus
+                  />
+                  {customerSearch && filteredCustomers.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {filteredCustomers.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => { setSelectedCustomerId(c.id); setCustomerSearch('') }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent cursor-pointer transition-colors"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
                     </div>
-                  </td>
-                  <td className="odin-table-cell">
-                    <div className="font-semibold">{logo.customers?.name || 'Unknown'}</div>
-                    {logo.customers?.website_url && (
-                      <a href={logo.customers.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground">
-                        {logo.customers.website_url}
-                      </a>
-                    )}
-                  </td>
-                  <td className="odin-table-cell">
-                    <button
-                      onClick={() => toggleActive.mutate({ id: logo.id, active: !logo.active })}
-                      className={`badge cursor-pointer ${logo.active ? 'badge-paid' : 'badge-draft'}`}
-                    >
-                      {logo.active ? 'Active' : 'Inactive'}
-                    </button>
-                  </td>
-                  <td className="odin-table-cell">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => moveLogo.mutate({ id: logo.id, direction: 'up' })}
-                        disabled={idx === 0}
-                        className="px-1.5 py-0.5 text-xs border border-border rounded hover:bg-accent disabled:opacity-30 cursor-pointer disabled:cursor-default transition-colors"
-                        title="Move up"
-                      >
-                        &uarr;
-                      </button>
-                      <button
-                        onClick={() => moveLogo.mutate({ id: logo.id, direction: 'down' })}
-                        disabled={idx === logos.length - 1}
-                        className="px-1.5 py-0.5 text-xs border border-border rounded hover:bg-accent disabled:opacity-30 cursor-pointer disabled:cursor-default transition-colors"
-                        title="Move down"
-                      >
-                        &darr;
-                      </button>
+                  )}
+                  {customerSearch && filteredCustomers.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg px-3 py-2 text-sm text-muted-foreground">
+                      No matching customers
                     </div>
-                  </td>
-                  <td className="odin-table-cell">
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete "${logo.customers?.name}" logo?`)) {
-                          deleteLogo.mutate(logo)
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-800 text-xs font-medium cursor-pointer transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="logo-file">Logo</Label>
+              <Input
+                ref={fileRef}
+                id="logo-file"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                PNG, JPEG, WebP, or AVIF. Will be converted to white on transparent.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setUploadOpen(false); resetUpload() }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={uploading || !selectedCustomerId}>
+                {uploading ? (uploadStep || 'Uploading…') : 'Upload'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
