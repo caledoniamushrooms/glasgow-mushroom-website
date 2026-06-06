@@ -6,6 +6,11 @@
  * Tailwind is scoped to portal pages only — main GMC website uses global.css.
  */
 
+/* Establish layer order before Tailwind imports.
+ * `reset` gets lowest priority so the universal reset in global.css does
+ * not trump Tailwind utilities (`px-*`, `m-*`, etc.) on shared pages. */
+@layer reset, theme, base, components, utilities;
+
 @import "tailwindcss";
 
 /* ====== shadcn/ui COLOUR TOKENS ====== */

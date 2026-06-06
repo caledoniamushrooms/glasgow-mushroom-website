@@ -1,10 +1,15 @@
 /* === Reset === */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Layered so it doesn't trump Tailwind utilities on pages that import
+ * portal-tailwind.css (e.g. /equipment-sale, /portal/**). Unlayered universal
+ * resets win over @layer utilities regardless of source order. */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 /* === Custom Properties === */

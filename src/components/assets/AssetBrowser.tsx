@@ -34,10 +34,10 @@ interface Props {
   imageBase: string
 }
 
-const STATUS_BADGE_VARIANT: Record<Status, 'default' | 'secondary' | 'outline'> = {
-  available: 'default',
-  reserved: 'secondary',
-  sold: 'outline',
+const STATUS_BADGE_CLASS: Record<Status, string> = {
+  available: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent',
+  reserved: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
 function formatPrice(p: number): string {
@@ -130,6 +130,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                   <TableRow className="bg-gray-50">
                     <TableHead className="text-left w-20"></TableHead>
                     <TableHead className="text-left">Item</TableHead>
+                    <TableHead className="text-left hidden lg:table-cell">Description</TableHead>
                     <TableHead className="text-left hidden md:table-cell">Category</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-left w-28">Status</TableHead>
@@ -165,6 +166,9 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                             <div className="text-xs text-gray-500 mt-0.5 md:hidden">{l.category}</div>
                           )}
                         </TableCell>
+                        <TableCell className="hidden lg:table-cell text-gray-600 max-w-xs">
+                          <span className="line-clamp-1">{l.description ?? '—'}</span>
+                        </TableCell>
                         <TableCell className="hidden md:table-cell text-gray-600">
                           {l.category ?? '—'}
                         </TableCell>
@@ -172,7 +176,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                           {formatPrice(l.asking_price)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={STATUS_BADGE_VARIANT[l.status]} className="capitalize">
+                          <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
                             {l.status}
                           </Badge>
                         </TableCell>
