@@ -678,24 +678,113 @@ function CategoryPicker({
   onChange: (v: string) => void
   options: string[]
 }) {
-  // Native HTML autocomplete. iOS Safari renders this as a proper picker;
-  // desktop Chrome/Firefox/Safari render a suggestion dropdown.
-  // Free-text values are always allowed — typing a new category just
-  // sets it. No portals, no Radix, no focus management.
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  const trimmedQuery = query.trim()
+  const filtered = trimmedQuery
+    ? options.filter((o) => o.toLowerCase().includes(trimmedQuery.toLowerCase()))
+    : options
+  const exactMatch = options.some(
+    (o) => o.toLowerCase() === trimmedQuery.toLowerCase(),
+  )
+
+  const select = (val: string) => {
+    onChange(val)
+    setQuery('')
+    setOpen(false)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: PointerEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [open])
+
   return (
-    <>
-      <Input
-        list="asset-category-options"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="e.g. Sterilisation, Cold chain, Office"
-        autoComplete="off"
-      />
-      <datalist id="asset-category-options">
-        {options.map((opt) => (
-          <option key={opt} value={opt} />
-        ))}
-      </datalist>
-    </>
+    <div ref={wrapperRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          'w-full justify-between font-normal',
+          !value && 'text-muted-foreground',
+        )}
+      >
+        {value || 'Select or type a category'}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg">
+          <div className="flex items-center border-b px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search or type new…"
+              className="flex h-10 w-full bg-transparent py-2 text-sm placeholder:text-muted-foreground outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (trimmedQuery && !exactMatch) select(trimmedQuery)
+                  else if (filtered.length === 1) select(filtered[0])
+                }
+                if (e.key === 'Escape') setOpen(false)
+              }}
+            />
+          </div>
+          <ul className="max-h-[260px] overflow-y-auto p-1">
+            {filtered.length === 0 && !trimmedQuery && (
+              <li className="px-2 py-6 text-center text-sm text-muted-foreground">
+                No categories yet — type to add one.
+              </li>
+            )}
+            {filtered.map((opt) => (
+              <li key={opt}>
+                {/* onMouseDown fires BEFORE iOS reinterprets the tap as a
+                    keyboard-dismiss, so the selection actually runs. */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onMouseDown={(e) => { e.preventDefault(); select(opt) }}
+                  onTouchEnd={(e) => { e.preventDefault(); select(opt) }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                >
+                  <Check className={cn('h-4 w-4', value === opt ? 'opacity-100' : 'opacity-0')} />
+                  {opt}
+                </div>
+              </li>
+            ))}
+            {trimmedQuery && !exactMatch && (
+              <>
+                {filtered.length > 0 && <li className="my-1 h-px bg-border" />}
+                <li>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onMouseDown={(e) => { e.preventDefault(); select(trimmedQuery) }}
+                    onTouchEnd={(e) => { e.preventDefault(); select(trimmedQuery) }}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm text-primary font-medium hover:bg-gray-100 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add "{trimmedQuery}"
+                  </div>
+                </li>
+              </>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
