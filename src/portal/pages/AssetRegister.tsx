@@ -683,10 +683,17 @@ function CategoryPicker({
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   const trimmedQuery = query.trim()
+  // Merge the current value into the options so a just-added category
+  // (only on form state, not yet persisted to a saved listing) still
+  // shows up — with a tick — when the user reopens the dropdown.
+  const mergedOptions =
+    value && !options.some((o) => o.toLowerCase() === value.toLowerCase())
+      ? [...options, value].sort((a, b) => a.localeCompare(b))
+      : options
   const filtered = trimmedQuery
-    ? options.filter((o) => o.toLowerCase().includes(trimmedQuery.toLowerCase()))
-    : options
-  const exactMatch = options.some(
+    ? mergedOptions.filter((o) => o.toLowerCase().includes(trimmedQuery.toLowerCase()))
+    : mergedOptions
+  const exactMatch = mergedOptions.some(
     (o) => o.toLowerCase() === trimmedQuery.toLowerCase(),
   )
 
