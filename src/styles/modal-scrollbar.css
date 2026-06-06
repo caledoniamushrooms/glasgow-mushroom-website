@@ -1,0 +1,108 @@
+/* Auto-hiding scrollbar styles for all modals */
+.dialog-auto-hide-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+/* =============================================================================
+   OVERLAY SCROLLBAR - floats above content, auto-hides when not scrolling
+   ============================================================================= */
+.scrollbar-overlay {
+  /* Use overlay when available (Chromium), fallback to auto */
+  overflow: auto;
+  overflow: overlay;
+
+  /* Firefox - thin scrollbar that doesn't reserve space */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* Firefox - show scrollbar on hover/scroll */
+.scrollbar-overlay:hover,
+.scrollbar-overlay.is-scrolling {
+  scrollbar-color: rgba(0, 0, 0, 0.8) transparent;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.scrollbar-overlay::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  /* overlay scrollbar floats above content */
+  position: absolute;
+  background: transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+/* Show scrollbar on hover or when scrolling */
+.scrollbar-overlay:hover::-webkit-scrollbar-thumb,
+.scrollbar-overlay.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.scrollbar-overlay:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.95);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .scrollbar-overlay:hover,
+  .scrollbar-overlay.is-scrolling {
+    scrollbar-color: rgba(200, 200, 200, 0.4) transparent;
+  }
+
+  .scrollbar-overlay:hover::-webkit-scrollbar-thumb,
+  .scrollbar-overlay.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: rgba(200, 200, 200, 0.4);
+  }
+
+  .scrollbar-overlay:hover::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(200, 200, 200, 0.6);
+  }
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.dialog-auto-hide-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dialog-auto-hide-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dialog-auto-hide-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dialog-auto-hide-scrollbar:hover::-webkit-scrollbar-thumb {
+  opacity: 1;
+}
+
+.dialog-auto-hide-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Auto-hide behavior - show only when scrolling or hovering */
+.dialog-auto-hide-scrollbar::-webkit-scrollbar-thumb {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dialog-auto-hide-scrollbar:hover::-webkit-scrollbar-thumb,
+.dialog-auto-hide-scrollbar:focus::-webkit-scrollbar-thumb,
+.dialog-auto-hide-scrollbar.scrolling::-webkit-scrollbar-thumb {
+  opacity: 1;
+}

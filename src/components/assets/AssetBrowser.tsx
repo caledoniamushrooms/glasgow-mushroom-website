@@ -1,4 +1,13 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Search } from 'lucide-react'
 
 type Status = 'available' | 'reserved' | 'sold'
 
@@ -24,10 +33,10 @@ interface Props {
   imageBase: string
 }
 
-const STATUS_BADGE: Record<Status, string> = {
-  available: 'badge badge-paid',
-  reserved: 'badge badge-pending',
-  sold: 'badge badge-draft',
+const STATUS_BADGE_VARIANT: Record<Status, 'default' | 'secondary' | 'outline'> = {
+  available: 'default',
+  reserved: 'secondary',
+  sold: 'outline',
 }
 
 function formatPrice(p: number): string {
@@ -73,60 +82,54 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
 
   return (
     <div>
-      <div className="odin-card">
-        <div className="odin-card-header flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="odin-card-title">Asset Register</h2>
-            <p className="odin-card-description">
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4 space-y-0">
+          <div className="space-y-1">
+            <CardTitle>Asset Register</CardTitle>
+            <CardDescription>
               Equipment, fixtures and fittings available for sale as the farm winds down.
-            </p>
+            </CardDescription>
           </div>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search…"
-            className="px-3 py-1.5 rounded-md border border-input bg-white text-sm w-full sm:w-64 odin-focus"
-          />
-        </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="pl-8"
+            />
+          </div>
+        </CardHeader>
 
-        <div className="odin-card-content">
-          <div role="tablist" className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-4">
-            {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
-              const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
-              const isActive = filter === f
-              return (
-                <button
-                  key={f}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setFilter(f)}
-                  className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium capitalize transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-white text-foreground shadow-sm'
-                      : 'hover:text-foreground'
-                  }`}
-                >
-                  {f}
-                  <span className="text-xs opacity-60">{count}</span>
-                </button>
-              )
-            })}
-          </div>
+        <CardContent>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="mb-4">
+            <TabsList>
+              {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
+                const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+                return (
+                  <TabsTrigger key={f} value={f} className="capitalize">
+                    {f}
+                    <span className="ml-1 text-xs opacity-60">{count}</span>
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </Tabs>
 
           {filtered.length === 0 ? (
-            <div className="odin-empty">
-              <p className="odin-empty-description">No items match your filters.</p>
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No items match your filters.
             </div>
           ) : (
-            <div className="odin-table-container overflow-x-auto">
+            <div className="border rounded-lg overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="odin-table-header">
-                    <th className="odin-table-cell text-left w-20"></th>
-                    <th className="odin-table-cell text-left">Item</th>
-                    <th className="odin-table-cell text-left hidden md:table-cell">Category</th>
-                    <th className="odin-table-cell text-right">Price</th>
-                    <th className="odin-table-cell text-left w-28">Status</th>
+                  <tr className="bg-muted/50 text-sm font-medium">
+                    <th className="px-4 py-3 text-left w-20"></th>
+                    <th className="px-4 py-3 text-left">Item</th>
+                    <th className="px-4 py-3 text-left hidden md:table-cell">Category</th>
+                    <th className="px-4 py-3 text-right">Price</th>
+                    <th className="px-4 py-3 text-left w-28">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,9 +140,9 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                       <tr
                         key={l.id}
                         onClick={() => setOpenListing(l)}
-                        className={`odin-table-row cursor-pointer ${isSold ? 'opacity-70' : ''}`}
+                        className={`border-b hover:bg-muted/20 transition-colors cursor-pointer ${isSold ? 'opacity-70' : ''}`}
                       >
-                        <td className="odin-table-cell">
+                        <td className="px-4 py-3">
                           <div className="w-12 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
                             {cover ? (
                               <img
@@ -153,20 +156,22 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                             )}
                           </div>
                         </td>
-                        <td className="odin-table-cell font-medium text-foreground">
+                        <td className="px-4 py-3 text-sm font-medium text-foreground">
                           {l.name}
                           {l.category && (
                             <div className="text-xs text-muted-foreground mt-0.5 md:hidden">{l.category}</div>
                           )}
                         </td>
-                        <td className="odin-table-cell text-muted-foreground hidden md:table-cell">
+                        <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
                           {l.category ?? '—'}
                         </td>
-                        <td className="odin-table-cell text-right font-semibold whitespace-nowrap text-foreground">
+                        <td className="px-4 py-3 text-sm text-right font-semibold whitespace-nowrap text-foreground">
                           {formatPrice(l.asking_price)}
                         </td>
-                        <td className="odin-table-cell">
-                          <span className={STATUS_BADGE[l.status]}>{l.status}</span>
+                        <td className="px-4 py-3">
+                          <Badge variant={STATUS_BADGE_VARIANT[l.status]} className="capitalize">
+                            {l.status}
+                          </Badge>
                         </td>
                       </tr>
                     )
@@ -175,8 +180,8 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
               </table>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {categories.length > 0 && (
         <p className="sr-only">Categories available: {categories.join(', ')}</p>
