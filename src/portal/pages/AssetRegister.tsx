@@ -688,7 +688,7 @@ function CategoryPicker({
   const trimmedQuery = query.trim()
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           type="button"
