@@ -25,9 +25,9 @@ interface Props {
 }
 
 const STATUS_PILL: Record<Status, string> = {
-  available: 'bg-emerald-100 text-emerald-800',
-  reserved: 'bg-amber-100 text-amber-800',
-  sold: 'bg-zinc-200 text-zinc-600',
+  available: 'bg-stone-100 text-stone-700 ring-1 ring-stone-200',
+  reserved: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200',
+  sold: 'bg-stone-100 text-stone-400 ring-1 ring-stone-200 line-through',
 }
 
 function formatPrice(p: number): string {
@@ -74,66 +74,74 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
   return (
     <div>
       {/* Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="inline-flex rounded-md border border-zinc-200 bg-white overflow-hidden">
-          {(['all', 'available', 'reserved', 'sold'] as const).map((f, idx) => {
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <nav className="flex gap-5 flex-wrap" aria-label="Filter by status">
+          {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
             const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+            const isActive = filter === f
             return (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-sm font-medium capitalize cursor-pointer transition-colors ${
-                  idx > 0 ? 'border-l border-zinc-200' : ''
-                } ${
-                  filter === f
-                    ? 'bg-zinc-900 text-white'
-                    : 'text-zinc-700 hover:bg-zinc-50'
+                className={`relative pb-1 text-sm capitalize cursor-pointer transition-colors ${
+                  isActive
+                    ? 'text-stone-900 font-medium'
+                    : 'text-stone-500 hover:text-stone-800'
                 }`}
               >
                 {f}
-                <span className={`ml-1.5 text-xs ${filter === f ? 'text-white/70' : 'text-zinc-400'}`}>
-                  {count}
-                </span>
+                <span className="ml-1 text-stone-400 text-xs">({count})</span>
+                {isActive && (
+                  <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-stone-900" />
+                )}
               </button>
             )
           })}
-        </div>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search…"
-          className="px-3 py-1.5 rounded-md border border-zinc-200 text-sm bg-white w-full sm:w-64"
-        />
+        </nav>
+        <label className="relative w-full sm:w-72">
+          <span className="sr-only">Search</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search items…"
+            className="w-full pl-9 pr-3 py-2 rounded-full bg-white border border-stone-200 text-sm placeholder:text-stone-400 focus:outline-none focus:border-stone-400"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+          </svg>
+        </label>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-zinc-500 text-sm">No items match your filters.</p>
+        <div className="text-center py-16 border border-dashed border-stone-200 rounded-lg bg-white">
+          <p className="text-stone-500">No items match your filters.</p>
+        </div>
       ) : (
-        <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
-          <table className="w-full border-collapse text-sm">
+        <div className="border border-stone-200 rounded-lg overflow-hidden bg-white shadow-sm">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-zinc-50">
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 w-20">Photo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500">Item</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 hidden md:table-cell">Category</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-zinc-500">Price</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-zinc-500 w-28">Status</th>
+              <tr className="border-b border-stone-200 bg-stone-50/60">
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 w-20"></th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Item</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 hidden md:table-cell">Category</th>
+                <th className="px-5 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Price</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 w-28">Status</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((l) => {
+              {filtered.map((l, idx) => {
                 const cover = l.asset_listing_images[0]
                 const isSold = l.status === 'sold'
                 return (
                   <tr
                     key={l.id}
                     onClick={() => setOpenListing(l)}
-                    className={`border-t border-zinc-100 hover:bg-zinc-50 cursor-pointer transition-colors ${
-                      isSold ? 'opacity-60' : ''
-                    }`}
+                    className={`cursor-pointer transition-colors group ${
+                      idx > 0 ? 'border-t border-stone-100' : ''
+                    } ${isSold ? 'bg-stone-50/40' : 'hover:bg-stone-50/60'}`}
                   >
-                    <td className="px-4 py-2">
-                      <div className="w-12 h-12 bg-zinc-100 rounded overflow-hidden flex items-center justify-center">
+                    <td className="px-5 py-3">
+                      <div className={`w-14 h-14 bg-stone-100 rounded-md overflow-hidden flex items-center justify-center ${isSold ? 'opacity-60' : ''}`}>
                         {cover ? (
                           <img
                             src={`${imageBase}/${cover.storage_path}`}
@@ -142,17 +150,27 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <span className="text-[10px] text-zinc-400">No photo</span>
+                          <span className="text-[10px] text-stone-400">No photo</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-2 font-medium text-zinc-900">{l.name}</td>
-                    <td className="px-4 py-2 text-zinc-600 hidden md:table-cell">{l.category ?? '—'}</td>
-                    <td className="px-4 py-2 text-right font-medium text-zinc-900 whitespace-nowrap">
+                    <td className="px-5 py-3">
+                      <div
+                        style={{ fontFamily: "'Abhaya Libre', serif" }}
+                        className={`text-lg leading-tight text-stone-900 group-hover:underline ${isSold ? 'text-stone-500' : ''}`}
+                      >
+                        {l.name}
+                      </div>
+                      {l.category && (
+                        <div className="text-xs text-stone-500 mt-0.5 md:hidden">{l.category}</div>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-stone-600 hidden md:table-cell">{l.category ?? '—'}</td>
+                    <td className={`px-5 py-3 text-right font-medium whitespace-nowrap ${isSold ? 'text-stone-400' : 'text-stone-900'}`}>
                       {formatPrice(l.asking_price)}
                     </td>
-                    <td className="px-4 py-2">
-                      <span className={`inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_PILL[l.status]}`}>
+                    <td className="px-5 py-3">
+                      <span className={`inline-block text-[10px] font-medium uppercase tracking-[0.1em] px-2 py-1 rounded ${STATUS_PILL[l.status]}`}>
                         {l.status}
                       </span>
                     </td>
