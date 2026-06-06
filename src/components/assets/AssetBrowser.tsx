@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Search } from 'lucide-react'
+import { Package, Search } from 'lucide-react'
 
 type Status = 'available' | 'reserved' | 'sold'
 
@@ -83,67 +84,69 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
   return (
     <div>
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4 space-y-0">
-          <div className="space-y-1">
-            <CardTitle>Asset Register</CardTitle>
-            <CardDescription>
-              Equipment, fixtures and fittings available for sale as the farm winds down.
-            </CardDescription>
-          </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
-              className="pl-8"
-            />
-          </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-[#009689]" />
+            Asset Register
+          </CardTitle>
+          <CardDescription>
+            Equipment, fixtures and fittings for sale as the farm winds down
+          </CardDescription>
         </CardHeader>
-
-        <CardContent>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="mb-4">
-            <TabsList>
-              {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
-                const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
-                return (
-                  <TabsTrigger key={f} value={f} className="capitalize">
-                    {f}
-                    <span className="ml-1 text-xs opacity-60">{count}</span>
-                  </TabsTrigger>
-                )
-              })}
-            </TabsList>
-          </Tabs>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <TabsList>
+                {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
+                  const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+                  return (
+                    <TabsTrigger key={f} value={f} className="capitalize">
+                      {f}
+                      <span className="ml-1 text-xs opacity-60">{count}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </Tabs>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="pl-8"
+              />
+            </div>
+          </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              No items match your filters.
+            <div className="text-center text-gray-500 py-8">
+              No items match your filters
             </div>
           ) : (
             <div className="border rounded-lg overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-muted/50 text-sm font-medium">
-                    <th className="px-4 py-3 text-left w-20"></th>
-                    <th className="px-4 py-3 text-left">Item</th>
-                    <th className="px-4 py-3 text-left hidden md:table-cell">Category</th>
-                    <th className="px-4 py-3 text-right">Price</th>
-                    <th className="px-4 py-3 text-left w-28">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="text-left w-20"></TableHead>
+                    <TableHead className="text-left">Item</TableHead>
+                    <TableHead className="text-left hidden md:table-cell">Category</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-left w-28">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filtered.map((l) => {
                     const cover = l.asset_listing_images[0]
                     const isSold = l.status === 'sold'
                     return (
-                      <tr
+                      <TableRow
                         key={l.id}
                         onClick={() => setOpenListing(l)}
-                        className={`border-b hover:bg-muted/20 transition-colors cursor-pointer ${isSold ? 'opacity-70' : ''}`}
+                        className={`hover:bg-gray-50 cursor-pointer ${isSold ? 'opacity-60' : ''}`}
                       >
-                        <td className="px-4 py-3">
-                          <div className="w-12 h-12 bg-muted rounded overflow-hidden flex items-center justify-center">
+                        <TableCell>
+                          <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                             {cover ? (
                               <img
                                 src={`${imageBase}/${cover.storage_path}`}
@@ -152,32 +155,32 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-[10px] text-muted-foreground">No photo</span>
+                              <span className="text-[10px] text-gray-400">No photo</span>
                             )}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-foreground">
+                        </TableCell>
+                        <TableCell className="font-medium">
                           {l.name}
                           {l.category && (
-                            <div className="text-xs text-muted-foreground mt-0.5 md:hidden">{l.category}</div>
+                            <div className="text-xs text-gray-500 mt-0.5 md:hidden">{l.category}</div>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-gray-600">
                           {l.category ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold whitespace-nowrap text-foreground">
+                        </TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap">
                           {formatPrice(l.asking_price)}
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={STATUS_BADGE_VARIANT[l.status]} className="capitalize">
                             {l.status}
                           </Badge>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
