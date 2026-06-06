@@ -299,13 +299,13 @@ function DetailView({
           )}
           <div>
             <div className="flex flex-wrap gap-2 items-center mb-2">
-              <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_PILL[listing.status]}`}>
+              <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[listing.status]}`}>
                 {listing.status}
-              </span>
+              </Badge>
               {listing.category && (
-                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-zinc-100 text-zinc-700">
+                <Badge variant="outline" className="bg-gray-100 text-gray-700 border-transparent">
                   {listing.category}
-                </span>
+                </Badge>
               )}
             </div>
             <p className="text-2xl font-semibold text-zinc-900">{formatPrice(listing.asking_price)}</p>
