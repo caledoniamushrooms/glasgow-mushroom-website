@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, type FormEvent, type DragEvent } from 'react'
+import { Fragment, useMemo, useState, useRef, useEffect, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
+import { ChevronDown, ChevronsUpDown, Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
@@ -16,10 +16,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronsUpDown, Search } from 'lucide-react'
+import { Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Status = 'available' | 'reserved' | 'sold'
+type Status = 'available' | 'under_offer' | 'sold'
+
+const STATUS_LABEL: Record<Status, string> = {
+  available: 'Available',
+  under_offer: 'Under Offer',
+  sold: 'Sold',
+}
 
 interface AssetImage {
   id: string
@@ -33,17 +39,40 @@ interface AssetListing {
   name: string
   description: string | null
   asking_price: number
+  original_cost: number | null
   category: string | null
   status: Status
+  allow_offers: boolean
+  is_poa: boolean
   sort_order: number
   created_at: string
   updated_at: string
   asset_listing_images: AssetImage[]
 }
 
+function parseNum(v: string): number | null {
+  if (v === '' || v === '-' || v === '.') return null
+  const n = parseFloat(v)
+  return Number.isFinite(n) ? n : null
+}
+
+function fmtNum(n: number): string {
+  return Number.isInteger(n) ? n.toString() : n.toFixed(2)
+}
+
+function calcDiscountPercent(cost: number | null, asking: number | null): string {
+  if (cost == null || cost <= 0 || asking == null) return ''
+  return fmtNum(((cost - asking) / cost) * 100)
+}
+
+function calcDiscountAmount(cost: number | null, asking: number | null): string {
+  if (cost == null || asking == null) return ''
+  return fmtNum(cost - asking)
+}
+
 const STATUS_BADGE_CLASS: Record<Status, string> = {
   available: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent',
-  reserved: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  under_offer: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-transparent',
   sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
@@ -98,6 +127,37 @@ export function AssetRegister() {
   const listings = listingsQuery.data ?? []
   const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter)
 
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const toggleCategory = (cat: string) =>
+    setCollapsed((s) => ({ ...s, [cat]: !s[cat] }))
+
+  // Group filtered by category, preserving each row's sort_order within the
+  // group. Categories themselves are sorted alphabetically (Uncategorised last).
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof filtered>()
+    for (const l of filtered) {
+      const key = l.category ?? 'Uncategorised'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(l)
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      if (a === 'Uncategorised') return 1
+      if (b === 'Uncategorised') return -1
+      return a.localeCompare(b)
+    })
+  }, [filtered])
+
+  const allExpanded = grouped.length > 0 && grouped.every(([cat]) => !collapsed[cat])
+  const toggleAll = () => {
+    if (allExpanded) {
+      const next: Record<string, boolean> = {}
+      grouped.forEach(([cat]) => { next[cat] = true })
+      setCollapsed(next)
+    } else {
+      setCollapsed({})
+    }
+  }
+
   const openNew = () => { setEditing(null); setDialogOpen(true) }
   const openEdit = (l: AssetListing) => { setEditing(l); setDialogOpen(true) }
 
@@ -109,8 +169,8 @@ export function AssetRegister() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="border-0 rounded-none shadow-none -mx-4 sm:mx-0 sm:border sm:rounded-xl sm:shadow-sm">
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-[#009689]" />
             Asset Register
@@ -119,20 +179,21 @@ export function AssetRegister() {
             Manage equipment listings for the public for-sale page
           </CardDescription>
           <CardAction>
-            <Button onClick={openNew}>
+            <Button onClick={openNew} aria-label="New listing">
               <Plus className="h-4 w-4" />
-              New listing
+              <span className="hidden sm:inline">New listing</span>
             </Button>
           </CardAction>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 sm:px-6">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
             <TabsList>
-              {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
+              {(['all', 'available', 'under_offer', 'sold'] as const).map((f) => {
                 const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+                const label = f === 'all' ? 'All' : STATUS_LABEL[f]
                 return (
-                  <TabsTrigger key={f} value={f} className="capitalize">
-                    {f}
+                  <TabsTrigger key={f} value={f}>
+                    {label}
                     <span className="ml-1 text-xs opacity-60">{count}</span>
                   </TabsTrigger>
                 )
@@ -151,13 +212,23 @@ export function AssetRegister() {
               No listings yet
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="sm:border sm:rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="w-14 sm:w-20"></TableHead>
+                    <TableHead className="w-20 sm:w-24 pl-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleAll}
+                        className="h-7 w-7"
+                        aria-label={allExpanded ? 'Collapse all categories' : 'Expand all categories'}
+                      >
+                        <ChevronsUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-left">Item</TableHead>
-                    <TableHead className="text-left hidden lg:table-cell">Category</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
                     <TableHead className="text-left hidden sm:table-cell w-28">Status</TableHead>
                     <TableHead className="text-right hidden md:table-cell w-20">Photos</TableHead>
@@ -165,83 +236,105 @@ export function AssetRegister() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((l) => {
-                    const cover = l.asset_listing_images[0]
+                  {grouped.map(([category, items]) => {
+                    const isCollapsed = !!collapsed[category]
                     return (
-                      <TableRow key={l.id} className="hover:bg-gray-50">
-                        <TableCell className="p-2 sm:p-4">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                            {cover ? (
-                              <img
-                                src={assetImageUrl(cover.storage_path)}
-                                alt={l.name}
-                                className="w-full h-full object-cover"
+                      <Fragment key={category}>
+                        <TableRow
+                          className="bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                          onClick={() => toggleCategory(category)}
+                        >
+                          <TableCell colSpan={99} className="py-2 px-3 sm:px-4">
+                            <div className="flex items-center gap-2 font-medium text-sm">
+                              <ChevronDown
+                                className={cn(
+                                  'h-4 w-4 transition-transform',
+                                  isCollapsed && '-rotate-90',
+                                )}
                               />
-                            ) : (
-                              <span className="text-[9px] text-gray-400">No photo</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="p-2 sm:p-4">
-                          <div className="font-medium">{l.name}</div>
-                          {/* Mobile-only: stack price + status + photos below name */}
-                          <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
-                            <span className="font-semibold">{formatPrice(l.asking_price)}</span>
-                            <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
-                              {l.status}
-                            </Badge>
-                            <span className="text-gray-500">{l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}</span>
-                          </div>
-                          {l.category && (
-                            <div className="text-xs text-gray-500 mt-0.5 lg:hidden">{l.category}</div>
-                          )}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-gray-600">{l.category ?? '—'}</TableCell>
-                        <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
-                          {formatPrice(l.asking_price)}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
-                            {l.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
-                          {l.asset_listing_images.length}
-                        </TableCell>
-                        <TableCell className="text-right p-2 sm:p-4">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEdit(l)}
-                              className="h-8 w-8 sm:hidden"
-                              aria-label="Edit"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEdit(l)}
-                              className="hidden sm:inline-flex"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (confirm(`Delete "${l.name}" and its photos?`)) deleteListing.mutate(l.id)
-                              }}
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                              <span>{category}</span>
+                              <span className="text-xs text-gray-500 font-normal">
+                                {items.length}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {!isCollapsed && items.map((l) => {
+                          const cover = l.asset_listing_images[0]
+                          return (
+                            <TableRow key={l.id} className="hover:bg-gray-50">
+                              <TableCell className="p-2 sm:p-4">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                                  {cover ? (
+                                    <img
+                                      src={assetImageUrl(cover.storage_path)}
+                                      alt={l.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-[9px] text-gray-400">No photo</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2 sm:p-4 whitespace-normal break-words">
+                                <div className="font-medium">{l.name}</div>
+                                {/* Mobile-only: stack price + status + photos below name */}
+                                <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
+                                  <span className="font-semibold">{formatPrice(l.asking_price)}</span>
+                                  <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
+                                    {STATUS_LABEL[l.status]}
+                                  </Badge>
+                                  <span className="text-gray-500">{l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
+                                {formatPrice(l.asking_price)}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell">
+                                <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
+                                  {STATUS_LABEL[l.status]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
+                                {l.asset_listing_images.length}
+                              </TableCell>
+                              <TableCell className="text-right p-2 sm:p-4">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEdit(l)}
+                                    className="h-8 w-8 sm:hidden"
+                                    aria-label="Edit"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openEdit(l)}
+                                    className="hidden sm:inline-flex"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (confirm(`Delete "${l.name}" and its photos?`)) deleteListing.mutate(l.id)
+                                    }}
+                                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    aria-label="Delete"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </Fragment>
                     )
                   })}
                 </TableBody>
@@ -281,9 +374,18 @@ function ListingDialog({
   // Reset state whenever the dialog is opened with a new (or null) initial
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [originalCost, setOriginalCost] = useState(initial?.original_cost?.toString() ?? '')
   const [askingPrice, setAskingPrice] = useState(initial?.asking_price?.toString() ?? '')
+  const [discountPercent, setDiscountPercent] = useState(
+    calcDiscountPercent(initial?.original_cost ?? null, initial?.asking_price ?? null),
+  )
+  const [discountAmount, setDiscountAmount] = useState(
+    calcDiscountAmount(initial?.original_cost ?? null, initial?.asking_price ?? null),
+  )
   const [category, setCategory] = useState(initial?.category ?? '')
   const [status, setStatus] = useState<Status>(initial?.status ?? 'available')
+  const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
+  const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
@@ -301,9 +403,14 @@ function ListingDialog({
     setLastInitialId(initialId)
     setName(initial?.name ?? '')
     setDescription(initial?.description ?? '')
+    setOriginalCost(initial?.original_cost?.toString() ?? '')
     setAskingPrice(initial?.asking_price?.toString() ?? '')
+    setDiscountPercent(calcDiscountPercent(initial?.original_cost ?? null, initial?.asking_price ?? null))
+    setDiscountAmount(calcDiscountAmount(initial?.original_cost ?? null, initial?.asking_price ?? null))
     setCategory(initial?.category ?? '')
     setStatus(initial?.status ?? 'available')
+    setAllowOffers(initial?.allow_offers ?? false)
+    setIsPoa(initial?.is_poa ?? false)
     setListingId(initialId)
     setImages(initial?.asset_listing_images ?? [])
     setError(null)
@@ -340,6 +447,56 @@ function ListingDialog({
     return true
   }
 
+  // Linked price field handlers: editing any of cost / % / £ discount / asking
+  // recalculates the others so the four fields stay coherent.
+  const handleCostChange = (val: string) => {
+    setOriginalCost(val)
+    const cost = parseNum(val)
+    const asking = parseNum(askingPrice)
+    if (cost == null || cost <= 0) {
+      setDiscountPercent('')
+      setDiscountAmount('')
+      return
+    }
+    if (asking == null) return
+    setDiscountPercent(fmtNum(((cost - asking) / cost) * 100))
+    setDiscountAmount(fmtNum(cost - asking))
+  }
+
+  const handlePercentChange = (val: string) => {
+    setDiscountPercent(val)
+    const pct = parseNum(val)
+    const cost = parseNum(originalCost)
+    if (pct == null || cost == null || cost <= 0) return
+    const newAsking = cost * (1 - pct / 100)
+    setAskingPrice(fmtNum(newAsking))
+    setDiscountAmount(fmtNum(cost - newAsking))
+  }
+
+  const handleAmountChange = (val: string) => {
+    setDiscountAmount(val)
+    const amount = parseNum(val)
+    const cost = parseNum(originalCost)
+    if (amount == null || cost == null || cost <= 0) return
+    const newAsking = cost - amount
+    setAskingPrice(fmtNum(newAsking))
+    setDiscountPercent(fmtNum((amount / cost) * 100))
+  }
+
+  const handleAskingChange = (val: string) => {
+    setAskingPrice(val)
+    const asking = parseNum(val)
+    const cost = parseNum(originalCost)
+    if (asking == null || cost == null || cost <= 0) return
+    setDiscountAmount(fmtNum(cost - asking))
+    setDiscountPercent(fmtNum(((cost - asking) / cost) * 100))
+  }
+
+  const costNum = parseNum(originalCost)
+  const askingNum = parseNum(askingPrice)
+  const hasCost = costNum != null && costNum > 0
+  const isMarkup = hasCost && askingNum != null && askingNum > costNum
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -349,8 +506,11 @@ function ListingDialog({
         name,
         description,
         asking_price: Number(askingPrice),
+        original_cost: originalCost.trim() === '' ? null : Number(originalCost),
         category,
         status,
+        allow_offers: allowOffers,
+        is_poa: isPoa,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -458,7 +618,10 @@ function ListingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{listingId ? 'Edit listing' : 'New listing'}</DialogTitle>
           <DialogDescription>
@@ -495,39 +658,145 @@ function ListingDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="asset-price">Asking price (£) *</Label>
+              <Label htmlFor="asset-cost">Original cost (£)</Label>
               <Input
-                id="asset-price"
+                id="asset-cost"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0"
-                value={askingPrice}
-                onChange={(e) => setAskingPrice(e.target.value)}
-                required
+                value={originalCost}
+                onChange={(e) => handleCostChange(e.target.value)}
+                placeholder="What we paid"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="asset-status">Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-                <SelectTrigger id="asset-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="reserved">Reserved</SelectItem>
-                  <SelectItem value="sold">Sold</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Native <select> on mobile so iOS gives the wheel picker. */}
+              <select
+                id="asset-status-mobile"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+                className="sm:hidden flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="available">Available</option>
+                <option value="under_offer">Under Offer</option>
+                <option value="sold">Sold</option>
+              </select>
+              <div className="hidden sm:block">
+                <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+                  <SelectTrigger id="asset-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="under_offer">Under Offer</SelectItem>
+                    <SelectItem value="sold">Sold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="asset-discount-pct" className={isMarkup ? 'text-amber-700' : ''}>
+                {isMarkup ? 'Markup (%)' : 'Discount (%)'}
+              </Label>
+              <Input
+                id="asset-discount-pct"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={discountPercent}
+                onChange={(e) => handlePercentChange(e.target.value)}
+                disabled={!hasCost}
+                placeholder={hasCost ? '0' : 'Set cost first'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="asset-discount-amt" className={isMarkup ? 'text-amber-700' : ''}>
+                {isMarkup ? 'Markup (£)' : 'Discount (£)'}
+              </Label>
+              <Input
+                id="asset-discount-amt"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={discountAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                disabled={!hasCost}
+                placeholder={hasCost ? '0' : 'Set cost first'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="asset-price">Asking price (£) *</Label>
+              <Input
+                id="asset-price"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={askingPrice}
+                onChange={(e) => handleAskingChange(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Sale options */}
+          <div className="space-y-2">
+            <Label>Sale options</Label>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={allowOffers}
+                  onChange={(e) => setAllowOffers(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Allow offers</span>
+                  <span className="text-muted-foreground text-xs">Visitors can submit a £ offer alongside their interest.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={isPoa}
+                  onChange={(e) => setIsPoa(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Price on application (POA)</span>
+                  <span className="text-muted-foreground text-xs">Public price shows "POA" instead of the asking price.</span>
+                </span>
+              </label>
+            </div>
+            {isPoa && askingNum != null && askingNum === 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+                POA hides the asking price, so an asking price of £0 has no effect. Did you mean to leave the asking price blank or set a real figure?
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label>Category</Label>
-            <CategoryPicker
-              value={category}
-              onChange={setCategory}
-              options={existingCategories}
-            />
+            {/* Native <select> on mobile so iOS gives the wheel picker. */}
+            <div className="sm:hidden">
+              <MobileCategoryPicker
+                value={category}
+                onChange={setCategory}
+                options={existingCategories}
+              />
+            </div>
+            <div className="hidden sm:block">
+              <CategoryPicker
+                value={category}
+                onChange={setCategory}
+                options={existingCategories}
+              />
+            </div>
           </div>
 
           {/* Photos */}
@@ -793,5 +1062,74 @@ function CategoryPicker({
         </div>
       )}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------
+// Mobile category picker — native <select> so iOS surfaces the
+// wheel picker. An extra "Add new…" sentinel option switches the
+// control into a text input for typing a brand new category.
+// ---------------------------------------------------------------
+function MobileCategoryPicker({
+  value,
+  onChange,
+  options,
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+}) {
+  const ADD_NEW = '__add_new__'
+  // Merge the current value in so a freshly-added one still shows as selected.
+  const mergedOptions =
+    value && !options.some((o) => o.toLowerCase() === value.toLowerCase())
+      ? [...options, value].sort((a, b) => a.localeCompare(b))
+      : options
+  const [addingNew, setAddingNew] = useState(false)
+
+  if (addingNew) {
+    return (
+      <div className="space-y-2">
+        <Input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="New category"
+          autoFocus
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setAddingNew(false)
+            onChange('')
+          }}
+          className="text-xs text-muted-foreground underline"
+        >
+          ← Pick from existing
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => {
+        if (e.target.value === ADD_NEW) {
+          setAddingNew(true)
+        } else {
+          onChange(e.target.value)
+        }
+      }}
+      className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <option value="">Select a category…</option>
+      {mergedOptions.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+      <option value={ADD_NEW}>+ Add new category…</option>
+    </select>
   )
 }

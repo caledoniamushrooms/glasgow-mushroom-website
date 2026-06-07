@@ -17,7 +17,16 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: 'Asking price must be a positive number.' }, 400);
   }
 
-  const status = ['available', 'reserved', 'sold'].includes(body.status) ? body.status : 'available';
+  let originalCost: number | null = null;
+  if (body.original_cost !== null && body.original_cost !== undefined && body.original_cost !== '') {
+    const c = Number(body.original_cost);
+    if (!Number.isFinite(c) || c < 0) {
+      return jsonResponse({ error: 'Original cost must be a positive number.' }, 400);
+    }
+    originalCost = c;
+  }
+
+  const status = ['available', 'under_offer', 'sold'].includes(body.status) ? body.status : 'available';
 
   const { data, error } = await serviceClient
     .from('asset_listings')
@@ -25,8 +34,11 @@ export const POST: APIRoute = async ({ request }) => {
       name,
       description: body.description?.toString().trim() || null,
       asking_price: askingPrice,
+      original_cost: originalCost,
       category: body.category?.toString().trim() || null,
       status,
+      allow_offers: body.allow_offers === true,
+      is_poa: body.is_poa === true,
       sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
     })
     .select()
