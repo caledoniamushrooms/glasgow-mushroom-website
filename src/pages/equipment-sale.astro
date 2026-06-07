@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const { data: listingsRaw } = await supabase
   .from('asset_listings')
-  .select('id, name, description, asking_price, category, status, allow_offers, is_poa, sort_order, asset_listing_images(id, storage_path, position)')
+  .select('id, name, description, asking_price, category, status, allow_offers, is_poa, is_zero_rated, sort_order, asset_listing_images(id, storage_path, position)')
   .order('sort_order')
   .order('created_at', { ascending: false });
 

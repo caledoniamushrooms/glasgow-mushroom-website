@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronsUpDown, Package, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { priceIncVat } from '@/lib/vat'
 
 type Status = 'available' | 'under_offer' | 'sold'
 
@@ -33,6 +34,7 @@ interface AssetListing {
   status: Status
   allow_offers: boolean
   is_poa: boolean
+  is_zero_rated: boolean
   sort_order: number
   asset_listing_images: AssetImage[]
 }
@@ -55,8 +57,9 @@ const STATUS_BADGE_CLASS: Record<Status, string> = {
 
 function priceLabel(l: AssetListing): string {
   if (l.is_poa) return 'POA'
-  if (Number(l.asking_price) === 0) return 'Free'
-  return `£${Number(l.asking_price).toLocaleString('en-GB')}`
+  const ex = Number(l.asking_price)
+  if (ex === 0) return 'Free'
+  return `£${priceIncVat(ex, l.is_zero_rated).toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
 }
 
 type Filter = 'all' | Status | 'free'
@@ -632,9 +635,21 @@ function DetailView({
                 </Badge>
               )}
             </div>
-            <p className="text-2xl font-semibold text-zinc-900">
-              {listing.allow_offers && !listing.is_poa ? `Asking ${priceLabel(listing)}` : priceLabel(listing)}
-            </p>
+            <div className="space-y-0.5">
+              <p className="text-2xl font-semibold text-zinc-900">
+                {listing.allow_offers && !listing.is_poa
+                  ? `Asking ${priceLabel(listing)}`
+                  : priceLabel(listing)}
+                {!listing.is_poa && Number(listing.asking_price) > 0 && (
+                  <span className="ml-1 text-sm font-normal text-zinc-500">incl. VAT</span>
+                )}
+              </p>
+              {!listing.is_poa && Number(listing.asking_price) > 0 && (
+                <p className="text-sm text-zinc-500">
+                  £{Number(listing.asking_price).toLocaleString('en-GB', { maximumFractionDigits: 2 })} excl. VAT
+                </p>
+              )}
+            </div>
           </div>
           {listing.description && (
             <p className="text-zinc-700 whitespace-pre-line leading-relaxed">{listing.description}</p>
@@ -714,7 +729,9 @@ function SummaryModal({
       }
       const offerStr = selection[l.id]
       const offer = offerStr ? Number(offerStr) : NaN
-      total += Number.isFinite(offer) ? offer : Number(l.asking_price)
+      total += Number.isFinite(offer)
+        ? offer
+        : priceIncVat(Number(l.asking_price), l.is_zero_rated)
     }
     return { quotedTotal: total, poaCount: poa }
   }, [items, selection])
@@ -818,7 +835,7 @@ function SummaryModal({
                 <div className="flex items-baseline justify-between text-sm border-b border-zinc-200 pb-2">
                   <span className="font-medium">Total</span>
                   <span>
-                    £{quotedTotal.toLocaleString('en-GB')}
+                    £{quotedTotal.toLocaleString('en-GB', { maximumFractionDigits: 2 })}
                     {poaCount > 0 && (
                       <span className="text-zinc-500"> + {poaCount} POA</span>
                     )}

@@ -39,6 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
       status,
       allow_offers: body.allow_offers === true,
       is_poa: body.is_poa === true,
+      is_zero_rated: body.is_zero_rated === true,
       sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
     })
     .select()
