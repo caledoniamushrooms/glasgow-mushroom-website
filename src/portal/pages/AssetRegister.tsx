@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { priceIncVat } from '@/lib/vat'
 
 type Status = 'available' | 'under_offer' | 'sold'
 
@@ -44,6 +45,7 @@ interface AssetListing {
   status: Status
   allow_offers: boolean
   is_poa: boolean
+  is_zero_rated: boolean
   sort_order: number
   created_at: string
   updated_at: string
@@ -83,8 +85,9 @@ async function authedFetch(input: string, init: RequestInit = {}) {
   return fetch(input, { ...init, headers })
 }
 
-function formatPrice(p: number): string {
-  return `£${Number(p).toLocaleString('en-GB')}`
+function formatPrice(exVat: number, isZeroRated: boolean): string {
+  const inc = priceIncVat(Number(exVat), isZeroRated)
+  return `£${inc.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
 }
 
 export function AssetRegister() {
@@ -280,7 +283,7 @@ export function AssetRegister() {
                                 <div className="font-medium">{l.name}</div>
                                 {/* Mobile-only: stack price + status + photos below name */}
                                 <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
-                                  <span className="font-semibold">{formatPrice(l.asking_price)}</span>
+                                  <span className="font-semibold">{formatPrice(l.asking_price, l.is_zero_rated)}</span>
                                   <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                     {STATUS_LABEL[l.status]}
                                   </Badge>
@@ -288,7 +291,7 @@ export function AssetRegister() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
-                                {formatPrice(l.asking_price)}
+                                {formatPrice(l.asking_price, l.is_zero_rated)}
                               </TableCell>
                               <TableCell className="hidden sm:table-cell">
                                 <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
@@ -386,6 +389,7 @@ function ListingDialog({
   const [status, setStatus] = useState<Status>(initial?.status ?? 'available')
   const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
   const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
+  const [isZeroRated, setIsZeroRated] = useState(initial?.is_zero_rated ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
@@ -411,6 +415,7 @@ function ListingDialog({
     setStatus(initial?.status ?? 'available')
     setAllowOffers(initial?.allow_offers ?? false)
     setIsPoa(initial?.is_poa ?? false)
+    setIsZeroRated(initial?.is_zero_rated ?? false)
     setListingId(initialId)
     setImages(initial?.asset_listing_images ?? [])
     setError(null)
@@ -511,6 +516,7 @@ function ListingDialog({
         status,
         allow_offers: allowOffers,
         is_poa: isPoa,
+        is_zero_rated: isZeroRated,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -730,7 +736,7 @@ function ListingDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="asset-price">Asking price (£) *</Label>
+              <Label htmlFor="asset-price">Asking price ex-VAT (£) *</Label>
               <Input
                 id="asset-price"
                 type="number"
@@ -770,6 +776,18 @@ function ListingDialog({
                 <span className="text-sm">
                   <span className="font-medium block">Price on application (POA)</span>
                   <span className="text-muted-foreground text-xs">Public price shows "POA" instead of the asking price.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={isZeroRated}
+                  onChange={(e) => setIsZeroRated(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Zero-rated for VAT</span>
+                  <span className="text-muted-foreground text-xs">No VAT is added to the displayed price.</span>
                 </span>
               </label>
             </div>
