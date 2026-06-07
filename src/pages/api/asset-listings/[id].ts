@@ -21,8 +21,17 @@ export const PATCH: APIRoute = async ({ request, params }) => {
     if (!Number.isFinite(p) || p < 0) return jsonResponse({ error: 'Bad asking_price' }, 400);
     patch.asking_price = p;
   }
+  if ('original_cost' in body) {
+    if (body.original_cost === null || body.original_cost === '' || body.original_cost === undefined) {
+      patch.original_cost = null;
+    } else {
+      const c = Number(body.original_cost);
+      if (!Number.isFinite(c) || c < 0) return jsonResponse({ error: 'Bad original_cost' }, 400);
+      patch.original_cost = c;
+    }
+  }
   if ('category' in body) patch.category = body.category?.toString().trim() || null;
-  if (typeof body.status === 'string' && ['available', 'reserved', 'sold'].includes(body.status)) {
+  if (typeof body.status === 'string' && ['available', 'under_offer', 'sold'].includes(body.status)) {
     patch.status = body.status;
   }
   if ('sort_order' in body && Number.isFinite(Number(body.sort_order))) {

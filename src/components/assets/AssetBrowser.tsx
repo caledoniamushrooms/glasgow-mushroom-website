@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, useMemo, type FormEvent } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -8,9 +8,16 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Package, Search } from 'lucide-react'
+import { ChevronDown, ChevronsUpDown, Package, Search } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-type Status = 'available' | 'reserved' | 'sold'
+type Status = 'available' | 'under_offer' | 'sold'
+
+const STATUS_LABEL: Record<Status, string> = {
+  available: 'Available',
+  under_offer: 'Under Offer',
+  sold: 'Sold',
+}
 
 interface AssetImage {
   id: string
@@ -36,16 +43,19 @@ interface Props {
 
 const STATUS_BADGE_CLASS: Record<Status, string> = {
   available: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent',
-  reserved: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  under_offer: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-transparent',
   sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
 function formatPrice(p: number): string {
+  if (Number(p) === 0) return 'Free'
   return `£${Number(p).toLocaleString('en-GB')}`
 }
 
+type Filter = 'all' | Status | 'free'
+
 export default function AssetBrowser({ listings, imageBase }: Props) {
-  const [filter, setFilter] = useState<'all' | Status>('all')
+  const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [openListing, setOpenListing] = useState<AssetListing | null>(null)
   const [openImageIdx, setOpenImageIdx] = useState<number | null>(null)
@@ -59,12 +69,50 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
 
   const filtered = useMemo(() => {
     return listings.filter((l) => {
-      if (filter !== 'all' && l.status !== filter) return false
+      if (filter === 'free') {
+        if (l.status !== 'available' || Number(l.asking_price) !== 0) return false
+      } else if (filter !== 'all' && l.status !== filter) {
+        return false
+      }
       if (search && !l.name.toLowerCase().includes(search.toLowerCase()) &&
           !(l.category ?? '').toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
   }, [listings, filter, search])
+
+  const freeCount = useMemo(
+    () => listings.filter((l) => l.status === 'available' && Number(l.asking_price) === 0).length,
+    [listings],
+  )
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const toggleCategory = (cat: string) =>
+    setCollapsed((s) => ({ ...s, [cat]: !s[cat] }))
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof filtered>()
+    for (const l of filtered) {
+      const key = l.category ?? 'Uncategorised'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(l)
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      if (a === 'Uncategorised') return 1
+      if (b === 'Uncategorised') return -1
+      return a.localeCompare(b)
+    })
+  }, [filtered])
+
+  const allExpanded = grouped.length > 0 && grouped.every(([cat]) => !collapsed[cat])
+  const toggleAll = () => {
+    if (allExpanded) {
+      const next: Record<string, boolean> = {}
+      grouped.forEach(([cat]) => { next[cat] = true })
+      setCollapsed(next)
+    } else {
+      setCollapsed({})
+    }
+  }
 
   useEffect(() => {
     if (openImageIdx === null || !openListing) return
@@ -83,8 +131,8 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
 
   return (
     <div>
-      <Card>
-        <CardHeader>
+      <Card className="border-0 rounded-none shadow-none sm:border sm:rounded-xl sm:shadow-sm">
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-[#009689]" />
             Asset Register
@@ -93,15 +141,22 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
             Equipment, fixtures and fittings for sale as the farm winds down
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-              <TabsList>
-                {(['all', 'available', 'reserved', 'sold'] as const).map((f) => {
-                  const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)} className="-mx-4 sm:mx-0 max-w-full overflow-x-auto sm:overflow-visible">
+              <TabsList className="mx-4 sm:mx-0">
+                {(['all', 'available', 'free', 'under_offer', 'sold'] as const).map((f) => {
+                  const count =
+                    f === 'all'
+                      ? listings.length
+                      : f === 'free'
+                        ? freeCount
+                        : listings.filter((l) => l.status === f).length
+                  const label =
+                    f === 'all' ? 'All' : f === 'free' ? 'Free' : STATUS_LABEL[f]
                   return (
-                    <TabsTrigger key={f} value={f} className="capitalize">
-                      {f}
+                    <TabsTrigger key={f} value={f}>
+                      {label}
                       <span className="ml-1 text-xs opacity-60">{count}</span>
                     </TabsTrigger>
                   )
@@ -124,63 +179,100 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
               No items match your filters
             </div>
           ) : (
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="sm:border sm:rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="text-left w-20"></TableHead>
+                    <TableHead className="text-left w-20 sm:w-24 pl-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleAll}
+                        className="h-7 w-7"
+                        aria-label={allExpanded ? 'Collapse all categories' : 'Expand all categories'}
+                      >
+                        <ChevronsUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="text-left">Item</TableHead>
                     <TableHead className="text-left hidden lg:table-cell">Description</TableHead>
-                    <TableHead className="text-left hidden md:table-cell">Category</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-left w-28">Status</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
+                    <TableHead className="text-left w-28 hidden sm:table-cell">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((l) => {
-                    const cover = l.asset_listing_images[0]
-                    const isSold = l.status === 'sold'
+                  {grouped.map(([category, items]) => {
+                    const isCollapsed = !!collapsed[category]
                     return (
-                      <TableRow
-                        key={l.id}
-                        onClick={() => setOpenListing(l)}
-                        className={`hover:bg-gray-50 cursor-pointer ${isSold ? 'opacity-60' : ''}`}
-                      >
-                        <TableCell>
-                          <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                            {cover ? (
-                              <img
-                                src={`${imageBase}/${cover.storage_path}`}
-                                alt={l.name}
-                                loading="lazy"
-                                className="w-full h-full object-cover"
+                      <Fragment key={category}>
+                        <TableRow
+                          className="bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                          onClick={() => toggleCategory(category)}
+                        >
+                          <TableCell colSpan={99} className="py-2 px-3 sm:px-4">
+                            <div className="flex items-center gap-2 font-medium text-sm">
+                              <ChevronDown
+                                className={cn(
+                                  'h-4 w-4 transition-transform',
+                                  isCollapsed && '-rotate-90',
+                                )}
                               />
-                            ) : (
-                              <span className="text-[10px] text-gray-400">No photo</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {l.name}
-                          {l.category && (
-                            <div className="text-xs text-gray-500 mt-0.5 md:hidden">{l.category}</div>
-                          )}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-gray-600 max-w-xs">
-                          <span className="line-clamp-1">{l.description ?? '—'}</span>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-gray-600">
-                          {l.category ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold whitespace-nowrap">
-                          {formatPrice(l.asking_price)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[l.status]}`}>
-                            {l.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
+                              <span>{category}</span>
+                              <span className="text-xs text-gray-500 font-normal">
+                                {items.length}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {!isCollapsed && items.map((l) => {
+                          const cover = l.asset_listing_images[0]
+                          const isSold = l.status === 'sold'
+                          return (
+                            <TableRow
+                              key={l.id}
+                              onClick={() => setOpenListing(l)}
+                              className={`hover:bg-gray-50 cursor-pointer ${isSold ? 'opacity-60' : ''}`}
+                            >
+                              <TableCell className="p-2 sm:p-4">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                                  {cover ? (
+                                    <img
+                                      src={`${imageBase}/${cover.storage_path}`}
+                                      alt={l.name}
+                                      loading="lazy"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400">No photo</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium p-2 sm:p-4 whitespace-normal break-words">
+                                {l.name}
+                                {/* Mobile-only: stack price + status under name */}
+                                <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
+                                  <span className="font-semibold">{formatPrice(l.asking_price)}</span>
+                                  <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
+                                    {STATUS_LABEL[l.status]}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell text-gray-600 max-w-xs">
+                                <span className="line-clamp-1">{l.description ?? '—'}</span>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
+                                {formatPrice(l.asking_price)}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell">
+                                <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
+                                  {STATUS_LABEL[l.status]}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </Fragment>
                     )
                   })}
                 </TableBody>
@@ -299,8 +391,8 @@ function DetailView({
           )}
           <div>
             <div className="flex flex-wrap gap-2 items-center mb-2">
-              <Badge variant="outline" className={`capitalize ${STATUS_BADGE_CLASS[listing.status]}`}>
-                {listing.status}
+              <Badge variant="outline" className={STATUS_BADGE_CLASS[listing.status]}>
+                {STATUS_LABEL[listing.status]}
               </Badge>
               {listing.category && (
                 <Badge variant="outline" className="bg-gray-100 text-gray-700 border-transparent">

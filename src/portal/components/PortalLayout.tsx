@@ -137,7 +137,7 @@ export function PortalLayout({ children }: { children?: ReactNode } = {}) {
       )}
 
       {/* Main content */}
-      <main className="flex-1 mt-16 lg:mt-0 lg:ml-60 min-h-screen">
+      <main className="flex-1 min-w-0 mt-16 lg:mt-0 lg:ml-60 min-h-screen">
         {isViewingAs && (
           <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-between text-sm">
             <span>Viewing as <strong>{viewAsCustomerName}</strong></span>
