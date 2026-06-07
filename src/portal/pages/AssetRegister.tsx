@@ -42,6 +42,8 @@ interface AssetListing {
   original_cost: number | null
   category: string | null
   status: Status
+  allow_offers: boolean
+  is_poa: boolean
   sort_order: number
   created_at: string
   updated_at: string
@@ -382,6 +384,8 @@ function ListingDialog({
   )
   const [category, setCategory] = useState(initial?.category ?? '')
   const [status, setStatus] = useState<Status>(initial?.status ?? 'available')
+  const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
+  const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
@@ -405,6 +409,8 @@ function ListingDialog({
     setDiscountAmount(calcDiscountAmount(initial?.original_cost ?? null, initial?.asking_price ?? null))
     setCategory(initial?.category ?? '')
     setStatus(initial?.status ?? 'available')
+    setAllowOffers(initial?.allow_offers ?? false)
+    setIsPoa(initial?.is_poa ?? false)
     setListingId(initialId)
     setImages(initial?.asset_listing_images ?? [])
     setError(null)
@@ -503,6 +509,8 @@ function ListingDialog({
         original_cost: originalCost.trim() === '' ? null : Number(originalCost),
         category,
         status,
+        allow_offers: allowOffers,
+        is_poa: isPoa,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -734,6 +742,42 @@ function ListingDialog({
                 required
               />
             </div>
+          </div>
+
+          {/* Sale options */}
+          <div className="space-y-2">
+            <Label>Sale options</Label>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={allowOffers}
+                  onChange={(e) => setAllowOffers(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Allow offers</span>
+                  <span className="text-muted-foreground text-xs">Visitors can submit a £ offer alongside their interest.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={isPoa}
+                  onChange={(e) => setIsPoa(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Price on application (POA)</span>
+                  <span className="text-muted-foreground text-xs">Public price shows "POA" instead of the asking price.</span>
+                </span>
+              </label>
+            </div>
+            {isPoa && askingNum != null && askingNum === 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+                POA hides the asking price, so an asking price of £0 has no effect. Did you mean to leave the asking price blank or set a real figure?
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

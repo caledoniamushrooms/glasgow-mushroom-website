@@ -37,6 +37,8 @@ export const POST: APIRoute = async ({ request }) => {
       original_cost: originalCost,
       category: body.category?.toString().trim() || null,
       status,
+      allow_offers: body.allow_offers === true,
+      is_poa: body.is_poa === true,
       sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
     })
     .select()

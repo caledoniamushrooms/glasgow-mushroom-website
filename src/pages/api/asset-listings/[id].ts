@@ -34,6 +34,8 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   if (typeof body.status === 'string' && ['available', 'under_offer', 'sold'].includes(body.status)) {
     patch.status = body.status;
   }
+  if ('allow_offers' in body) patch.allow_offers = body.allow_offers === true;
+  if ('is_poa' in body) patch.is_poa = body.is_poa === true;
   if ('sort_order' in body && Number.isFinite(Number(body.sort_order))) {
     patch.sort_order = Number(body.sort_order);
   }
