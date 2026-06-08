@@ -22,6 +22,7 @@ export function Dashboard() {
   const { portalUser, isSystemAdmin } = useAuthContext()
   const { isViewingAs } = useViewAs()
   const { isModuleEnabled, enabledModules, loading: modulesLoading } = useModules()
+  const { outstandingBalance, unpaidCount, invoices, payments, loading } = useInvoices()
 
   if (isSystemAdmin && !isViewingAs) return <AdminDashboard />
 
@@ -35,7 +36,6 @@ export function Dashboard() {
     // No modules enabled at all — show profile
     return <Navigate to="/portal/profile" replace />
   }
-  const { outstandingBalance, unpaidCount, invoices, payments, loading } = useInvoices()
 
   const showAccounts = isModuleEnabled('accounts')
   const showOrdering = isModuleEnabled('ordering')
