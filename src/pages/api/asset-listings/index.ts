@@ -11,10 +11,17 @@ export const POST: APIRoute = async ({ request }) => {
   if (!body) return jsonResponse({ error: 'Invalid JSON.' }, 400);
 
   const name = String(body.name ?? '').trim();
-  const askingPrice = Number(body.asking_price);
   if (!name) return jsonResponse({ error: 'Name is required.' }, 400);
-  if (!Number.isFinite(askingPrice) || askingPrice < 0) {
-    return jsonResponse({ error: 'Asking price must be a positive number.' }, 400);
+
+  // Asking price is optional now — staff can register an item and flag it
+  // for pricing review later (see needs_pricing_review below).
+  let askingPrice: number | null = null;
+  if (body.asking_price !== null && body.asking_price !== undefined && body.asking_price !== '') {
+    const p = Number(body.asking_price);
+    if (!Number.isFinite(p) || p < 0) {
+      return jsonResponse({ error: 'Asking price must be zero or a positive number.' }, 400);
+    }
+    askingPrice = p;
   }
 
   let originalCost: number | null = null;
@@ -40,6 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
       allow_offers: body.allow_offers === true,
       is_poa: body.is_poa === true,
       is_zero_rated: body.is_zero_rated === true,
+      needs_pricing_review: body.needs_pricing_review === true,
       sort_order: Number.isFinite(Number(body.sort_order)) ? Number(body.sort_order) : 0,
     })
     .select()
