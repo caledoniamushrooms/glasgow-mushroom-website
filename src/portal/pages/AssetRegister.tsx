@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState, useRef, useEffect, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronsUpDown, Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase, getCachedAccessToken } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
 import { resizeImage } from '../lib/resizeImage'
@@ -79,11 +79,29 @@ const STATUS_BADGE_CLASS: Record<Status, string> = {
   sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
-async function authedFetch(input: string, init: RequestInit = {}) {
-  const { data: { session } } = await supabase.auth.getSession()
+// Default timeout for portal-API JSON requests. The browser fetch has no
+// timeout of its own and on a stalled mobile connection (Vercel cold start,
+// 4G handoff, etc.) a Save click can spin forever. 20s is generous enough
+// that a healthy server will never hit it, but short enough to surface an
+// error before the user gives up.
+const FETCH_TIMEOUT_MS = 20_000
+
+async function authedFetch(input: string, init: RequestInit & { timeoutMs?: number } = {}) {
+  // Read the access token from the in-memory cache rather than calling
+  // supabase.auth.getSession() — that call goes through the SDK's auth
+  // lock and can stall on mobile while a token refresh is in flight,
+  // which leaves the Save button stuck on "Saving…" forever.
+  const token = getCachedAccessToken()
   const headers = new Headers(init.headers)
-  if (session?.access_token) headers.set('Authorization', `Bearer ${session.access_token}`)
-  return fetch(input, { ...init, headers })
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? FETCH_TIMEOUT_MS)
+  try {
+    return await fetch(input, { ...init, headers, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function formatPrice(exVat: number | null, isZeroRated: boolean): string {
@@ -507,13 +525,16 @@ function ListingDialog({
     // XHR rather than fetch — fetch can't report upload progress in the
     // browser, and on mobile data a multi-photo upload feels broken without
     // a visible bar.
-    const { data: { session } } = await supabase.auth.getSession()
+    const token = getCachedAccessToken()
     return new Promise<boolean>((resolve) => {
       const xhr = new XMLHttpRequest()
       xhr.open('POST', `/api/asset-listings/${id}/images`)
-      if (session?.access_token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
       }
+      // Photos can be several MB on slow mobile data — give them headroom,
+      // but don't let them hang forever.
+      xhr.timeout = 120_000
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           setUploadProgress(Math.round((e.loaded / e.total) * 100))
@@ -535,6 +556,10 @@ function ListingDialog({
       }
       xhr.onerror = () => {
         setError('Upload failed.')
+        resolve(false)
+      }
+      xhr.ontimeout = () => {
+        setError('Photo upload timed out. Check your connection and try again.')
         resolve(false)
       }
       xhr.send(formData)
@@ -639,8 +664,12 @@ function ListingDialog({
       }
       onSaved()
       onOpenChange(false)
-    } catch {
-      setError('Save failed.')
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Save timed out. Check your connection and try again.')
+      } else {
+        setError('Save failed.')
+      }
     } finally {
       setSaving(false)
     }
