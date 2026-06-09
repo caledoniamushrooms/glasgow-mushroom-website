@@ -22,3 +22,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     lock: noopLock,
   },
 })
+
+// Module-scope cache of the current access token. useAuth populates it from
+// its onAuthStateChange listener. Reading from here avoids `supabase.auth
+// .getSession()` at request time, which can block on the SDK's internal
+// lock when a token refresh is in flight on a slow mobile network —
+// causing UI flows like "Save listing" to hang on the spinner indefinitely.
+let currentAccessToken: string | null = null
+
+export function setCachedAccessToken(token: string | null): void {
+  currentAccessToken = token
+}
+
+export function getCachedAccessToken(): string | null {
+  return currentAccessToken
+}

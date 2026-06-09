@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, setCachedAccessToken } from '../lib/supabase'
 import type { PortalUser } from '../lib/types'
 
 interface AuthState {
@@ -53,6 +53,11 @@ export function useAuth() {
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null
 
     const applySession = async (session: Session | null, event: string) => {
+      // Mirror the access token into module scope so authedFetch() and the
+      // photo XHR don't need to call supabase.auth.getSession() at request
+      // time (which can stall on mobile when the SDK is mid-refresh).
+      setCachedAccessToken(session?.access_token ?? null)
+
       if (session?.user) {
         const portalUser = await fetchPortalUser(session.user.id)
 
@@ -119,6 +124,7 @@ export function useAuth() {
   }
 
   const signOut = async () => {
+    setCachedAccessToken(null)
     await supabase.auth.signOut()
     setState({ session: null, user: null, portalUser: null, loading: false, error: null })
   }
