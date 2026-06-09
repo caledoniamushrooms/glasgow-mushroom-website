@@ -1,6 +1,12 @@
 ---
 export const prerender = false
 import PortalApp from '../../portal/App'
+
+// Preconnect to Supabase so the TLS handshake is already done by the time
+// supabase-js fires its first request. On mobile cold-network this is the
+// difference between INITIAL_SESSION firing in ~150ms vs stalling for
+// seconds (which leaves ProtectedRoute stuck on "Loading…").
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
 ---
 
 <html lang="en">
@@ -9,6 +15,8 @@ import PortalApp from '../../portal/App'
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Glasgow Mushroom Company — Customer Portal" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {supabaseUrl && <link rel="preconnect" href={supabaseUrl} crossorigin />}
+    {supabaseUrl && <link rel="dns-prefetch" href={supabaseUrl} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
