@@ -98,6 +98,7 @@ export function AssetRegister() {
   const [editing, setEditing] = useState<AssetListing | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Status>('all')
+  const [search, setSearch] = useState('')
   // Bumped each time "+ new" is pressed so the dialog remounts with a clean
   // form — otherwise React's useState keeps the previous entry's values.
   const [newKey, setNewKey] = useState(0)
@@ -133,7 +134,13 @@ export function AssetRegister() {
   }
 
   const listings = listingsQuery.data ?? []
-  const filtered = filter === 'all' ? listings : listings.filter((l) => l.status === filter)
+  const trimmedSearch = search.trim().toLowerCase()
+  const filtered = listings.filter((l) => {
+    if (filter !== 'all' && l.status !== filter) return false
+    if (!trimmedSearch) return true
+    const haystack = `${l.name} ${l.description ?? ''} ${l.category ?? ''}`.toLowerCase()
+    return haystack.includes(trimmedSearch)
+  })
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const toggleCategory = (cat: string) =>
@@ -192,20 +199,43 @@ export function AssetRegister() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList>
-              {(['all', 'available', 'under_offer', 'sold'] as const).map((f) => {
-                const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
-                const label = f === 'all' ? 'All' : STATUS_LABEL[f]
-                return (
-                  <TabsTrigger key={f} value={f}>
-                    {label}
-                    <span className="ml-1 text-xs opacity-60">{count}</span>
-                  </TabsTrigger>
-                )
-              })}
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <TabsList>
+                {(['all', 'available', 'under_offer', 'sold'] as const).map((f) => {
+                  const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
+                  const label = f === 'all' ? 'All' : STATUS_LABEL[f]
+                  return (
+                    <TabsTrigger key={f} value={f}>
+                      {label}
+                      <span className="ml-1 text-xs opacity-60">{count}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </Tabs>
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, description, category…"
+                aria-label="Search listings"
+                className="pl-8 pr-8"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
 
           {listingsQuery.isLoading ? (
             <div className="space-y-2">
@@ -215,7 +245,11 @@ export function AssetRegister() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
-              No listings yet
+              {listings.length === 0
+                ? 'No listings yet'
+                : trimmedSearch
+                  ? `No listings match "${search}"`
+                  : 'No listings in this status'}
             </div>
           ) : (
             <div className="sm:border sm:rounded-lg overflow-x-auto">
@@ -243,7 +277,9 @@ export function AssetRegister() {
                 </TableHeader>
                 <TableBody>
                   {grouped.map(([category, items]) => {
-                    const isCollapsed = !!collapsed[category]
+                    // Force-expand while a search is active so matching rows
+                    // aren't hidden behind a collapsed category header.
+                    const isCollapsed = !trimmedSearch && !!collapsed[category]
                     return (
                       <Fragment key={category}>
                         <TableRow
