@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
 import { resizeImage } from '../lib/resizeImage'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -39,13 +39,14 @@ interface AssetListing {
   id: string
   name: string
   description: string | null
-  asking_price: number
+  asking_price: number | null
   original_cost: number | null
   category: string | null
   status: Status
   allow_offers: boolean
   is_poa: boolean
   is_zero_rated: boolean
+  needs_pricing_review: boolean
   sort_order: number
   created_at: string
   updated_at: string
@@ -85,7 +86,8 @@ async function authedFetch(input: string, init: RequestInit = {}) {
   return fetch(input, { ...init, headers })
 }
 
-function formatPrice(exVat: number, isZeroRated: boolean): string {
+function formatPrice(exVat: number | null, isZeroRated: boolean): string {
+  if (exVat == null) return '—'
   const inc = priceIncVat(Number(exVat), isZeroRated)
   return `£${inc.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
 }
@@ -96,6 +98,9 @@ export function AssetRegister() {
   const [editing, setEditing] = useState<AssetListing | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Status>('all')
+  // Bumped each time "+ new" is pressed so the dialog remounts with a clean
+  // form — otherwise React's useState keeps the previous entry's values.
+  const [newKey, setNewKey] = useState(0)
 
   const listingsQuery = useQuery({
     queryKey: ['admin-asset-listings'],
@@ -161,7 +166,11 @@ export function AssetRegister() {
     }
   }
 
-  const openNew = () => { setEditing(null); setDialogOpen(true) }
+  const openNew = () => {
+    setEditing(null)
+    setNewKey((n) => n + 1)
+    setDialogOpen(true)
+  }
   const openEdit = (l: AssetListing) => { setEditing(l); setDialogOpen(true) }
 
   // Categories already used across all listings — feeds the dropdown for fast
@@ -181,12 +190,6 @@ export function AssetRegister() {
           <CardDescription>
             Manage equipment listings for the public for-sale page
           </CardDescription>
-          <CardAction>
-            <Button onClick={openNew} aria-label="New listing">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New listing</span>
-            </Button>
-          </CardAction>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
@@ -264,6 +267,9 @@ export function AssetRegister() {
                         </TableRow>
                         {!isCollapsed && items.map((l) => {
                           const cover = l.asset_listing_images[0]
+                          const priceDisplay = l.needs_pricing_review
+                            ? <span className="font-normal text-amber-700">Needs review</span>
+                            : formatPrice(l.asking_price, l.is_zero_rated)
                           return (
                             <TableRow key={l.id} className="hover:bg-gray-50">
                               <TableCell className="p-2 sm:p-4">
@@ -283,7 +289,7 @@ export function AssetRegister() {
                                 <div className="font-medium">{l.name}</div>
                                 {/* Mobile-only: stack price + status + photos below name */}
                                 <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
-                                  <span className="font-semibold">{formatPrice(l.asking_price, l.is_zero_rated)}</span>
+                                  <span className="font-semibold">{priceDisplay}</span>
                                   <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                     {STATUS_LABEL[l.status]}
                                   </Badge>
@@ -291,7 +297,7 @@ export function AssetRegister() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
-                                {formatPrice(l.asking_price, l.is_zero_rated)}
+                                {priceDisplay}
                               </TableCell>
                               <TableCell className="hidden sm:table-cell">
                                 <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
@@ -348,12 +354,25 @@ export function AssetRegister() {
       </Card>
 
       <ListingDialog
+        key={editing ? `edit-${editing.id}` : `new-${newKey}`}
         open={dialogOpen}
         initial={editing}
         existingCategories={existingCategories}
         onOpenChange={setDialogOpen}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })}
       />
+
+      {/* Floating action button — primary way to add a new listing. Sits
+          above the iOS home indicator and stays clear of long scrollable
+          tables on mobile. */}
+      <Button
+        type="button"
+        onClick={openNew}
+        aria-label="New listing"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg p-0 pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </>
   )
 }
@@ -390,17 +409,23 @@ function ListingDialog({
   const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
   const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [isZeroRated, setIsZeroRated] = useState(initial?.is_zero_rated ?? false)
+  const [needsPricingReview, setNeedsPricingReview] = useState(initial?.needs_pricing_review ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
   const [images, setImages] = useState<AssetImage[]>(initial?.asset_listing_images ?? [])
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  // 0..100, or null when no upload is in flight. Used to drive the progress
+  // bar in the photos section.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
-  // Sync form when initial prop changes
+  // Sync form when initial prop changes (e.g. switching from one Edit dialog
+  // to another). Parent uses a `key` prop to force a remount when opening
+  // for a brand-new listing, so this only runs when editing existing rows.
   const initialId = initial?.id ?? null
   const [lastInitialId, setLastInitialId] = useState<string | null | undefined>(undefined)
   if (lastInitialId !== initialId) {
@@ -416,6 +441,7 @@ function ListingDialog({
     setAllowOffers(initial?.allow_offers ?? false)
     setIsPoa(initial?.is_poa ?? false)
     setIsZeroRated(initial?.is_zero_rated ?? false)
+    setNeedsPricingReview(initial?.needs_pricing_review ?? false)
     setListingId(initialId)
     setImages(initial?.asset_listing_images ?? [])
     setError(null)
@@ -437,19 +463,46 @@ function ListingDialog({
     if (files.length === 0) return true
     // Resize client-side so we stay well under Vercel's 4.5 MB serverless
     // body limit and the upload itself is faster on mobile data.
+    setUploadProgress(0)
     const resized = await Promise.all(files.map((f) => resizeImage(f)))
     const formData = new FormData()
     resized.forEach((f) => formData.append('files', f))
-    const res = await authedFetch(`/api/asset-listings/${id}/images`, {
-      method: 'POST',
-      body: formData,
+
+    // XHR rather than fetch — fetch can't report upload progress in the
+    // browser, and on mobile data a multi-photo upload feels broken without
+    // a visible bar.
+    const { data: { session } } = await supabase.auth.getSession()
+    return new Promise<boolean>((resolve) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `/api/asset-listings/${id}/images`)
+      if (session?.access_token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+      }
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100)
+          resolve(true)
+        } else {
+          try {
+            const r = JSON.parse(xhr.responseText)
+            setError(r.error || 'Upload failed.')
+          } catch {
+            setError('Upload failed.')
+          }
+          resolve(false)
+        }
+      }
+      xhr.onerror = () => {
+        setError('Upload failed.')
+        resolve(false)
+      }
+      xhr.send(formData)
     })
-    if (!res.ok) {
-      const r = await res.json().catch(() => ({}))
-      setError(r.error || 'Upload failed.')
-      return false
-    }
-    return true
   }
 
   // Linked price field handlers: editing any of cost / % / £ discount / asking
@@ -510,13 +563,14 @@ function ListingDialog({
       const payload = {
         name,
         description,
-        asking_price: Number(askingPrice),
+        asking_price: askingPrice.trim() === '' ? null : Number(askingPrice),
         original_cost: originalCost.trim() === '' ? null : Number(originalCost),
         category,
         status,
         allow_offers: allowOffers,
         is_poa: isPoa,
         is_zero_rated: isZeroRated,
+        needs_pricing_review: needsPricingReview,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -537,6 +591,7 @@ function ListingDialog({
         setUploading(true)
         const ok = await uploadFilesTo(id, pendingFiles)
         setUploading(false)
+        setUploadProgress(null)
         if (ok) {
           pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
           setPendingFiles([])
@@ -577,6 +632,7 @@ function ListingDialog({
       }
     } finally {
       setUploading(false)
+      setUploadProgress(null)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -736,7 +792,7 @@ function ListingDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="asset-price">Asking price ex-VAT (£) *</Label>
+              <Label htmlFor="asset-price">Asking price ex-VAT (£)</Label>
               <Input
                 id="asset-price"
                 type="number"
@@ -745,7 +801,6 @@ function ListingDialog({
                 min="0"
                 value={askingPrice}
                 onChange={(e) => handleAskingChange(e.target.value)}
-                required
               />
             </div>
           </div>
@@ -788,6 +843,18 @@ function ListingDialog({
                 <span className="text-sm">
                   <span className="font-medium block">Zero-rated for VAT</span>
                   <span className="text-muted-foreground text-xs">No VAT is added to the displayed price.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/40 px-3 py-2 cursor-pointer hover:bg-amber-50 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={needsPricingReview}
+                  onChange={(e) => setNeedsPricingReview(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-amber-600"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">I don't know how much to list this item for</span>
+                  <span className="text-muted-foreground text-xs">Hides the item from the public for-sale page and flags it for another reviewer to price.</span>
                 </span>
               </label>
             </div>
@@ -856,6 +923,27 @@ function ListingDialog({
                 ? 'Drop photos here'
                 : 'Drag photos here, or tap to choose from camera or library'}
             </div>
+
+            {uploading && uploadProgress != null && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Uploading photos…</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={uploadProgress}
+                  className="h-2 w-full rounded-full bg-muted overflow-hidden"
+                >
+                  <div
+                    className="h-full bg-primary transition-[width] duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {!listingId && pendingFiles.length > 0 && (
               <p className="text-xs text-muted-foreground">

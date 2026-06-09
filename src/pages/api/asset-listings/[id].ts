@@ -17,9 +17,13 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   if (typeof body.name === 'string') patch.name = body.name.trim();
   if ('description' in body) patch.description = body.description?.toString().trim() || null;
   if ('asking_price' in body) {
-    const p = Number(body.asking_price);
-    if (!Number.isFinite(p) || p < 0) return jsonResponse({ error: 'Bad asking_price' }, 400);
-    patch.asking_price = p;
+    if (body.asking_price === null || body.asking_price === '' || body.asking_price === undefined) {
+      patch.asking_price = null;
+    } else {
+      const p = Number(body.asking_price);
+      if (!Number.isFinite(p) || p < 0) return jsonResponse({ error: 'Bad asking_price' }, 400);
+      patch.asking_price = p;
+    }
   }
   if ('original_cost' in body) {
     if (body.original_cost === null || body.original_cost === '' || body.original_cost === undefined) {
@@ -37,6 +41,7 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   if ('allow_offers' in body) patch.allow_offers = body.allow_offers === true;
   if ('is_poa' in body) patch.is_poa = body.is_poa === true;
   if ('is_zero_rated' in body) patch.is_zero_rated = body.is_zero_rated === true;
+  if ('needs_pricing_review' in body) patch.needs_pricing_review = body.needs_pricing_review === true;
   if ('sort_order' in body && Number.isFinite(Number(body.sort_order))) {
     patch.sort_order = Number(body.sort_order);
   }

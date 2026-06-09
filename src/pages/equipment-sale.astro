@@ -10,15 +10,18 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Items flagged as needs_pricing_review have no public price yet — hide them
+// from the for-sale page until staff has decided on a number.
 const { data: listingsRaw } = await supabase
   .from('asset_listings')
   .select('id, name, description, asking_price, category, status, allow_offers, is_poa, is_zero_rated, sort_order, asset_listing_images(id, storage_path, position)')
+  .eq('needs_pricing_review', false)
   .order('sort_order')
   .order('created_at', { ascending: false });
 
 const listings = (listingsRaw ?? []).map((l: any) => ({
   ...l,
-  asking_price: Number(l.asking_price),
+  asking_price: l.asking_price == null ? 0 : Number(l.asking_price),
   asset_listing_images: (l.asset_listing_images ?? []).sort(
     (a: any, b: any) => a.position - b.position,
   ),
