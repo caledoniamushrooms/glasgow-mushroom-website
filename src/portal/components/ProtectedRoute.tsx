@@ -18,7 +18,37 @@ export function ProtectedRoute({ children, requireAdmin = false, requireSystemAd
   // forwards back here. Sign out first so /portal lands clean.
   useEffect(() => {
     if (!loading && !isAuthenticated && session) {
-      void signOut().then(() => window.location.replace('/portal'))
+      // signOut() makes a network call with no timeout — never let it block
+      // the recovery redirect. If it hasn't finished within 2s, drop the
+      // cached session by hand (otherwise /portal sees it and bounces back
+      // here in a loop) and redirect anyway.
+      let done = false
+      const finish = () => {
+        if (done) return
+        done = true
+        window.location.replace('/portal')
+      }
+      const timer = setTimeout(() => {
+        try {
+          window.localStorage.removeItem('sb-portal-auth')
+        } catch {
+          /* ignore */
+        }
+        finish()
+      }, 2000)
+      void signOut()
+        .catch(() => {
+          try {
+            window.localStorage.removeItem('sb-portal-auth')
+          } catch {
+            /* ignore */
+          }
+        })
+        .finally(() => {
+          clearTimeout(timer)
+          finish()
+        })
+      return () => clearTimeout(timer)
     }
   }, [loading, isAuthenticated, session, signOut])
 

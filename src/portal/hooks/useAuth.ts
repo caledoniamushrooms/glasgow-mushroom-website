@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase, setCachedAccessToken } from '../lib/supabase'
+import { supabase, supabaseUrl, supabaseAnonKey, setCachedAccessToken } from '../lib/supabase'
 import type { PortalUser } from '../lib/types'
 
 interface AuthState {
@@ -9,6 +9,62 @@ interface AuthState {
   portalUser: PortalUser | null
   loading: boolean
   error: string | null
+}
+
+// Look up the portal_users row with a PLAIN fetch rather than supabase-js.
+// The SDK resolves the access token before every PostgREST call, and if the
+// stored token is stale that means joining a token-refresh HTTP request
+// with no timeout — on a flaky mobile connection it stalls forever, which
+// left ProtectedRoute stuck on "Loading…" with nothing in the console.
+// We already hold a token here, so use it directly, bounded by an abort
+// timeout with one retry. Throws on network failure/timeout; resolves null
+// when the user genuinely has no active portal_users row.
+const PORTAL_USER_TIMEOUT_MS = 8_000
+
+async function fetchPortalUserRest(userId: string, accessToken: string): Promise<PortalUser | null> {
+  const url =
+    `${supabaseUrl}/rest/v1/portal_users` +
+    `?select=*&auth_user_id=eq.${encodeURIComponent(userId)}&status=eq.active&limit=1`
+
+  const attempt = async (): Promise<PortalUser | null> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), PORTAL_USER_TIMEOUT_MS)
+    try {
+      const res = await fetch(url, {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: controller.signal,
+      })
+      if (!res.ok) throw new Error(`portal_users fetch failed: ${res.status}`)
+      const rows = (await res.json()) as PortalUser[]
+      return rows[0] ?? null
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  try {
+    return await attempt()
+  } catch {
+    return attempt()
+  }
+}
+
+// Best-effort, never awaited in the auth path.
+function touchLastLogin(portalUserId: string, accessToken: string): void {
+  fetch(`${supabaseUrl}/rest/v1/portal_users?id=eq.${encodeURIComponent(portalUserId)}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ last_login_at: new Date().toISOString() }),
+    keepalive: true,
+  }).catch(() => {})
 }
 
 export function useAuth() {
@@ -20,20 +76,7 @@ export function useAuth() {
     error: null,
   })
 
-  const fetchPortalUser = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('portal_users')
-      .select('*')
-      .eq('auth_user_id', userId)
-      .eq('status', 'active')
-      .single()
-
-    if (error) {
-      console.error('Failed to fetch portal user:', error)
-      return null
-    }
-    return data as PortalUser
-  }, [])
+  const fetchPortalUser = useCallback(fetchPortalUserRest, [])
 
   useEffect(() => {
     // Use onAuthStateChange as the single source of truth.
@@ -51,45 +94,80 @@ export function useAuth() {
     // subsequent SIGNED_IN / TOKEN_REFRESHED event will update state.
     let resolvedInitial = false
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+    // Monotonic guard: events can queue up (INITIAL_SESSION, then
+    // TOKEN_REFRESHED) and applySession runs are async — only the
+    // latest event is allowed to commit state.
+    let applySeq = 0
 
-    const applySession = async (session: Session | null, event: string) => {
+    const applySession = async (session: Session | null, event: string, seq: number) => {
       // Mirror the access token into module scope so authedFetch() and the
       // photo XHR don't need to call supabase.auth.getSession() at request
       // time (which can stall on mobile when the SDK is mid-refresh).
       setCachedAccessToken(session?.access_token ?? null)
 
-      if (session?.user) {
-        const portalUser = await fetchPortalUser(session.user.id)
-
-        if (event === 'SIGNED_IN' && portalUser) {
-          await supabase
-            .from('portal_users')
-            .update({ last_login_at: new Date().toISOString() })
-            .eq('id', portalUser.id)
-        }
-
-        setState({
-          session,
-          user: session.user,
-          portalUser,
-          loading: false,
-          error: portalUser ? null : 'No active portal account found',
-        })
-      } else {
+      if (!session?.user) {
+        if (seq !== applySeq) return
         setState({ session: null, user: null, portalUser: null, loading: false, error: null })
+        return
       }
+
+      let portalUser: PortalUser | null = null
+      try {
+        portalUser = await fetchPortalUser(session.user.id, session.access_token)
+      } catch (err) {
+        console.warn('[useAuth] portal_users lookup failed/timed out:', err)
+        if (seq !== applySeq) return
+        setState((prev) => {
+          // A working signed-in state already exists for this user (e.g. a
+          // token refresh hit a network blip) — keep it, just swap session.
+          if (prev.portalUser && prev.user?.id === session.user.id) {
+            return { ...prev, session, user: session.user, loading: false }
+          }
+          // Initial load couldn't complete — bail to the same fresh-load
+          // recovery as the INITIAL_SESSION timeout below.
+          return { session: null, user: null, portalUser: null, loading: false, error: null }
+        })
+        return
+      }
+
+      if (event === 'SIGNED_IN' && portalUser) {
+        touchLastLogin(portalUser.id, session.access_token)
+      }
+
+      if (seq !== applySeq) return
+      setState({
+        session,
+        user: session.user,
+        portalUser,
+        loading: false,
+        error: portalUser ? null : 'No active portal account found',
+      })
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         resolvedInitial = true
         if (fallbackTimer) {
           clearTimeout(fallbackTimer)
           fallbackTimer = null
         }
-        await applySession(session, event)
+        const seq = ++applySeq
+        // Defer out of the callback: supabase-js awaits its listeners, so
+        // doing network work inline here blocks the SDK's own event loop
+        // (a documented deadlock source).
+        setTimeout(() => void applySession(session, event, seq), 0)
       },
     )
+
+    // Absolute ceiling: whatever path gets wedged, never show "Loading…"
+    // for more than 10s. Bail to the fresh-load recovery instead.
+    const watchdog = setTimeout(() => {
+      setState((prev) => {
+        if (!prev.loading) return prev
+        console.warn('[useAuth] auth init still loading after 10s — bailing to fresh-load recovery')
+        return { session: null, user: null, portalUser: null, loading: false, error: null }
+      })
+    }, 10_000)
 
     fallbackTimer = setTimeout(() => {
       if (resolvedInitial) return
@@ -112,6 +190,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe()
       if (fallbackTimer) clearTimeout(fallbackTimer)
+      clearTimeout(watchdog)
     }
   }, [fetchPortalUser])
 
@@ -125,8 +204,27 @@ export function useAuth() {
 
   const signOut = async () => {
     setCachedAccessToken(null)
-    await supabase.auth.signOut()
+    // Clear UI state immediately — logout must never block on the network.
     setState({ session: null, user: null, portalUser: null, loading: false, error: null })
+    let finished = false
+    await Promise.race([
+      supabase.auth
+        .signOut()
+        .then(() => {
+          finished = true
+        })
+        .catch(() => {}),
+      new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+    ])
+    if (!finished) {
+      // The SDK call stalled — drop the persisted session by hand so the
+      // login page doesn't see it and bounce straight back in.
+      try {
+        window.localStorage.removeItem('sb-portal-auth')
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   const resetPassword = async (email: string) => {
