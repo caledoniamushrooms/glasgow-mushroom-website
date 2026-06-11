@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronsUpDown, Package, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { priceIncVat } from '@/lib/vat'
+import { priceIncVat, formatGBP } from '@/lib/vat'
 
 type Status = 'available' | 'under_offer' | 'sold'
 
@@ -29,7 +29,7 @@ interface AssetListing {
   id: string
   name: string
   description: string | null
-  asking_price: number
+  asking_price: number | null
   category: string | null
   status: Status
   allow_offers: boolean
@@ -55,11 +55,17 @@ const STATUS_BADGE_CLASS: Record<Status, string> = {
   sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
+// Display model: POA wins; a set price shows as a price (an explicit
+// £0 means "Free"); no price at all (null) means the price is TBD.
 function priceLabel(l: AssetListing): string {
   if (l.is_poa) return 'POA'
-  const ex = Number(l.asking_price)
-  if (ex === 0) return 'Free'
-  return `£${priceIncVat(ex, l.is_zero_rated).toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
+  if (l.asking_price == null) return 'TBD'
+  if (l.asking_price === 0) return 'Free'
+  return formatGBP(priceIncVat(l.asking_price, l.is_zero_rated))
+}
+
+function hasQuotedPrice(l: AssetListing): boolean {
+  return !l.is_poa && l.asking_price != null && l.asking_price > 0
 }
 
 type Filter = 'all' | Status | 'free'
@@ -160,8 +166,8 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
   const filtered = useMemo(() => {
     return listings.filter((l) => {
       if (filter === 'free') {
-        // Free excludes POA — POA items don't have a quoted price at all
-        if (l.status !== 'available' || Number(l.asking_price) !== 0 || l.is_poa) return false
+        // Free = an explicit £0 price. Excludes POA and unpriced (TBD) items.
+        if (l.status !== 'available' || l.asking_price !== 0 || l.is_poa) return false
       } else if (filter !== 'all' && l.status !== filter) {
         return false
       }
@@ -181,7 +187,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
       listings.filter(
         (l) =>
           l.status === 'available' &&
-          Number(l.asking_price) === 0 &&
+          l.asking_price === 0 &&
           !l.is_poa,
       ).length,
     [listings],
@@ -216,10 +222,18 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
     }
   }
 
+  // One keyboard handler for the whole modal stack: Escape closes the
+  // top-most layer (lightbox → summary → detail); arrows page the lightbox.
   useEffect(() => {
-    if (openImageIdx === null || !openListing) return
+    if (!openListing && !showSummary) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenImageIdx(null)
+      if (e.key === 'Escape') {
+        if (openImageIdx !== null) setOpenImageIdx(null)
+        else if (showSummary) setShowSummary(false)
+        else setOpenListing(null)
+        return
+      }
+      if (openImageIdx === null || !openListing) return
       if (e.key === 'ArrowRight') {
         setOpenImageIdx((i) =>
           i === null ? null : Math.min(openListing.asset_listing_images.length - 1, i + 1),
@@ -231,7 +245,42 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [openImageIdx, openListing])
+  }, [openImageIdx, openListing, showSummary])
+
+  // Lock background scroll while any modal layer is open
+  useEffect(() => {
+    if (!openListing && !showSummary) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [openListing, showSummary])
+
+  // ---- View tracking (production only, no PII) ----
+  const trackedListings = useRef<Set<string>>(new Set())
+  const track = (kind: 'page' | 'listing', listingId?: string) => {
+    if (!import.meta.env.PROD) return
+    fetch('/api/asset-track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kind === 'page' ? { kind } : { kind, listing_id: listingId }),
+      keepalive: true,
+    }).catch(() => {})
+  }
+
+  useEffect(() => {
+    track('page')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const openDetail = (l: AssetListing) => {
+    setOpenListing(l)
+    if (!trackedListings.current.has(l.id)) {
+      trackedListings.current.add(l.id)
+      track('listing', l.id)
+    }
+  }
 
   const selectedCount = Object.keys(selection).length
   const selectedItems = useMemo(
@@ -256,7 +305,8 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
             Asset Register
           </CardTitle>
           <CardDescription>
-            Equipment, fixtures and fittings for sale as the farm winds down
+            Equipment, fixtures and fittings for sale as the farm winds down.
+            Prices include VAT where applicable.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
@@ -297,6 +347,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search…"
+                aria-label="Search listings"
                 className="pl-8"
               />
             </div>
@@ -362,7 +413,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                           return (
                             <TableRow
                               key={l.id}
-                              onClick={() => setOpenListing(l)}
+                              onClick={() => openDetail(l)}
                               className={cn(
                                 'hover:bg-gray-50 cursor-pointer',
                                 isSold && 'opacity-60',
@@ -401,7 +452,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                                 {/* Mobile-only stacked details */}
                                 <div className="flex flex-wrap items-center gap-2 mt-1 sm:hidden text-xs">
                                   <span className={cn('font-semibold', l.allow_offers && 'text-zinc-500 font-normal')}>
-                                    {l.allow_offers && !l.is_poa ? `Asking ${priceLabel(l)}` : priceLabel(l)}
+                                    {l.allow_offers && hasQuotedPrice(l) ? `Asking ${priceLabel(l)}` : priceLabel(l)}
                                   </span>
                                   <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                     {STATUS_LABEL[l.status]}
@@ -412,12 +463,11 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                                     className="mt-2 sm:hidden"
                                     onClick={(e) => e.stopPropagation()}
                                   >
+                                    {/* Setting an offer selects the item (presence in the
+                                        selection map IS selection) — no toggle call here. */}
                                     <OfferInput
                                       value={offerValue}
-                                      onChange={(v) => {
-                                        setOffer(l.id, v)
-                                        if (v && !selected) toggleSelected(l.id)
-                                      }}
+                                      onChange={(v) => setOffer(l.id, v)}
                                     />
                                   </div>
                                 )}
@@ -428,16 +478,13 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
                               <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
                                 <div className="flex flex-col items-end gap-1">
                                   <span className={cn('font-semibold', l.allow_offers && 'text-xs text-zinc-500 font-normal')}>
-                                    {l.allow_offers && !l.is_poa ? `Asking ${priceLabel(l)}` : priceLabel(l)}
+                                    {l.allow_offers && hasQuotedPrice(l) ? `Asking ${priceLabel(l)}` : priceLabel(l)}
                                   </span>
                                   {l.allow_offers && !isSold && (
                                     <div onClick={(e) => e.stopPropagation()}>
                                       <OfferInput
                                         value={offerValue}
-                                        onChange={(v) => {
-                                          setOffer(l.id, v)
-                                          if (v && !selected) toggleSelected(l.id)
-                                        }}
+                                        onChange={(v) => setOffer(l.id, v)}
                                       />
                                     </div>
                                   )}
@@ -473,10 +520,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
           selected={openListing.id in selection}
           offerValue={selection[openListing.id] ?? ''}
           onToggleSelected={() => toggleSelected(openListing.id)}
-          onOfferChange={(v) => {
-            setOffer(openListing.id, v)
-            if (v && !(openListing.id in selection)) toggleSelected(openListing.id)
-          }}
+          onOfferChange={(v) => setOffer(openListing.id, v)}
           onClose={() => { setOpenListing(null); setOpenImageIdx(null) }}
           onOpenImage={(i) => setOpenImageIdx(i)}
         />
@@ -560,6 +604,7 @@ function OfferInput({ value, onChange }: { value: string; onChange: (v: string) 
         onChange={(e) => onChange(e.target.value)}
         onClick={(e) => e.stopPropagation()}
         placeholder="—"
+        aria-label="Offer amount in pounds"
         className="h-7 w-20 px-2 border border-zinc-200 rounded text-base md:text-sm bg-white"
       />
     </div>
@@ -637,16 +682,24 @@ function DetailView({
             </div>
             <div className="space-y-0.5">
               <p className="text-2xl font-semibold text-zinc-900">
-                {listing.allow_offers && !listing.is_poa
+                {listing.allow_offers && hasQuotedPrice(listing)
                   ? `Asking ${priceLabel(listing)}`
                   : priceLabel(listing)}
-                {!listing.is_poa && Number(listing.asking_price) > 0 && (
+                {hasQuotedPrice(listing) && !listing.is_zero_rated && (
                   <span className="ml-1 text-sm font-normal text-zinc-500">incl. VAT</span>
                 )}
               </p>
-              {!listing.is_poa && Number(listing.asking_price) > 0 && (
+              {hasQuotedPrice(listing) &&
+                (listing.is_zero_rated ? (
+                  <p className="text-sm text-zinc-500">No VAT applies to this item</p>
+                ) : (
+                  <p className="text-sm text-zinc-500">
+                    {formatGBP(listing.asking_price!)} excl. VAT
+                  </p>
+                ))}
+              {!listing.is_poa && listing.asking_price == null && (
                 <p className="text-sm text-zinc-500">
-                  £{Number(listing.asking_price).toLocaleString('en-GB', { maximumFractionDigits: 2 })} excl. VAT
+                  Price to be confirmed — register your interest and we'll come back to you.
                 </p>
               )}
             </div>
@@ -656,10 +709,11 @@ function DetailView({
           )}
           {listing.allow_offers && !isSold && (
             <div className="rounded-md border border-zinc-200 p-3 bg-zinc-50">
-              <label className="block text-sm font-medium mb-1">Your offer (optional)</label>
+              <label htmlFor="detail-offer-input" className="block text-sm font-medium mb-1">Your offer (optional)</label>
               <div className="flex items-center gap-1">
                 <span className="text-sm text-zinc-500">£</span>
                 <input
+                  id="detail-offer-input"
                   type="number"
                   inputMode="decimal"
                   step="0.01"
@@ -719,27 +773,39 @@ function SummaryModal({
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { quotedTotal, poaCount } = useMemo(() => {
+  // An entered offer counts toward the total (even on POA/TBD items);
+  // otherwise the inc-VAT asking price does. POA/TBD items without an
+  // offer have no quotable figure and are counted separately.
+  const { quotedTotal, unpricedCount } = useMemo(() => {
     let total = 0
-    let poa = 0
+    let unpriced = 0
     for (const l of items) {
-      if (l.is_poa) {
-        poa += 1
-        continue
-      }
       const offerStr = selection[l.id]
       const offer = offerStr ? Number(offerStr) : NaN
-      total += Number.isFinite(offer)
-        ? offer
-        : priceIncVat(Number(l.asking_price), l.is_zero_rated)
+      if (Number.isFinite(offer) && offer >= 0) {
+        total += offer
+        continue
+      }
+      if (l.is_poa || l.asking_price == null) {
+        unpriced += 1
+        continue
+      }
+      total += priceIncVat(l.asking_price, l.is_zero_rated)
     }
-    return { quotedTotal: total, poaCount: poa }
+    return { quotedTotal: total, unpricedCount: unpriced }
   }, [items, selection])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setSubmitting(true)
     setError(null)
+    for (const l of items) {
+      const v = selection[l.id]
+      if (v && (!Number.isFinite(Number(v)) || Number(v) < 0)) {
+        setError(`The offer for "${l.name}" isn't a valid amount.`)
+        return
+      }
+    }
+    setSubmitting(true)
     const formData = new FormData(e.currentTarget)
     const payload = {
       name: formData.get('name')?.toString().trim(),
@@ -776,7 +842,7 @@ function SummaryModal({
   return (
     <div
       className="fixed inset-0 z-[10005] bg-black/60 flex items-stretch md:items-center justify-center md:p-6 overflow-y-auto"
-      onClick={onClose}
+      onClick={sent ? onSuccess : onClose}
     >
       <div
         className="bg-white w-full md:max-w-lg md:rounded-lg shadow-xl flex flex-col max-h-screen"
@@ -784,7 +850,7 @@ function SummaryModal({
       >
         <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-200">
           <h2 className="font-semibold text-zinc-900">Register interest</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 text-2xl leading-none cursor-pointer" aria-label="Close">×</button>
+          <button onClick={sent ? onSuccess : onClose} className="text-zinc-500 hover:text-zinc-900 text-2xl leading-none cursor-pointer" aria-label="Close">×</button>
         </header>
 
         {sent ? (
@@ -814,8 +880,8 @@ function SummaryModal({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{l.name}</p>
                         <p className="text-xs text-zinc-500">
-                          {l.allow_offers && !l.is_poa ? `Asking ${priceLabel(l)}` : priceLabel(l)}
-                          {offer != null && ` · Offer £${offer.toLocaleString('en-GB')}`}
+                          {l.allow_offers && hasQuotedPrice(l) ? `Asking ${priceLabel(l)}` : priceLabel(l)}
+                          {offer != null && ` · Offer ${formatGBP(offer)}`}
                         </p>
                       </div>
                       <button
@@ -835,9 +901,9 @@ function SummaryModal({
                 <div className="flex items-baseline justify-between text-sm border-b border-zinc-200 pb-2">
                   <span className="font-medium">Total</span>
                   <span>
-                    £{quotedTotal.toLocaleString('en-GB', { maximumFractionDigits: 2 })}
-                    {poaCount > 0 && (
-                      <span className="text-zinc-500"> + {poaCount} POA</span>
+                    {formatGBP(quotedTotal)}
+                    {unpricedCount > 0 && (
+                      <span className="text-zinc-500"> + {unpricedCount} POA/TBD</span>
                     )}
                   </span>
                 </div>
@@ -848,33 +914,40 @@ function SummaryModal({
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">Your name *</label>
+                <label htmlFor="si-name" className="block text-sm font-medium mb-1">Your name *</label>
                 <input
+                  id="si-name"
                   name="name"
+                  autoComplete="name"
                   required
                   className="w-full px-2.5 py-2 border border-zinc-200 rounded-md text-base md:text-sm bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
+                <label htmlFor="si-email" className="block text-sm font-medium mb-1">Email *</label>
                 <input
+                  id="si-email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   className="w-full px-2.5 py-2 border border-zinc-200 rounded-md text-base md:text-sm bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
+                <label htmlFor="si-phone" className="block text-sm font-medium mb-1">Phone</label>
                 <input
+                  id="si-phone"
                   name="phone"
                   type="tel"
+                  autoComplete="tel"
                   className="w-full px-2.5 py-2 border border-zinc-200 rounded-md text-base md:text-sm bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Collection or delivery?</label>
+                <label htmlFor="si-pref" className="block text-sm font-medium mb-1">Collection or delivery?</label>
                 <select
+                  id="si-pref"
                   name="collection_preference"
                   className="w-full px-2.5 py-2 border border-zinc-200 rounded-md text-base md:text-sm bg-white"
                 >
@@ -885,8 +958,9 @@ function SummaryModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Message</label>
+                <label htmlFor="si-message" className="block text-sm font-medium mb-1">Message</label>
                 <textarea
+                  id="si-message"
                   name="message"
                   rows={3}
                   className="w-full px-2.5 py-2 border border-zinc-200 rounded-md text-base md:text-sm bg-white"

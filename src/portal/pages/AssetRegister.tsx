@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { priceIncVat } from '@/lib/vat'
+import { priceIncVat, formatGBP } from '@/lib/vat'
 
 type Status = 'available' | 'under_offer' | 'sold'
 
@@ -39,6 +39,7 @@ interface AssetListing {
   id: string
   name: string
   description: string | null
+  internal_notes: string | null
   asking_price: number | null
   original_cost: number | null
   category: string | null
@@ -46,11 +47,39 @@ interface AssetListing {
   allow_offers: boolean
   is_poa: boolean
   is_zero_rated: boolean
-  needs_pricing_review: boolean
   sort_order: number
   created_at: string
   updated_at: string
   asset_listing_images: AssetImage[]
+}
+
+interface ViewStats {
+  page_views_total: number
+  page_views_7d: number
+  listing_views: Record<string, number>
+}
+
+interface AdminListingsData {
+  listings: AssetListing[]
+  stats: ViewStats
+}
+
+interface InterestItem {
+  id: string
+  listing_id: string | null
+  offer_value: number | null
+  asset_listings: { name: string } | null
+}
+
+interface InterestSubmission {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  message: string | null
+  collection_preference: string | null
+  created_at: string
+  interest_submission_items: InterestItem[]
 }
 
 function parseNum(v: string): number | null {
@@ -104,10 +133,12 @@ async function authedFetch(input: string, init: RequestInit & { timeoutMs?: numb
   }
 }
 
-function formatPrice(exVat: number | null, isZeroRated: boolean): string {
-  if (exVat == null) return '—'
-  const inc = priceIncVat(Number(exVat), isZeroRated)
-  return `£${inc.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
+// Admin price label: always show the number when one is set (POA gets its
+// own badge); null = TBD = not priced yet.
+function formatPrice(l: Pick<AssetListing, 'asking_price' | 'is_zero_rated'>): string {
+  if (l.asking_price == null) return 'TBD'
+  if (l.asking_price === 0) return 'Free'
+  return formatGBP(priceIncVat(l.asking_price, l.is_zero_rated))
 }
 
 export function AssetRegister() {
@@ -115,52 +146,76 @@ export function AssetRegister() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<AssetListing | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [filter, setFilter] = useState<'all' | Status>('all')
+  const [filter, setFilter] = useState<'all' | Status | 'tbd'>('all')
   const [search, setSearch] = useState('')
-  // Bumped each time "+ new" is pressed so the dialog remounts with a clean
-  // form — otherwise React's useState keeps the previous entry's values.
-  const [newKey, setNewKey] = useState(0)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [pageError, setPageError] = useState<string | null>(null)
 
+  // Reads go through the service-role admin endpoint: original_cost and
+  // internal_notes are blocked for the authenticated role by column grants.
   const listingsQuery = useQuery({
     queryKey: ['admin-asset-listings'],
-    queryFn: async (): Promise<AssetListing[]> => {
-      const { data, error } = await supabase
-        .from('asset_listings')
-        .select('*, asset_listing_images(*)')
-        .order('sort_order')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return (data ?? []).map((l) => ({
-        ...l,
-        asset_listing_images: (l.asset_listing_images ?? []).sort(
-          (a: AssetImage, b: AssetImage) => a.position - b.position,
-        ),
-      }))
+    enabled: isSystemAdmin,
+    queryFn: async (): Promise<AdminListingsData> => {
+      const res = await authedFetch('/api/asset-listings')
+      if (!res.ok) {
+        const r = await res.json().catch(() => ({}))
+        throw new Error(r.error || 'Failed to load listings.')
+      }
+      const data = await res.json()
+      return {
+        listings: (data.listings ?? []).map((l: any) => ({
+          ...l,
+          asking_price: l.asking_price == null ? null : Number(l.asking_price),
+          original_cost: l.original_cost == null ? null : Number(l.original_cost),
+          asset_listing_images: (l.asset_listing_images ?? []).sort(
+            (a: AssetImage, b: AssetImage) => a.position - b.position,
+          ),
+        })),
+        stats: data.stats ?? { page_views_total: 0, page_views_7d: 0, listing_views: {} },
+      }
+    },
+  })
+
+  const submissionsQuery = useQuery({
+    queryKey: ['admin-asset-interest'],
+    enabled: isSystemAdmin,
+    queryFn: async (): Promise<InterestSubmission[]> => {
+      const res = await authedFetch('/api/asset-interest')
+      if (!res.ok) {
+        const r = await res.json().catch(() => ({}))
+        throw new Error(r.error || 'Failed to load submissions.')
+      }
+      return res.json()
     },
   })
 
   const deleteListing = useMutation({
     mutationFn: async (id: string) => {
       const res = await authedFetch(`/api/asset-listings/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error((await res.json()).error || 'Delete failed')
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Delete failed')
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] }),
+    onSuccess: () => {
+      setPageError(null)
+      queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })
+    },
+    onError: (e: Error) => setPageError(e.message || 'Failed to delete the listing.'),
   })
 
-  if (!isSystemAdmin) {
-    return <p className="text-muted-foreground">You do not have access to this page.</p>
-  }
-
-  const listings = listingsQuery.data ?? []
+  const listings = listingsQuery.data?.listings ?? []
+  const stats = listingsQuery.data?.stats
   const trimmedSearch = search.trim().toLowerCase()
   const filtered = listings.filter((l) => {
-    if (filter !== 'all' && l.status !== filter) return false
+    if (filter === 'tbd') {
+      if (l.asking_price != null) return false
+    } else if (filter !== 'all' && l.status !== filter) {
+      return false
+    }
     if (!trimmedSearch) return true
     const haystack = `${l.name} ${l.description ?? ''} ${l.category ?? ''}`.toLowerCase()
     return haystack.includes(trimmedSearch)
   })
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const toggleCategory = (cat: string) =>
     setCollapsed((s) => ({ ...s, [cat]: !s[cat] }))
 
@@ -191,11 +246,7 @@ export function AssetRegister() {
     }
   }
 
-  const openNew = () => {
-    setEditing(null)
-    setNewKey((n) => n + 1)
-    setDialogOpen(true)
-  }
+  const openNew = () => { setEditing(null); setDialogOpen(true) }
   const openEdit = (l: AssetListing) => { setEditing(l); setDialogOpen(true) }
 
   // Categories already used across all listings — feeds the dropdown for fast
@@ -203,6 +254,11 @@ export function AssetRegister() {
   const existingCategories = Array.from(
     new Set(listings.map((l) => l.category).filter((c): c is string => !!c)),
   ).sort()
+
+  // After all hooks — conditional returns above a hook crash on auth flips.
+  if (!isSystemAdmin) {
+    return <p className="text-muted-foreground">You do not have access to this page.</p>
+  }
 
   return (
     <>
@@ -214,15 +270,40 @@ export function AssetRegister() {
           </CardTitle>
           <CardDescription>
             Manage equipment listings for the public for-sale page
+            {stats && (
+              <span className="block mt-1 text-xs">
+                Public page views: {stats.page_views_total} all-time · {stats.page_views_7d} in
+                the last 7 days
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
+          {pageError && (
+            <div className="px-3 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex items-center justify-between gap-3">
+              <span>{pageError}</span>
+              <button
+                type="button"
+                onClick={() => setPageError(null)}
+                aria-label="Dismiss"
+                className="text-red-400 hover:text-red-700 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
               <TabsList>
-                {(['all', 'available', 'under_offer', 'sold'] as const).map((f) => {
-                  const count = f === 'all' ? listings.length : listings.filter((l) => l.status === f).length
-                  const label = f === 'all' ? 'All' : STATUS_LABEL[f]
+                {(['all', 'tbd', 'available', 'under_offer', 'sold'] as const).map((f) => {
+                  const count =
+                    f === 'all'
+                      ? listings.length
+                      : f === 'tbd'
+                        ? listings.filter((l) => l.asking_price == null).length
+                        : listings.filter((l) => l.status === f).length
+                  const label = f === 'all' ? 'All' : f === 'tbd' ? 'TBD' : STATUS_LABEL[f]
                   return (
                     <TabsTrigger key={f} value={f}>
                       {label}
@@ -255,7 +336,16 @@ export function AssetRegister() {
             </div>
           </div>
 
-          {listingsQuery.isLoading ? (
+          {listingsQuery.isError ? (
+            <div className="text-center py-8 space-y-3">
+              <p className="text-sm text-red-700">
+                {(listingsQuery.error as Error).message || 'Failed to load listings.'}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => listingsQuery.refetch()}>
+                Try again
+              </Button>
+            </div>
+          ) : listingsQuery.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-16 bg-gray-100 animate-pulse rounded" />
@@ -267,7 +357,7 @@ export function AssetRegister() {
                 ? 'No listings yet'
                 : trimmedSearch
                   ? `No listings match "${search}"`
-                  : 'No listings in this status'}
+                  : 'No listings in this filter'}
             </div>
           ) : (
             <div className="sm:border sm:rounded-lg overflow-x-auto">
@@ -289,6 +379,7 @@ export function AssetRegister() {
                     <TableHead className="text-left">Item</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
                     <TableHead className="text-left hidden sm:table-cell w-28">Status</TableHead>
+                    <TableHead className="text-right hidden md:table-cell w-16">Views</TableHead>
                     <TableHead className="text-right hidden md:table-cell w-20">Photos</TableHead>
                     <TableHead className="text-right w-20 sm:w-32"></TableHead>
                   </TableRow>
@@ -321,9 +412,7 @@ export function AssetRegister() {
                         </TableRow>
                         {!isCollapsed && items.map((l) => {
                           const cover = l.asset_listing_images[0]
-                          const priceDisplay = l.needs_pricing_review
-                            ? <span className="font-normal text-amber-700">Needs review</span>
-                            : formatPrice(l.asking_price, l.is_zero_rated)
+                          const views = stats?.listing_views?.[l.id] ?? 0
                           return (
                             <TableRow key={l.id} className="hover:bg-gray-50">
                               <TableCell className="p-2 sm:p-4">
@@ -342,21 +431,37 @@ export function AssetRegister() {
                               <TableCell className="p-2 sm:p-4 whitespace-normal break-words">
                                 <div className="font-medium">{l.name}</div>
                                 {/* Mobile-only: stack price + status + photos below name */}
-                                <div className="flex items-center gap-2 mt-1 sm:hidden text-xs">
-                                  <span className="font-semibold">{priceDisplay}</span>
+                                <div className="flex flex-wrap items-center gap-2 mt-1 sm:hidden text-xs">
+                                  <span className={cn('font-semibold', l.asking_price == null && 'text-amber-600')}>
+                                    {formatPrice(l)}
+                                    {l.is_poa && ' · POA'}
+                                  </span>
                                   <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                     {STATUS_LABEL[l.status]}
                                   </Badge>
                                   <span className="text-gray-500">{l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}</span>
+                                  <span className="text-gray-500">{views} view{views === 1 ? '' : 's'}</span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right font-semibold whitespace-nowrap hidden sm:table-cell">
-                                {priceDisplay}
+                              <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {l.is_poa && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-800 border-transparent">
+                                      POA
+                                    </Badge>
+                                  )}
+                                  <span className={cn('font-semibold', l.asking_price == null && 'text-amber-600')}>
+                                    {formatPrice(l)}
+                                  </span>
+                                </div>
                               </TableCell>
                               <TableCell className="hidden sm:table-cell">
                                 <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                   {STATUS_LABEL[l.status]}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
+                                {views}
                               </TableCell>
                               <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
                                 {l.asset_listing_images.length}
@@ -407,8 +512,76 @@ export function AssetRegister() {
         </CardContent>
       </Card>
 
+      <Card className="mt-6 border-0 rounded-none shadow-none -mx-4 sm:mx-0 sm:border sm:rounded-xl sm:shadow-sm">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="text-base">
+            Interest submissions
+            {submissionsQuery.data && submissionsQuery.data.length > 0 && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {submissionsQuery.data.length}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Registered via the public page — newest first. You also get these by email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 px-4 sm:px-6">
+          {submissionsQuery.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="h-20 bg-gray-100 animate-pulse rounded" />
+              ))}
+            </div>
+          ) : submissionsQuery.isError ? (
+            <p className="text-sm text-red-700">
+              {(submissionsQuery.error as Error).message || 'Failed to load submissions.'}
+            </p>
+          ) : (submissionsQuery.data ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No submissions yet</p>
+          ) : (
+            (submissionsQuery.data ?? []).map((s) => (
+              <div key={s.id} className="border rounded-md p-3 space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="font-medium">{s.name}</span>
+                    <a href={`mailto:${s.email}`} className="ml-2 text-sm text-[#009689] hover:underline break-all">
+                      {s.email}
+                    </a>
+                    {s.phone && <span className="ml-2 text-sm text-muted-foreground">{s.phone}</span>}
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(s.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </span>
+                </div>
+                {s.collection_preference && (
+                  <Badge variant="outline" className="bg-gray-100 text-gray-700 border-transparent capitalize">
+                    {s.collection_preference}
+                  </Badge>
+                )}
+                <ul className="text-sm space-y-0.5">
+                  {s.interest_submission_items.map((it) => (
+                    <li key={it.id} className="flex items-baseline gap-2">
+                      <span className="text-muted-foreground">•</span>
+                      <span>{it.asset_listings?.name ?? '(listing removed)'}</span>
+                      {it.offer_value != null && (
+                        <span className="text-muted-foreground">
+                          — offer {formatGBP(Number(it.offer_value))}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {s.message && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-line border-t pt-2">{s.message}</p>
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
       <ListingDialog
-        key={editing ? `edit-${editing.id}` : `new-${newKey}`}
         open={dialogOpen}
         initial={editing}
         existingCategories={existingCategories}
@@ -447,9 +620,10 @@ function ListingDialog({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
-  // Reset state whenever the dialog is opened with a new (or null) initial
+  // Reset state whenever the dialog transitions closed -> open
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [internalNotes, setInternalNotes] = useState(initial?.internal_notes ?? '')
   const [originalCost, setOriginalCost] = useState(initial?.original_cost?.toString() ?? '')
   const [askingPrice, setAskingPrice] = useState(initial?.asking_price?.toString() ?? '')
   const [discountPercent, setDiscountPercent] = useState(
@@ -463,45 +637,46 @@ function ListingDialog({
   const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
   const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [isZeroRated, setIsZeroRated] = useState(initial?.is_zero_rated ?? false)
-  const [needsPricingReview, setNeedsPricingReview] = useState(initial?.needs_pricing_review ?? false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
   const [images, setImages] = useState<AssetImage[]>(initial?.asset_listing_images ?? [])
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  // 0..100, or null when no upload is in flight. Used to drive the progress
-  // bar in the photos section.
+  // 0..100, or null when no upload is in flight. Drives the progress bar
+  // in the photos section.
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
-  // Sync form when initial prop changes (e.g. switching from one Edit dialog
-  // to another). Parent uses a `key` prop to force a remount when opening
-  // for a brand-new listing, so this only runs when editing existing rows.
-  const initialId = initial?.id ?? null
-  const [lastInitialId, setLastInitialId] = useState<string | null | undefined>(undefined)
-  if (lastInitialId !== initialId) {
-    setLastInitialId(initialId)
-    setName(initial?.name ?? '')
-    setDescription(initial?.description ?? '')
-    setOriginalCost(initial?.original_cost?.toString() ?? '')
-    setAskingPrice(initial?.asking_price?.toString() ?? '')
-    setDiscountPercent(calcDiscountPercent(initial?.original_cost ?? null, initial?.asking_price ?? null))
-    setDiscountAmount(calcDiscountAmount(initial?.original_cost ?? null, initial?.asking_price ?? null))
-    setCategory(initial?.category ?? '')
-    setStatus(initial?.status ?? 'available')
-    setAllowOffers(initial?.allow_offers ?? false)
-    setIsPoa(initial?.is_poa ?? false)
-    setIsZeroRated(initial?.is_zero_rated ?? false)
-    setNeedsPricingReview(initial?.needs_pricing_review ?? false)
-    setListingId(initialId)
-    setImages(initial?.asset_listing_images ?? [])
-    setError(null)
-    pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
-    setPendingFiles([])
-    setPendingPreviews([])
+  // Reset the form every time the dialog OPENS. Keying the reset on
+  // initial.id alone broke two flows: "New listing" straight after a create
+  // re-armed the previous listing in edit mode (null -> null id change is
+  // invisible), and cancelled edits reappeared when reopening the same row.
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setName(initial?.name ?? '')
+      setDescription(initial?.description ?? '')
+      setInternalNotes(initial?.internal_notes ?? '')
+      setOriginalCost(initial?.original_cost?.toString() ?? '')
+      setAskingPrice(initial?.asking_price?.toString() ?? '')
+      setDiscountPercent(calcDiscountPercent(initial?.original_cost ?? null, initial?.asking_price ?? null))
+      setDiscountAmount(calcDiscountAmount(initial?.original_cost ?? null, initial?.asking_price ?? null))
+      setCategory(initial?.category ?? '')
+      setStatus(initial?.status ?? 'available')
+      setAllowOffers(initial?.allow_offers ?? false)
+      setIsPoa(initial?.is_poa ?? false)
+      setIsZeroRated(initial?.is_zero_rated ?? false)
+      setListingId(initial?.id ?? null)
+      setImages(initial?.asset_listing_images ?? [])
+      setError(null)
+      pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
+      setPendingFiles([])
+      setPendingPreviews([])
+    }
   }
 
   const refreshImages = async (id: string) => {
@@ -515,36 +690,57 @@ function ListingDialog({
 
   const uploadFilesTo = async (id: string, files: File[]): Promise<boolean> => {
     if (files.length === 0) return true
-    // Resize client-side so we stay well under Vercel's 4.5 MB serverless
-    // body limit and the upload itself is faster on mobile data.
     setUploadProgress(0)
+    // Resize client-side so uploads are fast on mobile data, then batch by
+    // cumulative size: Vercel rejects request bodies over ~4.5 MB, and
+    // pass-through files (small originals, undecodable HEIC) can stack up.
     const resized = await Promise.all(files.map((f) => resizeImage(f)))
-    const formData = new FormData()
-    resized.forEach((f) => formData.append('files', f))
+    const MAX_BATCH_BYTES = 3.5 * 1024 * 1024
+    const batches: File[][] = []
+    let batch: File[] = []
+    let batchBytes = 0
+    for (const f of resized) {
+      if (batch.length > 0 && batchBytes + f.size > MAX_BATCH_BYTES) {
+        batches.push(batch)
+        batch = []
+        batchBytes = 0
+      }
+      batch.push(f)
+      batchBytes += f.size
+    }
+    if (batch.length > 0) batches.push(batch)
 
     // XHR rather than fetch — fetch can't report upload progress in the
     // browser, and on mobile data a multi-photo upload feels broken without
-    // a visible bar.
+    // a visible bar. Progress is cumulative across batches.
+    const totalBytes = resized.reduce((s, f) => s + f.size, 0)
     const token = getCachedAccessToken()
-    return new Promise<boolean>((resolve) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', `/api/asset-listings/${id}/images`)
-      if (token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-      }
-      // Photos can be several MB on slow mobile data — give them headroom,
-      // but don't let them hang forever.
-      xhr.timeout = 120_000
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setUploadProgress(Math.round((e.loaded / e.total) * 100))
+    let sentBytes = 0
+    let uploaded = 0
+
+    for (const b of batches) {
+      const thisBatchBytes = b.reduce((s, f) => s + f.size, 0)
+      const formData = new FormData()
+      b.forEach((f) => formData.append('files', f))
+
+      const ok = await new Promise<boolean>((resolve) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', `/api/asset-listings/${id}/images`)
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+        // Photos can be several MB on slow mobile data — give them headroom,
+        // but don't let them hang forever.
+        xhr.timeout = 120_000
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && totalBytes > 0) {
+            const batchLoaded = Math.min(e.loaded, thisBatchBytes)
+            setUploadProgress(Math.round(((sentBytes + batchLoaded) / totalBytes) * 100))
+          }
         }
-      }
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadProgress(100)
-          resolve(true)
-        } else {
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(true)
+            return
+          }
           try {
             const r = JSON.parse(xhr.responseText)
             setError(r.error || 'Upload failed.')
@@ -553,17 +749,28 @@ function ListingDialog({
           }
           resolve(false)
         }
+        xhr.onerror = () => {
+          setError('Upload failed.')
+          resolve(false)
+        }
+        xhr.ontimeout = () => {
+          setError('Photo upload timed out. Check your connection and try again.')
+          resolve(false)
+        }
+        xhr.send(formData)
+      })
+
+      if (!ok) {
+        if (resized.length > 1) {
+          setError((prev) => `${prev ?? 'Upload failed.'} (${uploaded} of ${resized.length} photos uploaded.)`)
+        }
+        return false
       }
-      xhr.onerror = () => {
-        setError('Upload failed.')
-        resolve(false)
-      }
-      xhr.ontimeout = () => {
-        setError('Photo upload timed out. Check your connection and try again.')
-        resolve(false)
-      }
-      xhr.send(formData)
-    })
+      sentBytes += thisBatchBytes
+      uploaded += b.length
+      setUploadProgress(Math.round((sentBytes / totalBytes) * 100))
+    }
+    return true
   }
 
   // Linked price field handlers: editing any of cost / % / £ discount / asking
@@ -624,6 +831,8 @@ function ListingDialog({
       const payload = {
         name,
         description,
+        internal_notes: internalNotes,
+        // Blank = TBD (null). An explicit 0 = Free.
         asking_price: askingPrice.trim() === '' ? null : Number(askingPrice),
         original_cost: originalCost.trim() === '' ? null : Number(originalCost),
         category,
@@ -631,7 +840,6 @@ function ListingDialog({
         allow_offers: allowOffers,
         is_poa: isPoa,
         is_zero_rated: isZeroRated,
-        needs_pricing_review: needsPricingReview,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -652,7 +860,6 @@ function ListingDialog({
         setUploading(true)
         const ok = await uploadFilesTo(id, pendingFiles)
         setUploading(false)
-        setUploadProgress(null)
         if (ok) {
           pendingPreviews.forEach((url) => URL.revokeObjectURL(url))
           setPendingFiles([])
@@ -664,12 +871,8 @@ function ListingDialog({
       }
       onSaved()
       onOpenChange(false)
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('Save timed out. Check your connection and try again.')
-      } else {
-        setError('Save failed.')
-      }
+    } catch {
+      setError('Save failed.')
     } finally {
       setSaving(false)
     }
@@ -697,7 +900,6 @@ function ListingDialog({
       }
     } finally {
       setUploading(false)
-      setUploadProgress(null)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -720,8 +922,12 @@ function ListingDialog({
       method: 'DELETE',
     })
     if (res.ok) {
+      setError(null)
       await refreshImages(listingId)
       onSaved()
+    } else {
+      const r = await res.json().catch(() => ({}))
+      setError(r.error || 'Failed to delete the photo.')
     }
   }
 
@@ -735,11 +941,18 @@ function ListingDialog({
     const [moved] = reordered.splice(idx, 1)
     reordered.splice(next, 0, moved)
     setImages(reordered)
-    await authedFetch(`/api/asset-listings/${listingId}/images`, {
+    const res = await authedFetch(`/api/asset-listings/${listingId}/images`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order: reordered.map((i) => i.id) }),
     })
+    if (!res.ok) {
+      // Optimistic reorder failed — resync from the server so the UI
+      // doesn't silently diverge from the saved order.
+      setError('Failed to reorder photos.')
+      await refreshImages(listingId)
+      return
+    }
     onSaved()
   }
 
@@ -780,6 +993,17 @@ function ListingDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="asset-internal-notes">Internal notes</Label>
+            <Textarea
+              id="asset-internal-notes"
+              value={internalNotes}
+              onChange={(e) => setInternalNotes(e.target.value)}
+              rows={3}
+              placeholder="Never shown publicly — cost audit notes, provenance, reminders"
             />
           </div>
 
@@ -866,6 +1090,7 @@ function ListingDialog({
                 min="0"
                 value={askingPrice}
                 onChange={(e) => handleAskingChange(e.target.value)}
+                placeholder="Blank = TBD"
               />
             </div>
           </div>
@@ -910,22 +1135,16 @@ function ListingDialog({
                   <span className="text-muted-foreground text-xs">No VAT is added to the displayed price.</span>
                 </span>
               </label>
-              <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/40 px-3 py-2 cursor-pointer hover:bg-amber-50 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={needsPricingReview}
-                  onChange={(e) => setNeedsPricingReview(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-amber-600"
-                />
-                <span className="text-sm">
-                  <span className="font-medium block">I don't know how much to list this item for</span>
-                  <span className="text-muted-foreground text-xs">Hides the item from the public for-sale page and flags it for another reviewer to price.</span>
-                </span>
-              </label>
             </div>
-            {isPoa && askingNum != null && askingNum === 0 && (
+            {!isPoa && askingNum === 0 && (
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
-                POA hides the asking price, so an asking price of £0 has no effect. Did you mean to leave the asking price blank or set a real figure?
+                An explicit £0 shows as "Free" on the public page. Leave the price blank if
+                it's still TBD.
+              </p>
+            )}
+            {!isPoa && askingPrice.trim() === '' && (
+              <p className="text-xs text-muted-foreground">
+                No price set — the public page shows "TBD" for this item.
               </p>
             )}
           </div>
