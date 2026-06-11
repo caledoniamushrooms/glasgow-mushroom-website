@@ -1,8 +1,17 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Most visitors land here either fresh or via the SPA's auth-init bail-out
+// — in both cases supabase-js will fire its first request from this page,
+// so warm the TLS handshake while the HTML is downloading.
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 ---
 
 <BaseLayout title="Sign in — Glasgow Mushroom Company Trade Portal" description="Sign in to the Glasgow Mushroom Company trade portal.">
+  {supabaseUrl && <Fragment slot="head">
+    <link rel="preconnect" href={supabaseUrl} crossorigin />
+    <link rel="dns-prefetch" href={supabaseUrl} />
+  </Fragment>}
   <section class="portal-form">
     <div class="portal-form__card" data-reveal>
       <div class="portal-form__header">

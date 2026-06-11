@@ -1,11 +1,11 @@
 import { Fragment, useMemo, useState, useRef, useEffect, type FormEvent, type DragEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronsUpDown, Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase, getCachedAccessToken } from '../lib/supabase'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
 import { resizeImage } from '../lib/resizeImage'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -108,11 +108,29 @@ const STATUS_BADGE_CLASS: Record<Status, string> = {
   sold: 'bg-gray-200 text-gray-600 hover:bg-gray-200 border-transparent',
 }
 
-async function authedFetch(input: string, init: RequestInit = {}) {
-  const { data: { session } } = await supabase.auth.getSession()
+// Default timeout for portal-API JSON requests. The browser fetch has no
+// timeout of its own and on a stalled mobile connection (Vercel cold start,
+// 4G handoff, etc.) a Save click can spin forever. 20s is generous enough
+// that a healthy server will never hit it, but short enough to surface an
+// error before the user gives up.
+const FETCH_TIMEOUT_MS = 20_000
+
+async function authedFetch(input: string, init: RequestInit & { timeoutMs?: number } = {}) {
+  // Read the access token from the in-memory cache rather than calling
+  // supabase.auth.getSession() — that call goes through the SDK's auth
+  // lock and can stall on mobile while a token refresh is in flight,
+  // which leaves the Save button stuck on "Saving…" forever.
+  const token = getCachedAccessToken()
   const headers = new Headers(init.headers)
-  if (session?.access_token) headers.set('Authorization', `Bearer ${session.access_token}`)
-  return fetch(input, { ...init, headers })
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? FETCH_TIMEOUT_MS)
+  try {
+    return await fetch(input, { ...init, headers, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 // Admin price label: always show the number when one is set (POA gets its
@@ -129,6 +147,7 @@ export function AssetRegister() {
   const [editing, setEditing] = useState<AssetListing | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Status | 'tbd'>('all')
+  const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [pageError, setPageError] = useState<string | null>(null)
 
@@ -185,12 +204,17 @@ export function AssetRegister() {
 
   const listings = listingsQuery.data?.listings ?? []
   const stats = listingsQuery.data?.stats
-  const filtered =
-    filter === 'all'
-      ? listings
-      : filter === 'tbd'
-        ? listings.filter((l) => l.asking_price == null)
-        : listings.filter((l) => l.status === filter)
+  const trimmedSearch = search.trim().toLowerCase()
+  const filtered = listings.filter((l) => {
+    if (filter === 'tbd') {
+      if (l.asking_price != null) return false
+    } else if (filter !== 'all' && l.status !== filter) {
+      return false
+    }
+    if (!trimmedSearch) return true
+    const haystack = `${l.name} ${l.description ?? ''} ${l.category ?? ''}`.toLowerCase()
+    return haystack.includes(trimmedSearch)
+  })
 
   const toggleCategory = (cat: string) =>
     setCollapsed((s) => ({ ...s, [cat]: !s[cat] }))
@@ -253,12 +277,6 @@ export function AssetRegister() {
               </span>
             )}
           </CardDescription>
-          <CardAction>
-            <Button onClick={openNew} aria-label="New listing">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New listing</span>
-            </Button>
-          </CardAction>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
           {pageError && (
@@ -275,25 +293,48 @@ export function AssetRegister() {
             </div>
           )}
 
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList>
-              {(['all', 'tbd', 'available', 'under_offer', 'sold'] as const).map((f) => {
-                const count =
-                  f === 'all'
-                    ? listings.length
-                    : f === 'tbd'
-                      ? listings.filter((l) => l.asking_price == null).length
-                      : listings.filter((l) => l.status === f).length
-                const label = f === 'all' ? 'All' : f === 'tbd' ? 'TBD' : STATUS_LABEL[f]
-                return (
-                  <TabsTrigger key={f} value={f}>
-                    {label}
-                    <span className="ml-1 text-xs opacity-60">{count}</span>
-                  </TabsTrigger>
-                )
-              })}
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <TabsList>
+                {(['all', 'tbd', 'available', 'under_offer', 'sold'] as const).map((f) => {
+                  const count =
+                    f === 'all'
+                      ? listings.length
+                      : f === 'tbd'
+                        ? listings.filter((l) => l.asking_price == null).length
+                        : listings.filter((l) => l.status === f).length
+                  const label = f === 'all' ? 'All' : f === 'tbd' ? 'TBD' : STATUS_LABEL[f]
+                  return (
+                    <TabsTrigger key={f} value={f}>
+                      {label}
+                      <span className="ml-1 text-xs opacity-60">{count}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </Tabs>
+            <div className="relative sm:w-72">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, description, category…"
+                aria-label="Search listings"
+                className="pl-8 pr-8"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
 
           {listingsQuery.isError ? (
             <div className="text-center py-8 space-y-3">
@@ -312,7 +353,11 @@ export function AssetRegister() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
-              No listings yet
+              {listings.length === 0
+                ? 'No listings yet'
+                : trimmedSearch
+                  ? `No listings match "${search}"`
+                  : 'No listings in this filter'}
             </div>
           ) : (
             <div className="sm:border sm:rounded-lg overflow-x-auto">
@@ -341,7 +386,9 @@ export function AssetRegister() {
                 </TableHeader>
                 <TableBody>
                   {grouped.map(([category, items]) => {
-                    const isCollapsed = !!collapsed[category]
+                    // Force-expand while a search is active so matching rows
+                    // aren't hidden behind a collapsed category header.
+                    const isCollapsed = !trimmedSearch && !!collapsed[category]
                     return (
                       <Fragment key={category}>
                         <TableRow
@@ -541,6 +588,18 @@ export function AssetRegister() {
         onOpenChange={setDialogOpen}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] })}
       />
+
+      {/* Floating action button — primary way to add a new listing. Sits
+          above the iOS home indicator and stays clear of long scrollable
+          tables on mobile. */}
+      <Button
+        type="button"
+        onClick={openNew}
+        aria-label="New listing"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg p-0 pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </>
   )
 }
@@ -584,6 +643,9 @@ function ListingDialog({
   const [images, setImages] = useState<AssetImage[]>(initial?.asset_listing_images ?? [])
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  // 0..100, or null when no upload is in flight. Drives the progress bar
+  // in the photos section.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
@@ -628,6 +690,7 @@ function ListingDialog({
 
   const uploadFilesTo = async (id: string, files: File[]): Promise<boolean> => {
     if (files.length === 0) return true
+    setUploadProgress(0)
     // Resize client-side so uploads are fast on mobile data, then batch by
     // cumulative size: Vercel rejects request bodies over ~4.5 MB, and
     // pass-through files (small originals, undecodable HEIC) can stack up.
@@ -647,23 +710,65 @@ function ListingDialog({
     }
     if (batch.length > 0) batches.push(batch)
 
+    // XHR rather than fetch — fetch can't report upload progress in the
+    // browser, and on mobile data a multi-photo upload feels broken without
+    // a visible bar. Progress is cumulative across batches.
+    const totalBytes = resized.reduce((s, f) => s + f.size, 0)
+    const token = getCachedAccessToken()
+    let sentBytes = 0
     let uploaded = 0
+
     for (const b of batches) {
+      const thisBatchBytes = b.reduce((s, f) => s + f.size, 0)
       const formData = new FormData()
       b.forEach((f) => formData.append('files', f))
-      const res = await authedFetch(`/api/asset-listings/${id}/images`, {
-        method: 'POST',
-        body: formData,
+
+      const ok = await new Promise<boolean>((resolve) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', `/api/asset-listings/${id}/images`)
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+        // Photos can be several MB on slow mobile data — give them headroom,
+        // but don't let them hang forever.
+        xhr.timeout = 120_000
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && totalBytes > 0) {
+            const batchLoaded = Math.min(e.loaded, thisBatchBytes)
+            setUploadProgress(Math.round(((sentBytes + batchLoaded) / totalBytes) * 100))
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(true)
+            return
+          }
+          try {
+            const r = JSON.parse(xhr.responseText)
+            setError(r.error || 'Upload failed.')
+          } catch {
+            setError('Upload failed.')
+          }
+          resolve(false)
+        }
+        xhr.onerror = () => {
+          setError('Upload failed.')
+          resolve(false)
+        }
+        xhr.ontimeout = () => {
+          setError('Photo upload timed out. Check your connection and try again.')
+          resolve(false)
+        }
+        xhr.send(formData)
       })
-      if (!res.ok) {
-        const r = await res.json().catch(() => ({}))
-        setError(
-          (r.error || 'Upload failed.') +
-            (resized.length > 1 ? ` (${uploaded} of ${resized.length} photos uploaded.)` : ''),
-        )
+
+      if (!ok) {
+        if (resized.length > 1) {
+          setError((prev) => `${prev ?? 'Upload failed.'} (${uploaded} of ${resized.length} photos uploaded.)`)
+        }
         return false
       }
+      sentBytes += thisBatchBytes
       uploaded += b.length
+      setUploadProgress(Math.round((sentBytes / totalBytes) * 100))
     }
     return true
   }
@@ -1102,6 +1207,27 @@ function ListingDialog({
                 ? 'Drop photos here'
                 : 'Drag photos here, or tap to choose from camera or library'}
             </div>
+
+            {uploading && uploadProgress != null && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Uploading photos…</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={uploadProgress}
+                  className="h-2 w-full rounded-full bg-muted overflow-hidden"
+                >
+                  <div
+                    className="h-full bg-primary transition-[width] duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {!listingId && pendingFiles.length > 0 && (
               <p className="text-xs text-muted-foreground">
