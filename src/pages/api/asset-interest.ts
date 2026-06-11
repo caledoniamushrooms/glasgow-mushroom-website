@@ -3,6 +3,8 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { priceIncVat, formatGBP } from '../../lib/vat';
+import { requireAdmin } from './_lib/admin-auth';
 
 const admin = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -40,10 +42,13 @@ interface SubmittedItem {
   offer_value: number | null;
 }
 
-function priceLabel(asking: number, isPoa: boolean): string {
+// Mirrors the public page: POA wins, null price = TBD, explicit 0 = Free,
+// otherwise the inc-VAT price the visitor saw on the site.
+function priceLabel(asking: number | null, isPoa: boolean, isZeroRated: boolean): string {
   if (isPoa) return 'POA';
+  if (asking == null) return 'TBD';
   if (asking === 0) return 'Free';
-  return `£${asking.toLocaleString('en-GB')}`;
+  return `${formatGBP(priceIncVat(asking, isZeroRated))} inc VAT`;
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -70,10 +75,24 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const collection_preference = ['collection', 'delivery', 'either'].includes(rawPref) ? rawPref : null;
 
   if (!name || !email) return jsonResponse({ error: 'Name and email are required.' }, 400);
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return jsonResponse({ error: 'Enter a valid email address.' }, 400);
+  }
+  if (
+    name.length > 200 ||
+    email.length > 320 ||
+    (phone?.length ?? 0) > 50 ||
+    (message?.length ?? 0) > 5000
+  ) {
+    return jsonResponse({ error: 'One of the fields is too long.' }, 400);
+  }
 
   // Validate items
   if (!Array.isArray(body.items) || body.items.length === 0) {
     return jsonResponse({ error: 'Select at least one item.' }, 400);
+  }
+  if (body.items.length > 100) {
+    return jsonResponse({ error: 'Too many items.' }, 400);
   }
 
   const items: SubmittedItem[] = [];
@@ -87,7 +106,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     let offer: number | null = null;
     if (raw.offer_value !== null && raw.offer_value !== undefined && raw.offer_value !== '') {
       const n = Number(raw.offer_value);
-      if (!Number.isFinite(n) || n < 0) {
+      if (!Number.isFinite(n) || n < 0 || n > 1_000_000) {
         return jsonResponse({ error: `Bad offer value for an item.` }, 400);
       }
       offer = n;
@@ -100,15 +119,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // logged but kept on the submission so admin can still see what was tried.
   const { data: listingRows } = await admin
     .from('asset_listings')
-    .select('id, name, asking_price, is_poa')
+    .select('id, name, asking_price, is_poa, is_zero_rated')
     .in('id', items.map((i) => i.listing_id));
 
-  const listingMap = new Map<string, { name: string; asking_price: number; is_poa: boolean }>();
+  const listingMap = new Map<
+    string,
+    { name: string; asking_price: number | null; is_poa: boolean; is_zero_rated: boolean }
+  >();
   (listingRows ?? []).forEach((l) => {
     listingMap.set(l.id, {
       name: l.name,
-      asking_price: Number(l.asking_price),
+      asking_price: l.asking_price == null ? null : Number(l.asking_price),
       is_poa: Boolean(l.is_poa),
+      is_zero_rated: Boolean(l.is_zero_rated),
     });
   });
 
@@ -138,31 +161,34 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return jsonResponse({ error: 'Something went wrong saving the items.' }, 500);
   }
 
-  // Email summary
+  // Email summary — inc-VAT figures so the totals match what the visitor
+  // saw on the site. Offers count toward the total even on POA/TBD items.
   let quotedTotal = 0;
-  let poaCount = 0;
+  let unpricedCount = 0;
   const itemLines: string[] = items.map((i) => {
     const listing = listingMap.get(i.listing_id);
-    const name = listing?.name ?? '(unknown item)';
-    const asking = listing?.asking_price ?? 0;
+    const itemName = listing?.name ?? '(unknown item)';
+    const asking = listing?.asking_price ?? null;
     const isPoa = listing?.is_poa ?? false;
-    const askingLabel = priceLabel(asking, isPoa);
+    const isZeroRated = listing?.is_zero_rated ?? false;
 
-    let line = `- ${name} — Asking: ${askingLabel}`;
-    if (i.offer_value != null) line += ` | Offer: £${i.offer_value.toLocaleString('en-GB')}`;
+    let line = `- ${itemName} — Asking: ${priceLabel(asking, isPoa, isZeroRated)}`;
+    if (i.offer_value != null) line += ` | Offer: ${formatGBP(i.offer_value)}`;
 
-    if (isPoa) {
-      poaCount += 1;
+    if (i.offer_value != null) {
+      quotedTotal += i.offer_value;
+    } else if (isPoa || asking == null) {
+      unpricedCount += 1;
     } else {
-      quotedTotal += i.offer_value ?? asking;
+      quotedTotal += priceIncVat(asking, isZeroRated);
     }
     return line;
   });
 
   const totalLine = (() => {
-    const quoted = `£${quotedTotal.toLocaleString('en-GB')}`;
-    if (poaCount === 0) return `Quoted total: ${quoted}`;
-    return `Quoted total: ${quoted}  (+ ${poaCount} POA item${poaCount === 1 ? '' : 's'})`;
+    const quoted = `${formatGBP(quotedTotal)} inc VAT`;
+    if (unpricedCount === 0) return `Quoted total: ${quoted}`;
+    return `Quoted total: ${quoted}  (+ ${unpricedCount} POA/TBD item${unpricedCount === 1 ? '' : 's'})`;
   })();
 
   await Promise.allSettled([
@@ -206,4 +232,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   ]);
 
   return jsonResponse({ success: true, submission_id: submission.id });
+};
+
+// Admin: list interest submissions with their items.
+export const GET: APIRoute = async ({ request }) => {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  const { data, error } = await admin
+    .from('interest_submissions')
+    .select('*, interest_submission_items(id, listing_id, offer_value, asset_listings(name, asking_price, is_poa, is_zero_rated))')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error('List submissions error:', error);
+    return jsonResponse({ error: 'Failed to load submissions.' }, 500);
+  }
+  return jsonResponse(data ?? []);
 };
