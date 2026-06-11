@@ -202,6 +202,34 @@ export function AssetRegister() {
     onError: (e: Error) => setPageError(e.message || 'Failed to delete the listing.'),
   })
 
+  const toggleAllowOffers = useMutation({
+    mutationFn: async ({ id, allow }: { id: string; allow: boolean }) => {
+      const res = await authedFetch(`/api/asset-listings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allow_offers: allow }),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Update failed')
+    },
+    // Optimistic flip so the checkbox responds instantly; rolled back on error.
+    onMutate: async ({ id, allow }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-asset-listings'] })
+      const prev = queryClient.getQueryData<AdminListingsData>(['admin-asset-listings'])
+      queryClient.setQueryData<AdminListingsData>(['admin-asset-listings'], (old) =>
+        old
+          ? { ...old, listings: old.listings.map((l) => (l.id === id ? { ...l, allow_offers: allow } : l)) }
+          : old,
+      )
+      setPageError(null)
+      return { prev }
+    },
+    onError: (e: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['admin-asset-listings'], ctx.prev)
+      setPageError(e.message || 'Failed to update the offers setting.')
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['admin-asset-listings'] }),
+  })
+
   const listings = listingsQuery.data?.listings ?? []
   const stats = listingsQuery.data?.stats
   const trimmedSearch = search.trim().toLowerCase()
@@ -379,6 +407,7 @@ export function AssetRegister() {
                     <TableHead className="text-left">Item</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">Price</TableHead>
                     <TableHead className="text-left hidden sm:table-cell w-28">Status</TableHead>
+                    <TableHead className="text-center hidden sm:table-cell w-16">Offers</TableHead>
                     <TableHead className="text-right hidden md:table-cell w-16">Views</TableHead>
                     <TableHead className="text-right hidden md:table-cell w-20">Photos</TableHead>
                     <TableHead className="text-right w-20 sm:w-32"></TableHead>
@@ -441,6 +470,16 @@ export function AssetRegister() {
                                   </Badge>
                                   <span className="text-gray-500">{l.asset_listing_images.length} photo{l.asset_listing_images.length === 1 ? '' : 's'}</span>
                                   <span className="text-gray-500">{views} view{views === 1 ? '' : 's'}</span>
+                                  <label className="flex items-center gap-1 text-gray-500">
+                                    <input
+                                      type="checkbox"
+                                      checked={l.allow_offers}
+                                      onChange={(e) => toggleAllowOffers.mutate({ id: l.id, allow: e.target.checked })}
+                                      className="h-3.5 w-3.5 accent-foreground"
+                                      aria-label={`Allow offers on ${l.name}`}
+                                    />
+                                    Offers
+                                  </label>
                                 </div>
                               </TableCell>
                               <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
@@ -459,6 +498,15 @@ export function AssetRegister() {
                                 <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                   {STATUS_LABEL[l.status]}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-center hidden sm:table-cell">
+                                <input
+                                  type="checkbox"
+                                  checked={l.allow_offers}
+                                  onChange={(e) => toggleAllowOffers.mutate({ id: l.id, allow: e.target.checked })}
+                                  className="h-4 w-4 accent-foreground cursor-pointer"
+                                  aria-label={`Allow offers on ${l.name}`}
+                                />
                               </TableCell>
                               <TableCell className="text-right text-sm text-gray-500 hidden md:table-cell">
                                 {views}
