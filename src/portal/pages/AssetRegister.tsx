@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { priceIncVat, formatGBP } from '@/lib/vat'
+import { priceIncVat, priceExVat, formatGBP } from '@/lib/vat'
 
 type Status = 'available' | 'under_offer' | 'sold'
 
@@ -47,6 +47,7 @@ interface AssetListing {
   allow_offers: boolean
   is_poa: boolean
   is_zero_rated: boolean
+  sold_price_inc_vat: number | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -168,6 +169,7 @@ export function AssetRegister() {
           ...l,
           asking_price: l.asking_price == null ? null : Number(l.asking_price),
           original_cost: l.original_cost == null ? null : Number(l.original_cost),
+          sold_price_inc_vat: l.sold_price_inc_vat == null ? null : Number(l.sold_price_inc_vat),
           asset_listing_images: (l.asset_listing_images ?? []).sort(
             (a: AssetImage, b: AssetImage) => a.position - b.position,
           ),
@@ -299,8 +301,8 @@ export function AssetRegister() {
     <>
       <Card className="border-0 rounded-none shadow-none -mx-4 sm:mx-0 sm:border sm:rounded-xl sm:shadow-sm">
         <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            <div className="space-y-1.5">
+          <div className="flex flex-row items-start justify-between gap-2">
+            <div className="space-y-1.5 min-w-0">
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-[#009689]" />
                 Asset Register
@@ -315,7 +317,7 @@ export function AssetRegister() {
                 )}
               </CardDescription>
             </div>
-            <div className="text-left sm:text-right shrink-0">
+            <div className="text-right shrink-0">
               <span className="block text-xs text-muted-foreground">Total (excl. VAT)</span>
               <span className="text-lg font-semibold tabular-nums">{formatGBP(filteredTotal)}</span>
             </div>
@@ -337,8 +339,8 @@ export function AssetRegister() {
           )}
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-              <TabsList>
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)} className="w-full sm:flex-1">
+              <TabsList className="w-full h-auto">
                 {(['all', 'tbd', 'available', 'under_offer', 'sold'] as const).map((f) => {
                   const count =
                     f === 'all'
@@ -348,7 +350,7 @@ export function AssetRegister() {
                         : listings.filter((l) => l.status === f).length
                   const label = f === 'all' ? 'All' : f === 'tbd' ? 'TBD' : STATUS_LABEL[f]
                   return (
-                    <TabsTrigger key={f} value={f}>
+                    <TabsTrigger key={f} value={f} className="whitespace-normal leading-tight py-1">
                       {label}
                       <span className="ml-1 text-xs opacity-60">{count}</span>
                     </TabsTrigger>
@@ -451,6 +453,13 @@ export function AssetRegister() {
                               <span className="text-xs text-gray-500 font-normal">
                                 {items.length}
                               </span>
+                              <span className="ml-auto text-xs text-gray-600 font-normal tabular-nums">
+                                {formatGBP(
+                                  Math.round(
+                                    items.reduce((s, l) => s + (l.asking_price ?? 0), 0) * 100,
+                                  ) / 100,
+                                )}
+                              </span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -480,6 +489,11 @@ export function AssetRegister() {
                                     {formatPrice(l)}
                                     {l.is_poa && ' · POA'}
                                   </span>
+                                  {l.status === 'sold' && l.sold_price_inc_vat != null && (
+                                    <span className="text-emerald-700">
+                                      Sold {formatGBP(l.sold_price_inc_vat)} inc · {formatGBP(priceExVat(l.sold_price_inc_vat, l.is_zero_rated))} ex
+                                    </span>
+                                  )}
                                   <Badge variant="outline" className={STATUS_BADGE_CLASS[l.status]}>
                                     {STATUS_LABEL[l.status]}
                                   </Badge>
@@ -498,15 +512,22 @@ export function AssetRegister() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right whitespace-nowrap hidden sm:table-cell">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  {l.is_poa && (
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-800 border-transparent">
-                                      POA
-                                    </Badge>
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {l.is_poa && (
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-800 border-transparent">
+                                        POA
+                                      </Badge>
+                                    )}
+                                    <span className={cn('font-semibold', l.asking_price == null && 'text-amber-600')}>
+                                      {formatPrice(l)}
+                                    </span>
+                                  </div>
+                                  {l.status === 'sold' && l.sold_price_inc_vat != null && (
+                                    <span className="text-[11px] text-emerald-700 tabular-nums">
+                                      Sold {formatGBP(l.sold_price_inc_vat)} inc · {formatGBP(priceExVat(l.sold_price_inc_vat, l.is_zero_rated))} ex
+                                    </span>
                                   )}
-                                  <span className={cn('font-semibold', l.asking_price == null && 'text-amber-600')}>
-                                    {formatPrice(l)}
-                                  </span>
                                 </div>
                               </TableCell>
                               <TableCell className="hidden sm:table-cell">
@@ -700,6 +721,7 @@ function ListingDialog({
   const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
   const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [isZeroRated, setIsZeroRated] = useState(initial?.is_zero_rated ?? false)
+  const [soldPriceIncVat, setSoldPriceIncVat] = useState(initial?.sold_price_inc_vat?.toString() ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [listingId, setListingId] = useState<string | null>(initial?.id ?? null)
@@ -733,6 +755,7 @@ function ListingDialog({
       setAllowOffers(initial?.allow_offers ?? false)
       setIsPoa(initial?.is_poa ?? false)
       setIsZeroRated(initial?.is_zero_rated ?? false)
+      setSoldPriceIncVat(initial?.sold_price_inc_vat?.toString() ?? '')
       setListingId(initial?.id ?? null)
       setImages(initial?.asset_listing_images ?? [])
       setError(null)
@@ -903,6 +926,8 @@ function ListingDialog({
         allow_offers: allowOffers,
         is_poa: isPoa,
         is_zero_rated: isZeroRated,
+        sold_price_inc_vat:
+          status === 'sold' && soldPriceIncVat.trim() !== '' ? Number(soldPriceIncVat) : null,
       }
       const url = listingId ? `/api/asset-listings/${listingId}` : '/api/asset-listings'
       const method = listingId ? 'PATCH' : 'POST'
@@ -1070,7 +1095,7 @@ function ListingDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4 items-end">
             <div className="space-y-2">
               <Label htmlFor="asset-cost">Original cost (£)</Label>
               <Input
@@ -1084,35 +1109,6 @@ function ListingDialog({
                 placeholder="What we paid"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="asset-status">Status</Label>
-              {/* Native <select> on mobile so iOS gives the wheel picker. */}
-              <select
-                id="asset-status-mobile"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as Status)}
-                className="sm:hidden flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="available">Available</option>
-                <option value="under_offer">Under Offer</option>
-                <option value="sold">Sold</option>
-              </select>
-              <div className="hidden sm:block">
-                <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-                  <SelectTrigger id="asset-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="under_offer">Under Offer</SelectItem>
-                    <SelectItem value="sold">Sold</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="asset-discount-pct" className={isMarkup ? 'text-amber-700' : ''}>
                 {isMarkup ? 'Markup (%)' : 'Discount (%)'}
@@ -1143,6 +1139,9 @@ function ListingDialog({
                 placeholder={hasCost ? '0' : 'Set cost first'}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 items-end">
             <div className="space-y-2">
               <Label htmlFor="asset-price">Asking price ex-VAT (£)</Label>
               <Input
@@ -1155,6 +1154,49 @@ function ListingDialog({
                 onChange={(e) => handleAskingChange(e.target.value)}
                 placeholder="Blank = TBD"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="asset-status">Status</Label>
+              {/* Native <select> on mobile so iOS gives the wheel picker. */}
+              <select
+                id="asset-status-mobile"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Status)}
+                className="sm:hidden flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value="available">Available</option>
+                <option value="under_offer">Under Offer</option>
+                <option value="sold">Sold</option>
+              </select>
+              <div className="hidden sm:block">
+                <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+                  <SelectTrigger id="asset-status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="under_offer">Under Offer</SelectItem>
+                    <SelectItem value="sold">Sold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {status === 'sold' && (
+                <>
+                  <Label htmlFor="asset-sold-price">Sold for inc-VAT (£)</Label>
+                  <Input
+                    id="asset-sold-price"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    value={soldPriceIncVat}
+                    onChange={(e) => setSoldPriceIncVat(e.target.value)}
+                    placeholder="Realised gross"
+                  />
+                </>
+              )}
             </div>
           </div>
 
