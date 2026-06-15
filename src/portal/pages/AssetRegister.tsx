@@ -244,6 +244,13 @@ export function AssetRegister() {
     return haystack.includes(trimmedSearch)
   })
 
+  // Sum of asking prices (ex-VAT) across the currently shown listings — tracks
+  // the active tab + search. Null/TBD prices contribute nothing.
+  const filteredTotal = useMemo(
+    () => Math.round(filtered.reduce((sum, l) => sum + (l.asking_price ?? 0), 0) * 100) / 100,
+    [filtered],
+  )
+
   const toggleCategory = (cat: string) =>
     setCollapsed((s) => ({ ...s, [cat]: !s[cat] }))
 
@@ -292,19 +299,27 @@ export function AssetRegister() {
     <>
       <Card className="border-0 rounded-none shadow-none -mx-4 sm:mx-0 sm:border sm:rounded-xl sm:shadow-sm">
         <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-[#009689]" />
-            Asset Register
-          </CardTitle>
-          <CardDescription>
-            Manage equipment listings for the public for-sale page
-            {stats && (
-              <span className="block mt-1 text-xs">
-                Public page views: {stats.page_views_total} all-time · {stats.page_views_7d} in
-                the last 7 days
-              </span>
-            )}
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div className="space-y-1.5">
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-[#009689]" />
+                Asset Register
+              </CardTitle>
+              <CardDescription>
+                Manage equipment listings for the public for-sale page
+                {stats && (
+                  <span className="block mt-1 text-xs">
+                    Public page views: {stats.page_views_total} all-time · {stats.page_views_7d} in
+                    the last 7 days
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+            <div className="text-left sm:text-right shrink-0">
+              <span className="block text-xs text-muted-foreground">Total (excl. VAT)</span>
+              <span className="text-lg font-semibold tabular-nums">{formatGBP(filteredTotal)}</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
           {pageError && (
