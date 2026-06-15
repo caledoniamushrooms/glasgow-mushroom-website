@@ -232,3 +232,14 @@
 .badge-draft {
   @apply bg-gray-100 text-gray-600;
 }
+
+/* Hide native number spinners in the portal — keyboard input, paste, and
+   step= still work; only the up/down chrome is suppressed. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
