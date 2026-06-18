@@ -47,6 +47,7 @@ interface AssetListing {
   allow_offers: boolean
   is_poa: boolean
   is_zero_rated: boolean
+  is_hidden: boolean
   sold_price_inc_vat: number | null
   sort_order: number
   created_at: string
@@ -467,7 +468,7 @@ export function AssetRegister() {
                           const cover = l.asset_listing_images[0]
                           const views = stats?.listing_views?.[l.id] ?? 0
                           return (
-                            <TableRow key={l.id} className="hover:bg-gray-50">
+                            <TableRow key={l.id} className={cn('hover:bg-gray-50', l.is_hidden && 'opacity-60')}>
                               <TableCell className="p-2 sm:p-4">
                                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                                   {cover ? (
@@ -482,7 +483,14 @@ export function AssetRegister() {
                                 </div>
                               </TableCell>
                               <TableCell className="p-2 sm:p-4 whitespace-normal break-words">
-                                <div className="font-medium">{l.name}</div>
+                                <div className="font-medium flex flex-wrap items-center gap-2">
+                                  <span>{l.name}</span>
+                                  {l.is_hidden && (
+                                    <Badge variant="outline" className="bg-gray-200 text-gray-700 border-transparent text-[10px] uppercase tracking-wide">
+                                      Hidden
+                                    </Badge>
+                                  )}
+                                </div>
                                 {/* Mobile-only: stack price + status + photos below name */}
                                 <div className="flex flex-wrap items-center gap-2 mt-1 sm:hidden text-xs">
                                   <span className={cn('font-semibold', l.asking_price == null && 'text-amber-600')}>
@@ -721,6 +729,7 @@ function ListingDialog({
   const [allowOffers, setAllowOffers] = useState(initial?.allow_offers ?? false)
   const [isPoa, setIsPoa] = useState(initial?.is_poa ?? false)
   const [isZeroRated, setIsZeroRated] = useState(initial?.is_zero_rated ?? false)
+  const [isHidden, setIsHidden] = useState(initial?.is_hidden ?? false)
   const [soldPriceIncVat, setSoldPriceIncVat] = useState(initial?.sold_price_inc_vat?.toString() ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -755,6 +764,7 @@ function ListingDialog({
       setAllowOffers(initial?.allow_offers ?? false)
       setIsPoa(initial?.is_poa ?? false)
       setIsZeroRated(initial?.is_zero_rated ?? false)
+      setIsHidden(initial?.is_hidden ?? false)
       setSoldPriceIncVat(initial?.sold_price_inc_vat?.toString() ?? '')
       setListingId(initial?.id ?? null)
       setImages(initial?.asset_listing_images ?? [])
@@ -926,6 +936,7 @@ function ListingDialog({
         allow_offers: allowOffers,
         is_poa: isPoa,
         is_zero_rated: isZeroRated,
+        is_hidden: isHidden,
         sold_price_inc_vat:
           status === 'sold' && soldPriceIncVat.trim() !== '' ? Number(soldPriceIncVat) : null,
       }
@@ -1238,6 +1249,18 @@ function ListingDialog({
                 <span className="text-sm">
                   <span className="font-medium block">Zero-rated for VAT</span>
                   <span className="text-muted-foreground text-xs">No VAT is added to the displayed price.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 rounded-md border border-input px-3 py-2 cursor-pointer hover:bg-accent/50">
+                <input
+                  type="checkbox"
+                  checked={isHidden}
+                  onChange={(e) => setIsHidden(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-foreground"
+                />
+                <span className="text-sm">
+                  <span className="font-medium block">Hide from public listing</span>
+                  <span className="text-muted-foreground text-xs">Stays in the admin register but isn't shown on the public for-sale page.</span>
                 </span>
               </label>
             </div>
