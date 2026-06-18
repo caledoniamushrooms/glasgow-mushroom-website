@@ -75,6 +75,7 @@ export const POST: APIRoute = async ({ request }) => {
       allow_offers: body.allow_offers === true,
       is_poa: body.is_poa === true,
       is_zero_rated: body.is_zero_rated === true,
+      is_hidden: body.is_hidden === true,
       sold_price_inc_vat:
         body.sold_price_inc_vat === null || body.sold_price_inc_vat === undefined || body.sold_price_inc_vat === ''
           ? null
