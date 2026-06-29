@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { priceIncVat, formatGBP } from '../../lib/vat';
 import { requireAdmin } from './_lib/admin-auth';
+import { checkRateLimit } from './_lib/rate-limit';
 
 const admin = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -23,19 +24,9 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-// Lightweight in-memory rate limit (per warm Vercel instance)
-const ipHits = new Map<string, number[]>();
+// Durable rate limit (shared across Vercel instances via Postgres).
 const LIMIT = 5;
-const WINDOW_MS = 60 * 60 * 1000;
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now();
-  const arr = (ipHits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (arr.length >= LIMIT) return true;
-  arr.push(now);
-  ipHits.set(ip, arr);
-  return false;
-}
+const WINDOW_SECONDS = 60 * 60;
 
 interface SubmittedItem {
   listing_id: string;
@@ -63,7 +54,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const ip = clientAddress || request.headers.get('x-forwarded-for') || 'unknown';
-  if (rateLimited(ip)) {
+  if (!(await checkRateLimit(`interest:${ip}`, LIMIT, WINDOW_SECONDS))) {
     return jsonResponse({ error: 'Too many submissions. Please try again later.' }, 429);
   }
 
@@ -191,45 +182,32 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return `Quoted total: ${quoted}  (+ ${unpricedCount} POA/TBD item${unpricedCount === 1 ? '' : 's'})`;
   })();
 
-  await Promise.allSettled([
-    resend.emails.send({
-      from: FROM,
-      to: NOTIFY_TO,
-      subject: `Asset interest: ${items.length} item${items.length === 1 ? '' : 's'} — ${name}`,
-      text: [
-        `New interest in ${items.length} item${items.length === 1 ? '' : 's'}:`,
-        '',
-        ...itemLines,
-        '',
-        totalLine,
-        '',
-        `Name: ${name}`,
-        `Email: ${email}`,
-        `Phone: ${phone ?? '—'}`,
-        `Preference: ${collection_preference ?? '—'}`,
-        '',
-        'Message:',
-        message ?? '—',
-        '',
-        `Submission: ${submission.id}`,
-      ].join('\n'),
-    }),
-    resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: `Thanks for your interest — Glasgow Mushroom Company`,
-      text: [
-        `Hi ${name},`,
-        '',
-        `Thanks for registering interest in ${items.length} item${items.length === 1 ? '' : 's'} from our asset register. We've received your details and will be in touch shortly to discuss next steps (viewing, collection / delivery, payment).`,
-        '',
-        'If you have any questions in the meantime, just reply to this email.',
-        '',
-        'Best,',
-        'Glasgow Mushroom Company',
-      ].join('\n'),
-    }),
-  ]);
+  // Admin notification only. We deliberately do NOT send a confirmation
+  // to the visitor-supplied address: it's unverified, so it would let
+  // anyone send GMC-branded mail to arbitrary third parties. The visitor
+  // gets the on-page success state instead.
+  await resend.emails.send({
+    from: FROM,
+    to: NOTIFY_TO,
+    subject: `Asset interest: ${items.length} item${items.length === 1 ? '' : 's'} — ${name}`,
+    text: [
+      `New interest in ${items.length} item${items.length === 1 ? '' : 's'}:`,
+      '',
+      ...itemLines,
+      '',
+      totalLine,
+      '',
+      `Name: ${name}`,
+      `Email: ${email}`,
+      `Phone: ${phone ?? '—'}`,
+      `Preference: ${collection_preference ?? '—'}`,
+      '',
+      'Message:',
+      message ?? '—',
+      '',
+      `Submission: ${submission.id}`,
+    ].join('\n'),
+  }).catch((err) => console.error('Admin notification email failed:', err));
 
   return jsonResponse({ success: true, submission_id: submission.id });
 };
