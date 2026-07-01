@@ -307,6 +307,11 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
           <CardDescription>
             Equipment, fixtures and fittings for sale as the farm winds down.
             Prices include VAT where applicable.
+            <span className="block mt-2">
+              To register interest, select the items you'd like, then use the{' '}
+              <span className="font-medium text-zinc-700">Register interest</span>{' '}
+              button in the bottom-right corner to send us your selection.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-4 sm:px-6">
