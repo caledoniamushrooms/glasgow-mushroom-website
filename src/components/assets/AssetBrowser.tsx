@@ -302,7 +302,7 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
         <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-[#009689]" />
-            Asset Register
+            Equipment Sale
           </CardTitle>
           <CardDescription>
             Equipment, fixtures and fittings for sale as the farm winds down.
