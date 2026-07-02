@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState, useRef, useEffect, type FormEvent, type Dr
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronsUpDown, Package, Plus, Trash2, Pencil, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { supabase, getCachedAccessToken } from '../lib/supabase'
+import { authedFetch } from '../lib/authedFetch'
 import { useAuthContext } from '../components/AuthProvider'
 import { assetImageUrl } from '../lib/assetImage'
 import { resizeImage } from '../lib/resizeImage'
@@ -115,25 +116,6 @@ const STATUS_BADGE_CLASS: Record<Status, string> = {
 // 4G handoff, etc.) a Save click can spin forever. 20s is generous enough
 // that a healthy server will never hit it, but short enough to surface an
 // error before the user gives up.
-const FETCH_TIMEOUT_MS = 20_000
-
-async function authedFetch(input: string, init: RequestInit & { timeoutMs?: number } = {}) {
-  // Read the access token from the in-memory cache rather than calling
-  // supabase.auth.getSession() — that call goes through the SDK's auth
-  // lock and can stall on mobile while a token refresh is in flight,
-  // which leaves the Save button stuck on "Saving…" forever.
-  const token = getCachedAccessToken()
-  const headers = new Headers(init.headers)
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), init.timeoutMs ?? FETCH_TIMEOUT_MS)
-  try {
-    return await fetch(input, { ...init, headers, signal: controller.signal })
-  } finally {
-    clearTimeout(timeout)
-  }
-}
 
 // Admin price label: always show the number when one is set (POA gets its
 // own badge); null = TBD = not priced yet.
