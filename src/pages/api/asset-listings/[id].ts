@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { jsonResponse, requireAdmin, serviceClient } from '../_lib/admin-auth';
+import { ebayEligibility, endEbayListing, syncListingToEbay } from '../_lib/ebay/listing';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -62,8 +63,29 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   if ('sort_order' in body && Number.isFinite(Number(body.sort_order))) {
     patch.sort_order = Number(body.sort_order);
   }
+  if ('list_on_ebay' in body) patch.list_on_ebay = body.list_on_ebay === true;
+  if ('ebay_markup_pct' in body) {
+    const m = Number(body.ebay_markup_pct);
+    if (!Number.isFinite(m) || m < 0 || m > 100) return jsonResponse({ error: 'Bad ebay_markup_pct' }, 400);
+    patch.ebay_markup_pct = m;
+  }
 
   if (Object.keys(patch).length === 0) return jsonResponse({ error: 'No updates.' }, 400);
+
+  // Snapshot the pre-update row so we can work out which eBay transition (if any)
+  // this patch causes, and validate eligibility against the merged state.
+  const { data: before, error: beforeError } = await serviceClient
+    .from('asset_listings')
+    .select('status, asking_price, is_poa, is_hidden, list_on_ebay, ebay_sync_status')
+    .eq('id', id)
+    .single();
+  if (beforeError || !before) return jsonResponse({ error: 'Listing not found.' }, 404);
+
+  const merged = { ...before, ...patch } as typeof before;
+  if (merged.list_on_ebay) {
+    const ineligible = ebayEligibility(merged);
+    if (ineligible) return jsonResponse({ error: ineligible }, 400);
+  }
 
   const { data, error } = await serviceClient
     .from('asset_listings')
@@ -75,6 +97,28 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   if (error) {
     console.error('Update listing error:', error);
     return jsonResponse({ error: 'Failed to update listing.' }, 500);
+  }
+
+  // eBay side-effects, after the local update succeeds:
+  // - wants a live listing → (re)publish when not already listed, or when
+  //   price/details may have changed while listed (sync is idempotent).
+  // - no longer eligible/wanted → end a live listing.
+  let ebaySync: { ok: boolean; error?: string } | undefined;
+  const wantsLive = merged.list_on_ebay && merged.status === 'available' && !merged.is_hidden;
+  if (wantsLive) {
+    ebaySync = await syncListingToEbay(id);
+  } else if (before.ebay_sync_status === 'listed') {
+    ebaySync = await endEbayListing(id);
+  }
+
+  if (ebaySync) {
+    // Re-read so the response carries the sync outcome columns just written.
+    const { data: fresh } = await serviceClient
+      .from('asset_listings')
+      .select()
+      .eq('id', id)
+      .single();
+    return jsonResponse({ ...(fresh ?? data), ebay_sync: ebaySync });
   }
   return jsonResponse(data);
 };
