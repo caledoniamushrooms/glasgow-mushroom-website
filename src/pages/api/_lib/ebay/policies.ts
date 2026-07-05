@@ -147,9 +147,9 @@ async function ensureInventoryLocation(): Promise<void> {
       name: 'Glasgow Mushroom Company',
       location: {
         address: {
-          addressLine1: import.meta.env.EBAY_LOCATION_ADDRESS1 ?? '',
+          addressLine1: import.meta.env.EBAY_LOCATION_ADDRESS1 ?? '31 Dalsholm Avenue',
           city: import.meta.env.EBAY_LOCATION_CITY ?? 'Glasgow',
-          postalCode: import.meta.env.EBAY_LOCATION_POSTCODE ?? '',
+          postalCode: import.meta.env.EBAY_LOCATION_POSTCODE ?? 'G20 0TS',
           country: 'GB',
         },
       },
