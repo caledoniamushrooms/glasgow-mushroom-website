@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/equipment-sale",
+      "permanent": false
+    }
+  ],
   "crons": [
     {
       "path": "/api/ebay/poll-orders",
