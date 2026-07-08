@@ -321,6 +321,11 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
             </div>
           )}
 
+          <div className="rounded-md bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900">
+            <p className="font-medium mb-1">Make an offer on any item</p>
+            <p>Many items are open to negotiation. If you see something you're interested in, we encourage you to make an offer — even if you're just testing the waters. There's no obligation, and we're happy to discuss pricing.</p>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Tabs
               value={filter}
