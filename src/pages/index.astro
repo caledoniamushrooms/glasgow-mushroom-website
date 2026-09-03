@@ -1,81 +1,340 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { getImage } from 'astro:assets';
-import splashHeroSrc from '../assets/images/splash-hero.jpg';
+export const prerender = false;
 
-const splashHero = await getImage({ src: splashHeroSrc, format: 'webp', quality: 80, width: 1920 });
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { createClient } from '@supabase/supabase-js';
+import { priceIncVat, formatGBP } from '../lib/vat';
+
+// The two headline items this page advertises. IDs are stable asset_listings rows;
+// price / status / photos are read live so the page never goes stale when the
+// admin updates them in the portal.
+const FEATURED = [
+  {
+    id: 'cd54c9e7-14c4-4736-ae41-be14d10538df', // Upright Fodder Mixer / Substrate Batch Mixer
+    headline: 'Substrate batch mixer',
+    tagline: '220 kg upright fodder mixer, fully wired 3-phase, with pneumatic bagging gates.',
+    specs: [
+      ['Batch size', '220 kg (200 kg recommended)'],
+      ['Power', '3-phase, fully wired with safety cut-outs'],
+      ['Bagging', 'Pneumatic sliding plates for fast, clean bagging'],
+      ['Water dosing', 'Flow meter and spray bar included (single phase)'],
+      ['Requires', 'Air compressor for blade actuation (not included)'],
+      ['Delivery', 'UK shipping included in the price'],
+    ],
+  },
+  {
+    id: '6a5c813d-7422-4d40-b2ff-920cb412a3dc', // Cold water humidification system
+    headline: 'High-pressure cold water humidifier',
+    tagline: '70 bar misting system with UV sterilisation. Runs three zones independently.',
+    specs: [
+      ['Droplet size', '10 micron, room-filling fog with no wetting'],
+      ['Zones', '3 independent zones, timer or 0 V external input'],
+      ['Water safety', 'Two-stage filtration plus UV steriliser (Legionella safe)'],
+      ['Nozzles', '28 × 10 micron nozzles and tubing included (min. 9 per run)'],
+      ['Power', 'Single phase; mains water and drainage required'],
+      ['Size', 'H 940 × W 730 × D 560 mm'],
+    ],
+  },
+] as const;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const imageBase = `${supabaseUrl}/storage/v1/object/public/asset-images`;
+
+const { data: rows, error } = await supabase
+  .from('asset_listings')
+  .select('id, name, asking_price, status, allow_offers, is_poa, is_zero_rated, asset_listing_images(storage_path, position)')
+  .in('id', FEATURED.map((f) => f.id));
+
+if (error) console.error('index: featured listings fetch failed:', error);
+
+type Row = NonNullable<typeof rows>[number];
+const byId = new Map<string, Row>((rows ?? []).map((r) => [r.id, r]));
+
+const items = FEATURED.map((f) => {
+  const row = byId.get(f.id);
+  const images = [...(row?.asset_listing_images ?? [])].sort((a, b) => a.position - b.position);
+  const price = row == null
+    ? null
+    : row.is_poa
+      ? 'POA'
+      : row.asking_price == null
+        ? 'Price on request'
+        : formatGBP(priceIncVat(Number(row.asking_price), row.is_zero_rated));
+  return {
+    ...f,
+    status: row?.status ?? 'available',
+    allowOffers: row?.allow_offers ?? false,
+    price,
+    hero: images[0] ? `${imageBase}/${images[0].storage_path}` : null,
+    gallery: images.slice(1, 4).map((i) => `${imageBase}/${i.storage_path}`),
+  };
+});
+
+const availableCount = items.filter((i) => i.status !== 'sold').length;
 ---
 
-<BaseLayout title="Glasgow Mushroom Company" showNav={false} showFooter={false}>
-  <section class="splash" style={`--bg: url('${splashHero.src}')`}>
-    <div class="splash__content">
-      <img src="/images/logo-full.svg" alt="Glasgow Mushroom Company" class="splash__logo" />
-      <a href="/home" class="splash__enter">Enter</a>
+<BaseLayout
+  title="Commercial mushroom farm equipment for sale — Glasgow Mushroom Company"
+  description="Glasgow Mushroom Company has wound down. Our 220 kg substrate batch mixer and high-pressure cold water humidification system are for sale, with the rest of the farm's kit."
+>
+  <section class="hero">
+    <div class="container">
+      <p class="eyebrow">Farm closure sale · Glasgow</p>
+      <h1>Two pieces of kit that ran our farm are looking for a new home.</h1>
+      <p class="lede">
+        Glasgow Mushroom Company has stopped growing. The substrate mixer and
+        humidification system below were the backbone of our production and are
+        priced to sell. Everything else from the farm is listed too.
+      </p>
+      <div class="hero__actions">
+        <a href="#mixer" class="btn btn--primary">See the mixer</a>
+        <a href="#humidifier" class="btn btn--ghost">See the humidifier</a>
+      </div>
+    </div>
+  </section>
+
+  {items.map((item, idx) => (
+    <section class:list={['feature', { 'feature--alt': idx % 2 === 1, 'feature--sold': item.status === 'sold' }]} id={idx === 0 ? 'mixer' : 'humidifier'}>
+      <div class="container feature__grid">
+        <div class="feature__media">
+          {item.hero ? (
+            <img src={item.hero} alt={item.headline} loading={idx === 0 ? 'eager' : 'lazy'} />
+          ) : (
+            <div class="feature__placeholder" aria-hidden="true"></div>
+          )}
+          {item.gallery.length > 0 && (
+            <div class="feature__thumbs">
+              {item.gallery.map((src) => <img src={src} alt="" loading="lazy" />)}
+            </div>
+          )}
+        </div>
+        <div class="feature__body">
+          <p class="eyebrow">{idx === 0 ? 'Production equipment' : 'Climate control'}</p>
+          <h2>{item.headline}</h2>
+          <p class="feature__tagline">{item.tagline}</p>
+          <dl class="specs">
+            {item.specs.map(([k, v]) => (
+              <div class="specs__row"><dt>{k}</dt><dd>{v}</dd></div>
+            ))}
+          </dl>
+          <div class="feature__price">
+            {item.status === 'sold' ? (
+              <span class="badge badge--sold">Sold</span>
+            ) : item.status === 'under_offer' ? (
+              <>
+                <span class="price">{item.price}</span>
+                <span class="badge">Under offer</span>
+              </>
+            ) : (
+              <>
+                <span class="price">{item.price}</span>
+                <span class="price__note">inc. VAT{item.allowOffers ? ' · offers considered' : ''}</span>
+              </>
+            )}
+          </div>
+          {item.status !== 'sold' && (
+            <div class="feature__actions">
+              <a href={`/equipment-sale?item=${item.id}`} class="btn btn--primary">Full details &amp; register interest</a>
+              <a href="mailto:hello@glasgowmushroomcompany.co.uk" class="btn btn--ghost">Email us</a>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <section class="more">
+    <div class="container more__inner">
+      <div>
+        <h2>Everything else from the farm</h2>
+        <p>
+          Grow-room fans, shelving, sterilisation, cold chain, office kit and more.
+          Browse the full list, tick what you want and send us an offer in one go.
+        </p>
+      </div>
+      <a href="/equipment-sale" class="btn btn--primary">Browse all equipment</a>
+    </div>
+  </section>
+
+  <section class="practical">
+    <div class="container practical__grid">
+      <div>
+        <h3>Viewing</h3>
+        <p>Both items can be viewed and demonstrated by appointment in Glasgow. Email to arrange a time.</p>
+      </div>
+      <div>
+        <h3>Collection &amp; delivery</h3>
+        <p>Mixer price includes UK shipping. The humidifier is collection from Glasgow or courier at cost.</p>
+      </div>
+      <div>
+        <h3>Payment</h3>
+        <p>Bank transfer against a VAT invoice. Prices shown include VAT at 20%.</p>
+      </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  .splash {
-    min-height: 100vh;
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+  }
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+    color: var(--color-text);
+    margin: 0;
+    line-height: 1.05;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 5rem 0 4rem;
+    border-bottom: 1px solid #222;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    max-width: 18ch;
+  }
+  .lede {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    max-width: 60ch;
+    margin: 1.5rem 0 2rem;
+  }
+  .hero__actions,
+  .feature__actions {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background-image: var(--bg);
-    background-size: cover;
-    background-position: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
-  @keyframes fadeUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .splash__content {
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .splash__logo {
-    width: 250px;
-    height: auto;
-    margin-bottom: 2.5rem;
-    filter: brightness(0) invert(1);
-    animation: fadeUp 0.9s ease forwards;
-  }
-
-  .splash__enter {
+  /* Buttons */
+  .btn {
     display: inline-block;
     font-family: var(--font-heading);
-    font-size: 22px;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #000;
-    background-color: #fff;
-    padding: 9px 10px;
-    border: none;
+    padding: 0.7rem 1.4rem;
     border-radius: 6px;
-    opacity: 0;
-    animation: fadeUp 0.9s ease 0.3s forwards;
-    transition: opacity 0.2s ease;
+    text-decoration: none;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+  }
+  .btn--primary { background: #fff; color: #000; }
+  .btn--primary:hover { opacity: 0.85; }
+  .btn--ghost { color: #fff; border: 1px solid #555; }
+  .btn--ghost:hover { background: #1a1a1a; }
+
+  /* Feature blocks */
+  .feature {
+    padding: 4.5rem 0;
+    border-bottom: 1px solid #222;
+  }
+  .feature--alt { background: #0b0b0b; }
+  .feature--sold { opacity: 0.6; }
+  .feature__grid {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .feature__media img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: #111;
+    object-fit: cover;
+  }
+  .feature__placeholder {
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
+    background: #111;
+  }
+  .feature__thumbs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .feature__thumbs img { aspect-ratio: 4 / 3; }
+  .feature h2 { font-size: clamp(2rem, 4vw, 3rem); }
+  .feature__tagline {
+    font-size: 1.1rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    margin: 1rem 0 1.75rem;
   }
 
-  .splash__enter:hover {
-    opacity: 0.85;
+  .specs { margin: 0 0 1.75rem; }
+  .specs__row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid #222;
+    font-size: 0.95rem;
+    line-height: 1.45;
   }
+  .specs__row:last-child { border-bottom: 1px solid #222; }
+  .specs dt { color: var(--color-text-muted); }
+  .specs dd { margin: 0; color: var(--color-text); }
+
+  .feature__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .price {
+    font-family: var(--font-heading);
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .price__note { color: var(--color-text-muted); font-size: 0.95rem; }
+  .badge {
+    display: inline-block;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #555;
+    color: var(--color-text);
+  }
+  .badge--sold { background: #333; border-color: #333; font-size: 1.2rem; }
+
+  /* Browse-all + practical */
+  .more { padding: 4rem 0; border-bottom: 1px solid #222; }
+  .more__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .more h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .more p { color: var(--color-text-muted); max-width: 55ch; line-height: 1.55; margin: 0; }
+
+  .practical { padding: 3.5rem 0 5rem; }
+  .practical__grid { display: grid; gap: 2rem; }
+  .practical h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .practical p { color: var(--color-text-muted); line-height: 1.55; margin: 0; }
 
   @media (min-width: 768px) {
-    .splash__logo {
-      width: 500px;
-    }
-
-    .splash__tagline {
-      font-size: 2rem;
-    }
+    .feature__grid { grid-template-columns: 1.1fr 1fr; gap: 3.5rem; }
+    .feature--alt .feature__media { order: 2; }
+    .practical__grid { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
