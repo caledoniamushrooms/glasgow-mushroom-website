@@ -5,230 +5,245 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { createClient } from '@supabase/supabase-js';
 import { priceIncVat, formatGBP } from '../lib/vat';
 
-// The two headline items this page advertises. IDs are stable asset_listings rows;
-// price / status / photos are read live so the page never goes stale when the
-// admin updates them in the portal.
-const FEATURED = [
-  {
-    id: 'cd54c9e7-14c4-4736-ae41-be14d10538df', // Upright Fodder Mixer / Substrate Batch Mixer
-    headline: 'Substrate batch mixer',
-    tagline: '220 kg upright fodder mixer, fully wired 3-phase, with pneumatic bagging gates.',
-    specs: [
-      ['Batch size', '220 kg (200 kg recommended)'],
-      ['Power', '3-phase, fully wired with safety cut-outs'],
-      ['Bagging', 'Pneumatic sliding plates for fast, clean bagging'],
-      ['Water dosing', 'Flow meter and spray bar included (single phase)'],
-      ['Requires', 'Air compressor for blade actuation (not included)'],
-      ['Delivery', 'UK shipping included in the price'],
-    ],
-  },
-  {
-    id: '6a5c813d-7422-4d40-b2ff-920cb412a3dc', // Cold water humidification system
-    headline: 'High-pressure cold water humidifier',
-    tagline: '70 bar misting system with UV sterilisation. Runs three zones independently.',
-    specs: [
-      ['Droplet size', '10 micron, room-filling fog with no wetting'],
-      ['Zones', '3 independent zones, timer or 0 V external input'],
-      ['Water safety', 'Two-stage filtration plus UV steriliser (Legionella safe)'],
-      ['Nozzles', '28 × 10 micron nozzles and tubing included (min. 9 per run)'],
-      ['Power', 'Single phase; mains water and drainage required'],
-      ['Size', 'H 940 × W 730 × D 560 mm'],
-    ],
-  },
-] as const;
+// The single item this site now advertises. Price, status and photos are read
+// live from asset_listings so the page tracks the portal admin without a deploy.
+const MIXER_ID = 'cd54c9e7-14c4-4736-ae41-be14d10538df';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const imageBase = `${supabaseUrl}/storage/v1/object/public/asset-images`;
 
-const { data: rows, error } = await supabase
+const { data: row, error } = await supabase
   .from('asset_listings')
-  .select('id, name, asking_price, status, allow_offers, is_poa, is_zero_rated, asset_listing_images(storage_path, position)')
-  .in('id', FEATURED.map((f) => f.id));
+  .select('id, asking_price, status, allow_offers, is_poa, is_zero_rated, asset_listing_images(storage_path, position)')
+  .eq('id', MIXER_ID)
+  .maybeSingle();
 
-if (error) console.error('index: featured listings fetch failed:', error);
+if (error) console.error('index: mixer listing fetch failed:', error);
 
-type Row = NonNullable<typeof rows>[number];
-const byId = new Map<string, Row>((rows ?? []).map((r) => [r.id, r]));
+const status: string = row?.status ?? 'available';
+const allowOffers = row?.allow_offers ?? false;
+const price = row == null
+  ? null
+  : row.is_poa
+    ? 'POA'
+    : row.asking_price == null
+      ? 'Price on request'
+      : formatGBP(priceIncVat(Number(row.asking_price), row.is_zero_rated));
+const priceEx = row?.asking_price != null && !row.is_poa
+  ? formatGBP(Number(row.asking_price))
+  : null;
 
-const items = FEATURED.map((f) => {
-  const row = byId.get(f.id);
-  const images = [...(row?.asset_listing_images ?? [])].sort((a, b) => a.position - b.position);
-  const price = row == null
-    ? null
-    : row.is_poa
-      ? 'POA'
-      : row.asking_price == null
-        ? 'Price on request'
-        : formatGBP(priceIncVat(Number(row.asking_price), row.is_zero_rated));
-  return {
-    ...f,
-    status: row?.status ?? 'available',
-    allowOffers: row?.allow_offers ?? false,
-    price,
-    hero: images[0] ? `${imageBase}/${images[0].storage_path}` : null,
-    gallery: images.slice(1, 4).map((i) => `${imageBase}/${i.storage_path}`),
-  };
-});
+const photos = [...(row?.asset_listing_images ?? [])]
+  .sort((a, b) => a.position - b.position)
+  .map((i) => `${imageBase}/${i.storage_path}`);
+const hero = photos[0] ?? null;
+const gallery = photos.slice(1);
 
-const availableCount = items.filter((i) => i.status !== 'sold').length;
+const captions = [
+  'Control enclosure with start/stop and lockable isolator',
+  '3-phase inlet with switched wall socket',
+  'Radicon worm gearbox and 3-phase motor',
+  'Pneumatic valve manifold for the discharge gates',
+  'Foot pedal for hands-free bagging',
+  'Dodge flange bearing and flow meter controller',
+  'Digital flow meter: set litres, it stops itself',
+  'Flow meter housing and water feed',
+  'Paddle blades under the welded mesh guard',
+];
+
+const specs = [
+  ['Type', 'Vertical paddle batch mixer'],
+  ['Capacity', '220 kg per batch (200 kg recommended working load)'],
+  ['Drive', '3-phase motor with Radicon worm gearbox'],
+  ['Controls', 'Schneider enclosure, start/stop, rotary isolator, 3-phase CEE inlet'],
+  ['Discharge', 'Two pneumatic sliding gates, foot-pedal operated'],
+  ['Air supply', 'Standard workshop compressor, push-fit line (compressor not included)'],
+  ['Water dosing', 'Digital flow meter with run/stop, spray bar in hopper, 13 A plug'],
+  ['Guarding', 'Welded steel mesh over the hopper opening'],
+  ['Condition', 'Used, working, in daily service until the farm closed'],
+];
+
+const detailsHref = `/equipment-sale?item=${MIXER_ID}`;
+const mailHref = 'mailto:hello@glasgowmushroomcompany.co.uk?subject=Substrate%20batch%20mixer';
 ---
 
 <BaseLayout
-  title="Commercial mushroom farm equipment for sale — Glasgow Mushroom Company"
-  description="Glasgow Mushroom Company has wound down. Our 220 kg substrate batch mixer and high-pressure cold water humidification system are for sale, with the rest of the farm's kit."
+  title="220 kg substrate batch mixer for sale — Glasgow Mushroom Company"
+  description="Upright 220 kg substrate and fodder batch mixer for sale. 3-phase, pneumatic bagging gates, automatic water dosing. From a closed Glasgow mushroom farm. UK delivery included."
 >
   <section class="hero">
-    <div class="container">
-      <p class="eyebrow">Farm closure sale · Glasgow</p>
-      <h1>Two pieces of kit that ran our farm are looking for a new home.</h1>
-      <p class="lede">
-        Glasgow Mushroom Company has stopped growing. The substrate mixer and
-        humidification system below were the backbone of our production and are
-        priced to sell. Everything else from the farm is listed too.
-      </p>
-      <div class="hero__actions">
-        <a href="#mixer" class="btn btn--primary">See the mixer</a>
-        <a href="#humidifier" class="btn btn--ghost">See the humidifier</a>
+    <div class="container hero__grid">
+      <div class="hero__copy">
+        <p class="eyebrow">For sale · Glasgow · UK delivery included</p>
+        <h1>220 kg substrate batch mixer</h1>
+        <p class="lede">
+          The mixer that produced every block of substrate we grew on. Vertical
+          paddle mixer for sawdust, straw, grain and feed. Mixes a 200 kg batch
+          in minutes, doses its own water, and bags out through pneumatic gates
+          while you hold the bag.
+        </p>
+        <div class="pricebox">
+          {status === 'sold' ? (
+            <span class="badge badge--sold">Sold</span>
+          ) : (
+            <>
+              <span class="price">{price}</span>
+              <span class="price__note">
+                inc. VAT{priceEx ? ` · ${priceEx} ex-VAT` : ''}
+                {status === 'under_offer' ? ' · under offer' : allowOffers ? ' · offers considered' : ''}
+              </span>
+            </>
+          )}
+        </div>
+        {status !== 'sold' && (
+          <div class="actions">
+            <a href={detailsHref} class="btn btn--primary">Register interest</a>
+            <a href={mailHref} class="btn btn--ghost">Email us</a>
+          </div>
+        )}
+      </div>
+      <div class="hero__media">
+        {hero ? <img src={hero} alt="Upright substrate batch mixer" loading="eager" /> : <div class="ph" aria-hidden="true"></div>}
       </div>
     </div>
   </section>
 
-  {items.map((item, idx) => (
-    <section class:list={['feature', { 'feature--alt': idx % 2 === 1, 'feature--sold': item.status === 'sold' }]} id={idx === 0 ? 'mixer' : 'humidifier'}>
-      <div class="container feature__grid">
-        <div class="feature__media">
-          {item.hero ? (
-            <img src={item.hero} alt={item.headline} loading={idx === 0 ? 'eager' : 'lazy'} />
-          ) : (
-            <div class="feature__placeholder" aria-hidden="true"></div>
-          )}
-          {item.gallery.length > 0 && (
-            <div class="feature__thumbs">
-              {item.gallery.map((src) => <img src={src} alt="" loading="lazy" />)}
-            </div>
-          )}
+  <section class="why">
+    <div class="container">
+      <h2>Why this one</h2>
+      <div class="why__grid">
+        <div>
+          <h3>Real batch size</h3>
+          <p>220 kg hopper. We ran 200 kg batches of wet sawdust and it never laboured.</p>
         </div>
-        <div class="feature__body">
-          <p class="eyebrow">{idx === 0 ? 'Production equipment' : 'Climate control'}</p>
-          <h2>{item.headline}</h2>
-          <p class="feature__tagline">{item.tagline}</p>
-          <dl class="specs">
-            {item.specs.map(([k, v]) => (
-              <div class="specs__row"><dt>{k}</dt><dd>{v}</dd></div>
-            ))}
-          </dl>
-          <div class="feature__price">
-            {item.status === 'sold' ? (
-              <span class="badge badge--sold">Sold</span>
-            ) : item.status === 'under_offer' ? (
-              <>
-                <span class="price">{item.price}</span>
-                <span class="badge">Under offer</span>
-              </>
-            ) : (
-              <>
-                <span class="price">{item.price}</span>
-                <span class="price__note">inc. VAT{item.allowOffers ? ' · offers considered' : ''}</span>
-              </>
-            )}
-          </div>
-          {item.status !== 'sold' && (
-            <div class="feature__actions">
-              <a href={`/equipment-sale?item=${item.id}`} class="btn btn--primary">Full details &amp; register interest</a>
-              <a href="mailto:hello@glasgowmushroomcompany.co.uk" class="btn btn--ghost">Email us</a>
-            </div>
-          )}
+        <div>
+          <h3>Hands-free water</h3>
+          <p>Set the litres on the flow meter and it stops itself. Same moisture every batch, no buckets.</p>
+        </div>
+        <div>
+          <h3>Fast, clean bagging</h3>
+          <p>Two pneumatic sliding gates on a foot pedal leave both hands free for the bag.</p>
+        </div>
+        <div>
+          <h3>Properly wired</h3>
+          <p>Schneider enclosure, lockable isolator, 3-phase CEE inlet. An electrician connects it in an hour.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="spec">
+    <div class="container spec__grid">
+      <div>
+        <h2>Specification</h2>
+        <dl class="specs">
+          {specs.map(([k, v]) => <div class="specs__row"><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+      </div>
+      <div class="lists">
+        <h2>What you get</h2>
+        <ul>
+          <li>Mixer, frame and drive complete</li>
+          <li>Control enclosure, isolator and 3-phase inlet lead</li>
+          <li>Pneumatic manifold, foot pedal and air lines</li>
+          <li>Flow meter, controller, spray bar and water fittings</li>
+          <li>Delivery to UK mainland</li>
+        </ul>
+        <h2>Not included</h2>
+        <ul>
+          <li>Air compressor. Any small workshop compressor with a tank will do.</li>
+          <li>Installation</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  {gallery.length > 0 && (
+    <section class="gallery">
+      <div class="container">
+        <h2>Up close</h2>
+        <div class="gallery__grid">
+          {gallery.map((src, i) => (
+            <figure>
+              <img src={src} alt={captions[i] ?? 'Substrate batch mixer detail'} loading="lazy" />
+              {captions[i] && <figcaption>{captions[i]}</figcaption>}
+            </figure>
+          ))}
         </div>
       </div>
     </section>
-  ))}
-
-  <section class="more">
-    <div class="container more__inner">
-      <div>
-        <h2>Everything else from the farm</h2>
-        <p>
-          Grow-room fans, shelving, sterilisation, cold chain, office kit and more.
-          Browse the full list, tick what you want and send us an offer in one go.
-        </p>
-      </div>
-      <a href="/equipment-sale" class="btn btn--primary">Browse all equipment</a>
-    </div>
-  </section>
+  )}
 
   <section class="practical">
     <div class="container practical__grid">
       <div>
         <h3>Viewing</h3>
-        <p>Both items can be viewed and demonstrated by appointment in Glasgow. Email to arrange a time.</p>
+        <p>See it run before you buy. Viewing and a working demonstration in Glasgow by appointment.</p>
       </div>
       <div>
-        <h3>Collection &amp; delivery</h3>
-        <p>Mixer price includes UK shipping. The humidifier is collection from Glasgow or courier at cost.</p>
+        <h3>Delivery</h3>
+        <p>UK mainland delivery is included in the price. Collection welcome if you prefer.</p>
       </div>
       <div>
         <h3>Payment</h3>
-        <p>Bank transfer against a VAT invoice. Prices shown include VAT at 20%.</p>
+        <p>Bank transfer against a VAT invoice. Price shown includes VAT at 20%.</p>
       </div>
+    </div>
+  </section>
+
+  {status !== 'sold' && (
+    <section class="cta">
+      <div class="container cta__inner">
+        <h2>Interested?</h2>
+        <div class="actions">
+          <a href={detailsHref} class="btn btn--primary">Register interest</a>
+          <a href={mailHref} class="btn btn--ghost">hello@glasgowmushroomcompany.co.uk</a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="more">
+    <div class="container more__inner">
+      <p>The farm has closed. Other equipment from the farm is also for sale.</p>
+      <a href="/equipment-sale" class="link">Browse everything else</a>
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  .container {
-    max-width: var(--container-max);
-    margin: 0 auto;
-    padding: 0 var(--container-padding);
-  }
+  .container { max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-padding); }
   .eyebrow {
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-    margin: 0 0 1rem;
+    font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--color-text-muted); margin: 0 0 1rem;
   }
-  h1, h2, h3 {
-    font-family: var(--font-heading);
-    color: var(--color-text);
-    margin: 0;
-    line-height: 1.05;
+  h1, h2, h3 { font-family: var(--font-heading); color: var(--color-text); margin: 0; line-height: 1.05; }
+  h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); margin-bottom: 1.5rem; }
+  h3 { font-size: 1.35rem; margin-bottom: 0.5rem; }
+  p { color: var(--color-text-muted); line-height: 1.55; margin: 0; }
+  section { border-bottom: 1px solid #222; }
+
+  .hero { padding: 4rem 0; }
+  .hero__grid { display: grid; gap: 2.5rem; align-items: center; }
+  .hero h1 { font-size: clamp(2.6rem, 6vw, 4.8rem); }
+  .lede { font-size: 1.15rem; margin: 1.5rem 0 2rem; max-width: 55ch; }
+  .hero__media img, .ph {
+    width: 100%; height: auto; border-radius: 8px; background: #111; aspect-ratio: 3 / 4; object-fit: cover;
   }
 
-  /* Hero */
-  .hero {
-    padding: 5rem 0 4rem;
-    border-bottom: 1px solid #222;
-  }
-  .hero h1 {
-    font-size: clamp(2.4rem, 6vw, 4.5rem);
-    max-width: 18ch;
-  }
-  .lede {
-    font-size: 1.15rem;
-    line-height: 1.6;
-    color: var(--color-text-muted);
-    max-width: 60ch;
-    margin: 1.5rem 0 2rem;
-  }
-  .hero__actions,
-  .feature__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
+  .pricebox { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .price { font-family: var(--font-heading); font-size: 2.8rem; font-weight: 700; color: var(--color-text); }
+  .price__note { color: var(--color-text-muted); font-size: 0.95rem; }
+  .badge { display: inline-block; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #555; color: var(--color-text); }
+  .badge--sold { background: #333; border-color: #333; font-size: 1.4rem; }
 
-  /* Buttons */
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
   .btn {
-    display: inline-block;
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 700;
-    padding: 0.7rem 1.4rem;
-    border-radius: 6px;
-    text-decoration: none;
+    display: inline-block; font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700;
+    padding: 0.7rem 1.4rem; border-radius: 6px; text-decoration: none;
     transition: opacity 0.2s ease, background-color 0.2s ease;
   }
   .btn--primary { background: #fff; color: #000; }
@@ -236,105 +251,48 @@ const availableCount = items.filter((i) => i.status !== 'sold').length;
   .btn--ghost { color: #fff; border: 1px solid #555; }
   .btn--ghost:hover { background: #1a1a1a; }
 
-  /* Feature blocks */
-  .feature {
-    padding: 4.5rem 0;
-    border-bottom: 1px solid #222;
-  }
-  .feature--alt { background: #0b0b0b; }
-  .feature--sold { opacity: 0.6; }
-  .feature__grid {
-    display: grid;
-    gap: 2.5rem;
-    align-items: start;
-  }
-  .feature__media img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    background: #111;
-    object-fit: cover;
-  }
-  .feature__placeholder {
-    aspect-ratio: 4 / 3;
-    border-radius: 8px;
-    background: #111;
-  }
-  .feature__thumbs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-  .feature__thumbs img { aspect-ratio: 4 / 3; }
-  .feature h2 { font-size: clamp(2rem, 4vw, 3rem); }
-  .feature__tagline {
-    font-size: 1.1rem;
-    line-height: 1.55;
-    color: var(--color-text-muted);
-    margin: 1rem 0 1.75rem;
-  }
+  .why { padding: 4rem 0; background: #0b0b0b; }
+  .why__grid { display: grid; gap: 2rem; }
 
-  .specs { margin: 0 0 1.75rem; }
+  .spec { padding: 4rem 0; }
+  .spec__grid { display: grid; gap: 3rem; }
+  .specs { margin: 0; }
   .specs__row {
-    display: grid;
-    grid-template-columns: 9rem 1fr;
-    gap: 1rem;
-    padding: 0.6rem 0;
-    border-top: 1px solid #222;
-    font-size: 0.95rem;
-    line-height: 1.45;
+    display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; padding: 0.65rem 0;
+    border-top: 1px solid #222; font-size: 0.95rem; line-height: 1.45;
   }
   .specs__row:last-child { border-bottom: 1px solid #222; }
   .specs dt { color: var(--color-text-muted); }
   .specs dd { margin: 0; color: var(--color-text); }
+  .lists h2 { font-size: 1.5rem; margin: 0 0 0.75rem; }
+  .lists h2 + ul + h2 { margin-top: 2rem; }
+  .lists ul { margin: 0; padding-left: 1.2rem; color: var(--color-text); line-height: 1.6; }
 
-  .feature__price {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-  .price {
-    font-family: var(--font-heading);
-    font-size: 2.4rem;
-    font-weight: 700;
-    color: var(--color-text);
-  }
-  .price__note { color: var(--color-text-muted); font-size: 0.95rem; }
-  .badge {
-    display: inline-block;
-    font-size: 0.8rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    border: 1px solid #555;
-    color: var(--color-text);
-  }
-  .badge--sold { background: #333; border-color: #333; font-size: 1.2rem; }
+  .gallery { padding: 4rem 0; background: #0b0b0b; }
+  .gallery__grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(2, 1fr); }
+  .gallery figure { margin: 0; }
+  .gallery img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 6px; background: #111; }
+  .gallery figcaption { font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.5rem; }
 
-  /* Browse-all + practical */
-  .more { padding: 4rem 0; border-bottom: 1px solid #222; }
-  .more__inner {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
-  }
-  .more h2 { font-size: 2rem; margin-bottom: 0.5rem; }
-  .more p { color: var(--color-text-muted); max-width: 55ch; line-height: 1.55; margin: 0; }
-
-  .practical { padding: 3.5rem 0 5rem; }
+  .practical { padding: 3.5rem 0; }
   .practical__grid { display: grid; gap: 2rem; }
-  .practical h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-  .practical p { color: var(--color-text-muted); line-height: 1.55; margin: 0; }
+
+  .cta { padding: 4rem 0; background: #0b0b0b; }
+  .cta__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.5rem; }
+  .cta h2 { margin: 0; }
+
+  .more { padding: 2rem 0; border-bottom: none; }
+  .more__inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+  .link { color: var(--color-text); text-decoration: underline; }
 
   @media (min-width: 768px) {
-    .feature__grid { grid-template-columns: 1.1fr 1fr; gap: 3.5rem; }
-    .feature--alt .feature__media { order: 2; }
+    .hero__grid { grid-template-columns: 1.1fr 0.9fr; gap: 4rem; }
+    .why__grid, .practical__grid { grid-template-columns: repeat(2, 1fr); }
+    .spec__grid { grid-template-columns: 1.2fr 0.8fr; }
+    .gallery__grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .why__grid { grid-template-columns: repeat(4, 1fr); }
     .practical__grid { grid-template-columns: repeat(3, 1fr); }
   }
 </style>
