@@ -144,6 +144,16 @@ export default function AssetBrowser({ listings, imageBase }: Props) {
     }
   }, [selection, hydrated])
 
+  // ---- Deep link: /equipment-sale?item=<id> opens that listing ----
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const id = new URLSearchParams(window.location.search).get('item')
+    if (!id) return
+    const match = listings.find((l) => l.id === id)
+    if (match) setOpenListing(match)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // ---- Cookie banner detection so the FAB doesn't clash ----
   const [bannerVisible, setBannerVisible] = useState(false)
   useEffect(() => {

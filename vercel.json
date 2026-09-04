@@ -1,8 +1,9 @@
 {
   "redirects": [
     {
-      "source": "/",
-      "destination": "/equipment-sale",
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "compostclub.glasgowmushroom.co" }],
+      "destination": "https://spentmushroom.com/:path*",
       "permanent": true
     }
   ]
