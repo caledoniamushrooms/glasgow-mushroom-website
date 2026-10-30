@@ -7,6 +7,9 @@ import PortalApp from '../../portal/App'
 // difference between INITIAL_SESSION firing in ~150ms vs stalling for
 // seconds (which leaves ProtectedRoute stuck on "Loading…").
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
+
+// The business has wound down; the portal is closed.
+return Astro.redirect('/', 301)
 ---
 
 <html lang="en">
