@@ -11,6 +11,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://astro.build/config
 export default defineConfig({
   site: 'https://www.glasgowmushroom.co',
+  // The business has wound down: every old public page and the trade portal
+  // point at the placeholder homepage.
+  redirects: {
+    '/home': '/',
+    '/products': '/',
+    '/recipes': '/',
+    '/where-to-find-us': '/',
+    '/direct-sales': '/',
+    '/wholesale': '/',
+    '/markets': '/',
+    '/contact': '/',
+    '/equipment-sale': '/',
+    '/portal': '/',
+    '/portal/register': '/',
+    '/portal/forgot-password': '/',
+    '/portal/reset-password': '/',
+  },
   integrations: [react({
     include: ['src/portal/**', 'src/components/assets/**'],
   })],
